@@ -1,9 +1,13 @@
 const API_URL = "";
 
+function goTo(page) {
+  window.location.href = page;
+}
+
 function protectPage() {
   const isSessionActive = localStorage.getItem("sessionActive");
   if (!isSessionActive) {
-    window.location.href = "/login.html";
+    goTo("login.html");
   }
 }
 
@@ -11,7 +15,7 @@ function protectAdminPage() {
   const role = localStorage.getItem("userRole");
   if (role !== "admin") {
     alert("No tienes permisos para entrar a esta página.");
-    window.location.href = "/index.html";
+    goTo("index.html");
   }
 }
 
@@ -28,7 +32,7 @@ function setupHeader() {
   const cartBtn = document.getElementById("cartBtn");
   if (cartBtn) {
     cartBtn.addEventListener("click", function () {
-      window.location.href = "/carrito.html";
+      goTo("carrito.html");
     });
   }
 
@@ -42,7 +46,7 @@ function setupHeader() {
       localStorage.removeItem("userName");
       localStorage.removeItem("cart");
       localStorage.removeItem("lastOrder");
-      window.location.href = "/login.html";
+      goTo("login.html");
     });
   }
 }
@@ -181,7 +185,7 @@ function setupCartPage() {
 
         localStorage.removeItem("cart");
         alert("Pedido confirmado correctamente.");
-        window.location.href = "/index.html";
+        goTo("index.html");
       } catch (error) {
         console.error("Error al confirmar pedido:", error);
         alert("No se pudo conectar con el servidor.");
