@@ -1,0 +1,1212 @@
+[
+  {
+    "id": 1,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "1",
+    "grado_secundaria": "1",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 100 hojas c/espiral TIRA AZUL",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "1",
+    "grado_secundaria": "1",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c5 100 hojas c/espiral TIRA AZUL",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "1",
+    "grado_secundaria": "1",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional blanco 100 hojas c/espiral TIRA AZUL",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "1",
+    "grado_secundaria": "1",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 50 hojas c/espiral TIRA AZUL",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "1",
+    "grado_secundaria": "1",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno francés c7 100 hojas c/espiral TIRA AZUL",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "1",
+    "grado_secundaria": "1",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta rayado 100 hojas TIRA AZUL",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "1",
+    "grado_secundaria": "1",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño esquela c7 100 hojas TIRA AZUL",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "2",
+    "grado_secundaria": "2",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional rayado 100 hojas c/espiral TIRA AMARILLA",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "2",
+    "grado_secundaria": "2",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 100 hojas c/espiral TIRA AMARILLA",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "2",
+    "grado_secundaria": "2",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c5 100 hojas c/espiral TIRA AMARILLA",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "2",
+    "grado_secundaria": "2",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno francés c7 100 hojas c/espiral TIRA AMARILLA",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "2",
+    "grado_secundaria": "2",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta c7 100 hojas TIRA AMARILLA",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "2",
+    "grado_secundaria": "2",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño esquela c7 100 hojas TIRA AMARILLA",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "3",
+    "grado_secundaria": "3",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional rayado 100 hojas c/espiral TIRA ROJA",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "3",
+    "grado_secundaria": "3",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 100 hojas c/espiral TIRA ROJA",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "3",
+    "grado_secundaria": "3",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c5 100 hojas c/espiral TIRA ROJA",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "3",
+    "grado_secundaria": "3",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno francés c7 100 hojas c/espiral TIRA ROJA",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "3",
+    "grado_secundaria": "3",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta c7 100 hojas TIRA ROJA",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "3",
+    "grado_secundaria": "3",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta blanco 100 hojas TIRA ROJA",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "escuela": "IPAE",
+    "nivel": "Secundaria",
+    "grado": "3",
+    "grado_secundaria": "3",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño esquela c7 100 hojas TIRA ROJA",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional rayado 100 hojas c/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 100 hojas c/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "CCuaderno profesional c5 100 hojas c/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 200 hojas c/espiral",
+    "descripcion": "",
+    "precio": 165,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 25,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno francés rayado 30 hojas c/espiral",
+    "descripcion": "",
+    "precio": 35,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 26,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno marquilla 20 hojas c/espiral",
+    "descripcion": "",
+    "precio": 100,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 27,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "CCuaderno marquilla 20 hojas s/espiral",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 28,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta c7 100 hojas",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 29,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta c5 100 hojas",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 30,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño esquela c5 100 hojas",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 31,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block de papel milimétrico 100 hojas",
+    "descripcion": "",
+    "precio": 35,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 32,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Carpeta tamaño carta ",
+    "descripcion": "",
+    "precio": 250,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 33,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Paquete de hojas para carpeta c7 100 hojas",
+    "descripcion": "",
+    "precio": 70,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 34,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Paquete de hojas para carpeta c5 100 hojas",
+    "descripcion": "",
+    "precio": 70,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 35,
+    "escuela": "IPAE",
+    "nivel": "Preparatoria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "General",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "AGENDA ESCOLAR IPAE",
+    "descripcion": "",
+    "precio": 260,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "id": 36,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno Italiano c7 100 hojas s/espiral",
+    "descripcion": "",
+    "precio": 80,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 37,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno Italiano mixto-pautado y rayado 100 hojas",
+    "descripcion": "",
+    "precio": 100,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 38,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional rayado 100 hojas s/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional doble raya 100 hojas s/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 40,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 100 hojas s/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 41,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c5 100 hojas s/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 42,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional rayado 50 hojas s/espiral",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 43,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional doble raya 50 hojas s/espiral",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 44,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 50 hojas s/espiral",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 45,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c5 50 hojas s/espiral",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 46,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno marquilla 20 hojas c/espiral",
+    "descripcion": "",
+    "precio": 100,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 47,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno marquilla 30 hojas c/espiral",
+    "descripcion": "",
+    "precio": 130,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 48,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta rayado 100 hojas",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 49,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta c7 100 hojas",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 50,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño carta c5 100 hojas",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 51,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño esquela rayado 100 hojas",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 52,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño esquela c7 100 hojas",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 53,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Block tamaño esquela c5 100 hojas",
+    "descripcion": "",
+    "precio": 85,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 54,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno francés rayado 100 hojas s/espiral",
+    "descripcion": "",
+    "precio": 95,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 55,
+    "escuela": "IAE",
+    "nivel": "Primaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Libreta de tareas",
+    "descripcion": "",
+    "precio": 140,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  }
+]

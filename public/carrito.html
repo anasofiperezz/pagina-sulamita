@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carrito | Papelería Sulamita</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="contacto.html" class="nav-btn">Contacto</a>
+        <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero cart-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Tu compra</span>
+        <h1>Carrito de compras</h1>
+        <p>
+          Revisa tus productos, tallas, cantidades y selecciona tu método
+          de entrega y pago antes de confirmar el pedido.
+        </p>
+      </div>
+    </section>
+
+    <section class="cart-page">
+      <div class="cart-layout">
+        <div class="cart-left">
+          <div class="cart-card">
+            <div class="cart-card-header">
+              <h2>Productos agregados</h2>
+              <button class="btn-outline" id="clearCartBtn" type="button">Vaciar carrito</button>
+            </div>
+
+            <div id="cartItems" class="cart-items"></div>
+
+            <div id="emptyCartMessage" class="empty-cart" style="display: none;">
+              Tu carrito está vacío.
+            </div>
+          </div>
+        </div>
+
+        <div class="cart-right">
+          <div class="summary-card">
+            <h3>Resumen del pedido</h3>
+
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span id="subtotal">$0.00</span>
+            </div>
+
+            <div class="summary-row">
+              <span>Envío</span>
+              <span id="shippingCost">$0.00</span>
+            </div>
+
+            <div class="summary-row total-row">
+              <span>Total</span>
+              <span id="total">$0.00</span>
+            </div>
+
+            <div class="form-group">
+              <label for="deliveryMethod">Método de entrega</label>
+              <select id="deliveryMethod">
+                <option value="pickup">Recoger en papelería</option>
+                <option value="delivery">Envío a domicilio</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="addressGroup" style="display: none;">
+              <label for="shippingAddress">Dirección de envío</label>
+              <input
+                type="text"
+                id="shippingAddress"
+                placeholder="Escribe tu dirección completa"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="paymentMethod">Método de pago</label>
+              <select id="paymentMethod">
+                <option value="tarjeta">Tarjeta</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="contra_entrega">Pago al recibir / recoger</option>
+              </select>
+            </div>
+
+            <button class="btn-primary full-width" id="checkoutBtn" type="button">
+              Confirmar pedido
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Carrito</p>
+  </footer>
+
+  <script src="tienda.js"></script>
+  <script>
+    protectPage();
+    setupHeader();
+    setupCartPage();
+
+    const role = localStorage.getItem("userRole");
+    const adminBtn = document.getElementById("adminBtn");
+
+    if (role === "admin" && adminBtn) {
+      adminBtn.style.display = "inline-block";
+      adminBtn.addEventListener("click", function () {
+        window.location.href = "admin.html";
+      });
+    }
+  </script>
+</body>
+</html>

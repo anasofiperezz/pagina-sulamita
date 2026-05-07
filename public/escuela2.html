@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IAE | Papelería Sulamita</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="/index.html" class="nav-btn">Inicio</a>
+        <a href="#niveles" class="nav-btn">Niveles</a>
+        <button class="nav-btn" id="cartBtn">Carrito</button>
+        <button class="nav-btn" id="adminBtn" style="display:none;">Panel admin</button>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero school-hero-2">
+      <div class="page-hero-content">
+        <span class="page-badge">IAE</span>
+        <h1>Instituto Anglo Español (IAE)</h1>
+        <p>
+          Aquí encontrarás los niveles disponibles de esta escuela:
+          Jardín de niños y Primaria.
+        </p>
+      </div>
+    </section>
+
+    <section class="school-detail">
+      <div class="detail-card">
+        <h3>Información de la escuela</h3>
+
+        <p><strong>Jardín de niños:</strong> Sadi Carnot #23, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
+        <p><strong>Teléfono Jardín de niños:</strong> 55-55-5-37-57</p>
+        <p><strong>Tel. y Fax Jardín de niños:</strong> 55-55-66-36-10</p>
+
+        <br />
+
+        <p><strong>Primaria:</strong> Sadi Carnot #44, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
+        <p><strong>Teléfonos Primaria:</strong> 55-55-66-82-53, 55-57-05-01-81, 55-57-05-03-06</p>
+        <p><strong>Tel. y Fax Primaria:</strong> 55-55-35-86-75</p>
+      </div>
+    </section>
+
+    <section class="grades-page" id="niveles">
+      <h2 class="section-title">Niveles disponibles</h2>
+
+      <div class="grade-grid">
+        <article class="grade-card">
+          <div class="grade-top grade-primary">Jardín de niños</div>
+
+          <div class="grade-content">
+            <h3>Jardín de niños</h3>
+            <p>
+              Catálogo con uniformes, batas y materiales
+              para jardín de niños del IAE.
+            </p>
+
+            <ul class="grade-list">
+              <li>Uniformes</li>
+              <li>Batas</li>
+              <li>Accesorios</li>
+            </ul>
+
+            <div class="actions">
+              <a href="/jardin.html" class="btn-primary">Ver catálogo</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="grade-card">
+          <div class="grade-top grade-primary">Primaria</div>
+
+          <div class="grade-content">
+            <h3>Primaria</h3>
+            <p>
+              Catálogo con uniformes, accesorios y productos
+              para primaria del IAE.
+            </p>
+
+            <ul class="grade-list">
+              <li>Uniformes</li>
+              <li>Accesorios</li>
+              <li>Material especial</li>
+            </ul>
+
+            <div class="actions">
+              <a href="/primaria.html" class="btn-primary">Ver catálogo</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - IAE</p>
+  </footer>
+
+  <script src="/tienda.js"></script>
+  <script>
+    protectPage();
+    setupHeader();
+
+    const role = localStorage.getItem("userRole");
+    const adminBtn = document.getElementById("adminBtn");
+
+    if (role === "admin" && adminBtn) {
+      adminBtn.style.display = "inline-block";
+      adminBtn.addEventListener("click", function () {
+        window.location.href = "/admin.html";
+      });
+    }
+  </script>
+</body>
+</html>

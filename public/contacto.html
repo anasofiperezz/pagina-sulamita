@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contacto | Tienda Escolar</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Tienda Escolar</div>
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="carrito.html" class="nav-btn">Carrito</a>
+        <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero contact-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Contacto</span>
+        <h1>Estamos para ayudarte</h1>
+        <p>
+          Ponte en contacto con nosotros para resolver dudas sobre pedidos,
+          entregas, pagos o información de las escuelas.
+        </p>
+      </div>
+    </section>
+
+    <section class="contact-page">
+      <div class="contact-layout">
+        <div class="contact-form-card">
+          <h2>Envíanos un mensaje</h2>
+          <p class="contact-subtext">
+            Completa el formulario y nos pondremos en contacto contigo.
+          </p>
+
+          <form id="contactForm">
+            <div class="form-group">
+              <label for="contactName">Nombre completo</label>
+              <input type="text" id="contactName" placeholder="Tu nombre" required />
+            </div>
+
+            <div class="form-group">
+              <label for="contactEmail">Correo electrónico</label>
+              <input type="email" id="contactEmail" placeholder="correo@ejemplo.com" required />
+            </div>
+
+            <div class="form-group">
+              <label for="contactPhone">Teléfono</label>
+              <input type="text" id="contactPhone" placeholder="Tu número de teléfono" />
+            </div>
+
+            <div class="form-group">
+              <label for="contactSubject">Asunto</label>
+              <select id="contactSubject" required>
+                <option value="">Selecciona una opción</option>
+                <option value="pedido">Duda sobre pedido</option>
+                <option value="envio">Envío a domicilio</option>
+                <option value="pago">Método de pago</option>
+                <option value="escuela">Información de escuela</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="contactMessage">Mensaje</label>
+              <textarea
+                id="contactMessage"
+                rows="6"
+                placeholder="Escribe tu mensaje aquí"
+                required
+              ></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary full-width">Enviar mensaje</button>
+          </form>
+
+          <div class="note" id="contactResponse"></div>
+        </div>
+
+        <div class="contact-info-column">
+          <div class="info-card">
+            <h3>Contacto general</h3>
+            <p>
+              <strong>Correo:</strong> soporte@tiendaescolar.com<br />
+              <strong>Teléfono:</strong> 555-000-1122<br />
+              <strong>Horario:</strong> Lunes a Viernes, 8:00 AM a 6:00 PM
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h3>Escuela 1</h3>
+            <p>
+              <strong>Nombre:</strong> Instituto Escolar del Centro<br />
+              <strong>Dirección:</strong> Av. Principal 123, Centro, Ciudad Escolar<br />
+              <strong>Teléfono:</strong> 555-123-4567<br />
+              <strong>Correo:</strong> contacto@escuela1.com
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h3>Escuela 2</h3>
+            <p>
+              <strong>Nombre:</strong> Academia Educativa del Norte<br />
+              <strong>Dirección:</strong> Calle Universidad 456, Zona Norte, Ciudad Escolar<br />
+              <strong>Teléfono:</strong> 555-987-6543<br />
+              <strong>Correo:</strong> informes@escuela2.com
+            </p>
+          </div>
+
+          <div class="info-card">
+            <h3>Métodos de atención</h3>
+            <p>
+              Atención por correo electrónico.<br />
+              Atención telefónica.<br />
+              Seguimiento de pedidos y apoyo con compras escolares.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Tienda Escolar - Contacto</p>
+  </footer>
+
+  <script src="tienda.js"></script>
+  <script>
+    protectPage();
+    setupHeader();
+
+    const role = localStorage.getItem("userRole");
+    const adminBtn = document.getElementById("adminBtn");
+
+    if (role === "admin" && adminBtn) {
+      adminBtn.style.display = "inline-block";
+      adminBtn.addEventListener("click", function () {
+        window.location.href = "admin.html";
+      });
+    }
+
+    const contactForm = document.getElementById("contactForm");
+    const contactResponse = document.getElementById("contactResponse");
+
+    const savedName = localStorage.getItem("userName");
+    const savedEmail = localStorage.getItem("userEmail");
+
+    if (savedName) {
+      document.getElementById("contactName").value = savedName;
+    }
+
+    if (savedEmail) {
+      document.getElementById("contactEmail").value = savedEmail;
+    }
+
+    contactForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const payload = {
+        nombre: document.getElementById("contactName").value.trim(),
+        email: document.getElementById("contactEmail").value.trim(),
+        telefono: document.getElementById("contactPhone").value.trim(),
+        asunto: document.getElementById("contactSubject").value,
+        mensaje: document.getElementById("contactMessage").value.trim()
+      };
+
+      try {
+        const response = await fetch(`/api/contacto`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          contactResponse.textContent = data.message || "No se pudo enviar el mensaje.";
+          contactResponse.classList.add("show");
+          contactResponse.style.background = "#fef2f2";
+          contactResponse.style.color = "#dc2626";
+          return;
+        }
+
+        contactResponse.textContent = "Tu mensaje fue enviado correctamente.";
+        contactResponse.classList.add("show");
+        contactResponse.style.background = "#eff6ff";
+        contactResponse.style.color = "#1d4ed8";
+
+        contactForm.reset();
+
+        if (savedName) {
+          document.getElementById("contactName").value = savedName;
+        }
+
+        if (savedEmail) {
+          document.getElementById("contactEmail").value = savedEmail;
+        }
+      } catch (error) {
+        console.error(error);
+        contactResponse.textContent = "No se pudo conectar con el servidor.";
+        contactResponse.classList.add("show");
+        contactResponse.style.background = "#fef2f2";
+        contactResponse.style.color = "#dc2626";
+      }
+    });
+  </script>
+</body>
+</html>

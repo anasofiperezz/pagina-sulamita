@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IPAE | Papelería Sulamita</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="/index.html" class="nav-btn">Inicio</a>
+        <a href="#niveles" class="nav-btn">Niveles</a>
+        <button class="nav-btn" id="cartBtn">Carrito</button>
+        <button class="nav-btn" id="adminBtn" style="display:none;">Panel admin</button>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero school-hero-1">
+      <div class="page-hero-content">
+        <span class="page-badge">IPAE</span>
+        <h1>Instituto Pedagógico Anglo Español (IPAE)</h1>
+        <p>Esta escuela cuenta con Secundaria y Preparatoria.</p>
+      </div>
+    </section>
+
+    <section class="school-detail">
+      <div class="detail-card">
+        <h3>Información de la escuela</h3>
+        <p><strong>Secundaria:</strong> Jalapa 44, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700</p>
+        <p><strong>Teléfonos Secundaria:</strong> 55-55-25-57-90, 55-55-25-76-37, 55-55-25-76-36, 55-55-25-76-38</p>
+        <p><strong>Tel. y Fax Secundaria:</strong> 55-55-25-58-48</p>
+
+        <br>
+
+        <p><strong>Preparatoria:</strong> Durango 101, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700</p>
+        <p><strong>Teléfonos Preparatoria:</strong> 55-55-25-88-25, 55-55-11-44-25, 55-25-30-27</p>
+        <p><strong>Tel. y Fax Preparatoria:</strong> 55-52-08-70-13</p>
+      </div>
+    </section>
+
+    <section class="grades-page" id="niveles">
+      <h2 class="section-title">Niveles disponibles</h2>
+
+      <div class="grade-grid">
+        <article class="grade-card">
+          <div class="grade-top grade-secondary">Secundaria</div>
+          <div class="grade-content">
+            <h3>Secundaria</h3>
+            <p>Catálogo con uniformes, materiales y productos para secundaria del IPAE.</p>
+            <div class="actions">
+              <a href="/secundaria.html" class="btn-primary">Ver catálogo</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="grade-card">
+          <div class="grade-top grade-highschool">Preparatoria</div>
+          <div class="grade-content">
+            <h3>Preparatoria</h3>
+            <p>Catálogo con uniformes, materiales y productos para preparatoria del IPAE.</p>
+            <div class="actions">
+              <a href="/preparatoria.html" class="btn-primary">Ver catálogo</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - IPAE</p>
+  </footer>
+
+  <script src="/tienda.js"></script>
+  <script>
+    protectPage();
+    setupHeader();
+
+    const role = localStorage.getItem("userRole");
+    const adminBtn = document.getElementById("adminBtn");
+
+    if (role === "admin" && adminBtn) {
+      adminBtn.style.display = "inline-block";
+      adminBtn.addEventListener("click", function () {
+        window.location.href = "/admin.html";
+      });
+    }
+  </script>
+</body>
+</html>

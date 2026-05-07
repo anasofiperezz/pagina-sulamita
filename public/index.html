@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inicio | Papelería Sulamita</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="#escuelas" class="nav-btn">Escuelas</a>
+        <a href="/contacto.html" class="nav-btn">Contacto</a>
+        <button class="nav-btn" id="cartBtn">Carrito</button>
+        <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Compra útiles, uniformes y materiales por escuela y nivel</h1>
+        <p>
+          Bienvenido a Papelería Sulamita. Aquí podrás elegir una escuela,
+          entrar al nivel correspondiente y revisar el catálogo disponible
+          para cada sección escolar.
+        </p>
+
+        <div class="actions">
+          <a href="#escuelas" class="btn-primary">Ver escuelas</a>
+          <a href="/contacto.html" class="btn-outline">Ir a contacto</a>
+        </div>
+      </div>
+
+      <div class="hero-box">
+        <h3>¿Qué encontrarás aquí?</h3>
+        <ul>
+          <li>Catálogo por escuela</li>
+          <li>Niveles por colegio</li>
+          <li>Útiles, uniformes y materiales</li>
+          <li>Carrito de compras</li>
+          <li>Acceso para cliente, invitado y administrador</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="schools" id="escuelas">
+      <h2 class="section-title">Escuelas disponibles</h2>
+
+      <div class="school-grid">
+        <article class="school-card">
+          <div class="school-top school-1">
+            <img src="/img/ipae.png" class="school-logo">
+          </div>
+
+          <div class="school-content">
+            <h3>Instituto Pedagógico Anglo Español (IPAE)</h3>
+            <p><strong>Niveles:</strong> Secundaria y Preparatoria</p>
+            <p><strong>Secundaria:</strong> Jalapa 44, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700</p>
+            <p><strong>Preparatoria:</strong> Durango 101, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700</p>
+
+            <div class="grades">
+              <span class="grade-tag">Secundaria</span>
+              <span class="grade-tag">Preparatoria</span>
+            </div>
+
+            <div class="actions">
+              <a href="/escuela1.html" class="btn-primary">Ver niveles</a>
+              <button class="btn-outline" type="button" onclick="showSchoolInfo('ipae')">
+                Más información
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article class="school-card">
+          <div class="school-top school-2">
+            <img src="/img/iae.png" class="school-logo">
+          </div>
+
+          <div class="school-content">
+            <h3>Instituto Anglo Español (IAE)</h3>
+            <p><strong>Niveles:</strong> Jardín de niños y Primaria</p>
+            <p><strong>Jardín de niños:</strong> Sadi Carnot #23, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
+            <p><strong>Primaria:</strong> Sadi Carnot #44, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
+
+            <div class="grades">
+              <span class="grade-tag">Jardín de niños</span>
+              <span class="grade-tag">Primaria</span>
+            </div>
+
+            <div class="actions">
+              <a href="/escuela2.html" class="btn-primary">Ver niveles</a>
+              <button class="btn-outline" type="button" onclick="showSchoolInfo('iae')">
+                Más información
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="info-section">
+      <div class="info-card">
+        <h3>Contacto general</h3>
+        <p>
+          <strong>Nombre comercial:</strong> Papelería Sulamita<br />
+          <strong>Teléfono:</strong> 55 5533 5177
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3>Métodos de entrega</h3>
+        <p>
+          Recoger en papelería.<br />
+          Envío a domicilio.<br />
+          Las opciones aparecen al confirmar el pedido.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3>Métodos de pago</h3>
+        <p>
+          Pago con tarjeta.<br />
+          Transferencia.<br />
+          Pago al recoger o contra entrega.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Todos los derechos reservados</p>
+  </footer>
+
+  <script src="/tienda.js"></script>
+  <script>
+    protectPage();
+    setupHeader();
+
+    const role = localStorage.getItem("userRole");
+    const adminBtn = document.getElementById("adminBtn");
+
+    if (role === "admin" && adminBtn) {
+      adminBtn.style.display = "inline-block";
+      adminBtn.addEventListener("click", function () {
+        window.location.href = "/admin.html";
+      });
+    }
+
+    function showSchoolInfo(school) {
+      if (school === "ipae") {
+        alert(
+          "Instituto Pedagógico Anglo Español (IPAE)\\n\\nSecundaria:\\nJalapa 44, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700\\n\\nPreparatoria:\\nDurango 101, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700"
+        );
+      } else {
+        alert(
+          "Instituto Anglo Español (IAE)\\n\\nJardín de niños:\\nSadi Carnot #23, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470\\n\\nPrimaria:\\nSadi Carnot #44, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470"
+        );
+      }
+    }
+  </script>
+</body>
+</html>

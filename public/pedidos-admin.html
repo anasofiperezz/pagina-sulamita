@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pedidos | Administrador</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Tienda Escolar - Pedidos</div>
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="admin.html" class="nav-btn">Inventario</a>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero admin-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Administrador</span>
+        <h1>Pedidos recibidos</h1>
+        <p>
+          Aquí puedes revisar las compras realizadas por clientes e invitados.
+        </p>
+      </div>
+    </section>
+
+    <section class="orders-admin-page">
+      <div class="orders-admin-header">
+        <h2 class="section-title">Lista de pedidos</h2>
+        <button class="btn-outline" id="reloadOrdersBtn">Actualizar pedidos</button>
+      </div>
+
+      <div id="ordersContainer" class="orders-grid">
+        <div class="info-card">
+          <p>Cargando pedidos...</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Tienda Escolar - Pedidos administrador</p>
+  </footer>
+
+  <script src="tienda.js"></script>
+  <script>
+    protectPage();
+    protectAdminPage();
+    setupHeader();
+    loadAdminOrders();
+
+    document.getElementById("reloadOrdersBtn").addEventListener("click", loadAdminOrders);
+
+    async function loadAdminOrders() {
+      const container = document.getElementById("ordersContainer");
+      container.innerHTML = `
+        <div class="info-card">
+          <p>Cargando pedidos...</p>
+        </div>
+      `;
+
+      try {
+        const response = await fetch("/api/pedidos");
+        const orders = await response.json();
+
+        if (!response.ok) {
+          container.innerHTML = `
+            <div class="info-card">
+              <p>No se pudieron cargar los pedidos.</p>
+            </div>
+          `;
+          return;
+        }
+
+        if (!orders.length) {
+          container.innerHTML = `
+            <div class="info-card">
+              <p>No hay pedidos registrados todavía.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = orders.map(order => {
+          const productosHtml = Array.isArray(order.productos)
+            ? order.productos.map(item => `
+                <li>
+                  Producto ID: <strong>${item.producto_id}</strong> |
+                  Cantidad: <strong>${item.cantidad}</strong> |
+                  Precio: <strong>$${Number(item.precio).toFixed(2)}</strong>
+                </li>
+              `).join("")
+            : "<li>Sin detalle de productos</li>";
+
+          return `
+            <article class="order-card">
+              <div class="order-card-top">
+                <h3>Pedido #${order.id}</h3>
+                <span class="order-status">${order.estado || "pendiente"}</span>
+              </div>
+
+              <div class="order-card-body">
+                <p><strong>Cliente:</strong> ${order.nombre_cliente}</p>
+                <p><strong>Correo:</strong> ${order.email_cliente}</p>
+                <p><strong>Entrega:</strong> ${order.tipo_entrega}</p>
+                <p><strong>Dirección:</strong> ${order.direccion_envio || "No aplica"}</p>
+                <p><strong>Pago:</strong> ${order.metodo_pago}</p>
+                <p><strong>Subtotal:</strong> $${Number(order.subtotal).toFixed(2)}</p>
+                <p><strong>Envío:</strong> $${Number(order.envio).toFixed(2)}</p>
+                <p><strong>Total:</strong> $${Number(order.total).toFixed(2)}</p>
+                <p><strong>Fecha:</strong> ${new Date(order.creado_en).toLocaleString()}</p>
+
+                <div class="order-products">
+                  <h4>Productos</h4>
+                  <ul>
+                    ${productosHtml}
+                  </ul>
+                </div>
+              </div>
+            </article>
+          `;
+        }).join("");
+      } catch (error) {
+        console.error(error);
+        container.innerHTML = `
+          <div class="info-card">
+            <p>Error al cargar pedidos.</p>
+          </div>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>

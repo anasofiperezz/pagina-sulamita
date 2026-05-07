@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administrador | Papelería Sulamita</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita - Admin</div>
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="/index.html" class="nav-btn">Inicio</a>
+        <a href="/pedidos-admin.html" class="nav-btn">Pedidos</a>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero admin-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Administrador</span>
+        <h1>Gestión de catálogo e inventario</h1>
+        <p>
+          Aquí puedes agregar productos, asignar tallas con stock,
+          actualizar precios y mantener el catálogo organizado por escuela, nivel y grado.
+        </p>
+      </div>
+    </section>
+
+    <section class="admin-page">
+      <div class="admin-layout">
+        <div class="admin-form-card">
+          <h2>Agregar producto</h2>
+
+          <form id="productForm">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="productGeneral" />
+                Producto general: se muestra en todas las escuelas, niveles y grados
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label for="schoolName">Escuela</label>
+              <select id="schoolName" required>
+                <option value="">Selecciona una escuela</option>
+                <option value="IPAE">IPAE</option>
+                <option value="IAE">IAE</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="levelName">Nivel</label>
+              <select id="levelName" required>
+                <option value="">Selecciona un nivel</option>
+                <option value="Jardín de niños">Jardín de niños</option>
+                <option value="Primaria">Primaria</option>
+                <option value="Secundaria">Secundaria</option>
+                <option value="Preparatoria">Preparatoria</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="gradeName">Grado / Sección</label>
+              <select id="gradeName">
+                <option value="General">General / Todos los grados del nivel</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="prepaAreaGroup" style="display: none;">
+              <label for="prepaArea">Área de preparatoria</label>
+              <select id="prepaArea">
+                <option value="">Sin área específica</option>
+                <option value="Área I">Área I</option>
+                <option value="Área II">Área II</option>
+                <option value="Área III">Área III</option>
+                <option value="Área IV">Área IV</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="categoryName">Categoría</label>
+              <select id="categoryName" required>
+                <option value="">Selecciona una categoría</option>
+                <option value="Uniformes">Uniformes</option>
+                <option value="Accesorios">Accesorios</option>
+                <option value="Especial">Especial</option>
+                <option value="Libros">Libros</option>
+                <option value="Cuadernos">Cuadernos</option>
+                <option value="Cuadernos institucionales">Cuadernos institucionales</option>
+                <option value="Material general">Material general</option>
+                <option value="Material para entregar">Material para entregar</option>
+                <option value="Laboratorio">Laboratorio</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="productName">Nombre del producto</label>
+              <input type="text" id="productName" required />
+            </div>
+
+            <div class="form-group">
+              <label for="productDescription">Descripción</label>
+              <textarea id="productDescription" rows="4"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="productPrice">Precio</label>
+              <input type="number" id="productPrice" step="0.01" min="0" value="0" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="productAvailable" checked />
+                Disponible para venta
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="productRequiresPrice" checked />
+                Requiere definir precio después
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Tallas / Presentación y stock</label>
+              <div id="sizesContainer" class="sizes-editor"></div>
+              <button type="button" class="btn-outline btn-sm" id="addSizeBtn">
+                Agregar talla
+              </button>
+            </div>
+
+            <button type="submit" class="btn-primary full-width">
+              Guardar producto
+            </button>
+          </form>
+
+          <div class="note" id="adminMessage"></div>
+        </div>
+
+        <div class="admin-table-card">
+          <div class="admin-table-header">
+            <h2>Inventario actual</h2>
+
+            <div class="admin-header-actions">
+              <select id="schoolFilter">
+                <option value="todos">Todas las escuelas</option>
+                <option value="General">General</option>
+                <option value="IPAE">IPAE</option>
+                <option value="IAE">IAE</option>
+              </select>
+
+              <select id="levelFilter">
+                <option value="todos">Todos los niveles</option>
+                <option value="General">General</option>
+                <option value="Jardín de niños">Jardín de niños</option>
+                <option value="Primaria">Primaria</option>
+                <option value="Secundaria">Secundaria</option>
+                <option value="Preparatoria">Preparatoria</option>
+              </select>
+
+              <select id="gradeFilter">
+                <option value="todos">Todos los grados</option>
+                <option value="General">General / Todos</option>
+                <option value="1">1°</option>
+                <option value="2">2°</option>
+                <option value="3">3°</option>
+                <option value="4">4°</option>
+                <option value="5">5°</option>
+                <option value="6">6°</option>
+              </select>
+
+              <button class="btn-outline" id="reloadProductsBtn" type="button">
+                Actualizar lista
+              </button>
+            </div>
+          </div>
+
+          <div id="productsList" class="admin-products-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Panel administrador</p>
+  </footer>
+
+  <script src="/tienda.js"></script>
+  <script>
+    protectPage();
+    protectAdminPage();
+    setupHeader();
+
+    const productForm = document.getElementById("productForm");
+    const adminMessage = document.getElementById("adminMessage");
+    const reloadProductsBtn = document.getElementById("reloadProductsBtn");
+    const addSizeBtn = document.getElementById("addSizeBtn");
+    const sizesContainer = document.getElementById("sizesContainer");
+
+    const productGeneral = document.getElementById("productGeneral");
+    const schoolSelect = document.getElementById("schoolName");
+    const levelSelect = document.getElementById("levelName");
+    const gradeSelect = document.getElementById("gradeName");
+    const prepaAreaGroup = document.getElementById("prepaAreaGroup");
+    const prepaArea = document.getElementById("prepaArea");
+
+    const schoolFilter = document.getElementById("schoolFilter");
+    const levelFilter = document.getElementById("levelFilter");
+    const gradeFilter = document.getElementById("gradeFilter");
+
+    updateGradeOptions();
+    toggleGeneralProductFields();
+    createSizeRow();
+    loadAdminProducts();
+
+    addSizeBtn.addEventListener("click", createSizeRow);
+    reloadProductsBtn.addEventListener("click", loadAdminProducts);
+
+    schoolFilter.addEventListener("change", loadAdminProducts);
+    levelFilter.addEventListener("change", loadAdminProducts);
+    gradeFilter.addEventListener("change", loadAdminProducts);
+
+    levelSelect.addEventListener("change", updateGradeOptions);
+    productGeneral.addEventListener("change", toggleGeneralProductFields);
+
+    productForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const tallas = collectSizes(sizesContainer);
+      const isGeneral = productGeneral.checked;
+      const selectedLevel = levelSelect.value;
+      const selectedGrade = gradeSelect.value || "General";
+      const selectedArea = prepaArea.value;
+
+      const payload = {
+        escuela: isGeneral ? "General" : schoolSelect.value,
+        nivel: isGeneral ? "General" : selectedLevel,
+        grado: isGeneral ? "General" : selectedGrade,
+
+        grado_secundaria:
+          !isGeneral && selectedLevel === "Secundaria" && selectedGrade !== "General"
+            ? selectedGrade
+            : "",
+
+        grado_prepa:
+          !isGeneral && selectedLevel === "Preparatoria" && selectedGrade !== "General"
+            ? selectedGrade
+            : "",
+
+        area_prepa:
+          !isGeneral && selectedLevel === "Preparatoria"
+            ? selectedArea
+            : "",
+
+        categoria: document.getElementById("categoryName").value,
+        nombre: document.getElementById("productName").value.trim(),
+        descripcion: document.getElementById("productDescription").value.trim(),
+        precio: Number(document.getElementById("productPrice").value || 0),
+        disponible: document.getElementById("productAvailable").checked,
+        requiere_precio: document.getElementById("productRequiresPrice").checked,
+        aplica_general: isGeneral,
+        tallas
+      };
+
+      if (!payload.nombre || !payload.categoria) {
+        showAdminMessage("Completa el nombre y la categoría del producto.", true);
+        return;
+      }
+
+      if (!isGeneral && (!payload.escuela || !payload.nivel)) {
+        showAdminMessage("Selecciona escuela y nivel, o marca el producto como general.", true);
+        return;
+      }
+
+      if (!payload.tallas.length) {
+        showAdminMessage("Agrega al menos una talla o presentación con stock.", true);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/admin/productos", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showAdminMessage(data.message || "No se pudo guardar el producto.", true);
+          return;
+        }
+
+        showAdminMessage("Producto guardado correctamente.");
+
+        productForm.reset();
+        sizesContainer.innerHTML = "";
+        createSizeRow();
+        updateGradeOptions();
+        toggleGeneralProductFields();
+
+        document.getElementById("productAvailable").checked = true;
+        document.getElementById("productRequiresPrice").checked = true;
+
+        loadAdminProducts();
+      } catch (error) {
+        console.error(error);
+        showAdminMessage("No se pudo conectar con el servidor.", true);
+      }
+    });
+
+    function updateGradeOptions() {
+      const currentValue = gradeSelect.value || "General";
+      const level = levelSelect.value;
+
+      const optionsByLevel = {
+        "Jardín de niños": [
+          { value: "General", text: "General / Todo jardín de niños" }
+        ],
+        "Primaria": [
+          { value: "General", text: "General / Toda primaria" },
+          { value: "1", text: "1° Primaria" },
+          { value: "2", text: "2° Primaria" },
+          { value: "3", text: "3° Primaria" },
+          { value: "4", text: "4° Primaria" },
+          { value: "5", text: "5° Primaria" },
+          { value: "6", text: "6° Primaria" }
+        ],
+        "Secundaria": [
+          { value: "General", text: "General / Toda secundaria" },
+          { value: "1", text: "1° Secundaria" },
+          { value: "2", text: "2° Secundaria" },
+          { value: "3", text: "3° Secundaria" }
+        ],
+        "Preparatoria": [
+          { value: "General", text: "General / Toda preparatoria" },
+          { value: "4", text: "4° Preparatoria" },
+          { value: "5", text: "5° Preparatoria" },
+          { value: "6", text: "6° Preparatoria" }
+        ]
+      };
+
+      const options = optionsByLevel[level] || [
+        { value: "General", text: "General / Todos los grados del nivel" }
+      ];
+
+      gradeSelect.innerHTML = options
+        .map(option => `
+          <option value="${escapeHtmlAttr(option.value)}">
+            ${escapeHtml(option.text)}
+          </option>
+        `)
+        .join("");
+
+      const optionValues = options.map(option => option.value);
+      gradeSelect.value = optionValues.includes(currentValue) ? currentValue : "General";
+
+      prepaAreaGroup.style.display =
+        level === "Preparatoria" && !productGeneral.checked
+          ? "block"
+          : "none";
+    }
+
+    function toggleGeneralProductFields() {
+      const isGeneral = productGeneral.checked;
+
+      schoolSelect.disabled = isGeneral;
+      levelSelect.disabled = isGeneral;
+      gradeSelect.disabled = isGeneral;
+      prepaArea.disabled = isGeneral;
+
+      schoolSelect.required = !isGeneral;
+      levelSelect.required = !isGeneral;
+
+      if (isGeneral) {
+        schoolSelect.value = "";
+        levelSelect.value = "";
+        gradeSelect.innerHTML = `
+          <option value="General">
+            General / Todas las escuelas, niveles y grados
+          </option>
+        `;
+        gradeSelect.value = "General";
+        prepaArea.value = "";
+        prepaAreaGroup.style.display = "none";
+      } else {
+        updateGradeOptions();
+      }
+    }
+
+    function createSizeRow(talla = "", stock = "") {
+      const row = document.createElement("div");
+      row.className = "size-row";
+
+      row.innerHTML = `
+        <div class="admin-field-group">
+          <label>Talla / Presentación</label>
+          <input
+            type="text"
+            class="size-name size-input-label"
+            placeholder="Ej. 12, CH, M, Unitalla, Paquete"
+            value="${escapeHtmlAttr(talla)}"
+          />
+        </div>
+
+        <div class="admin-field-group">
+          <label>Stock</label>
+          <input
+            type="number"
+            class="size-stock stock-input-value"
+            placeholder="0"
+            min="0"
+            value="${stock}"
+          />
+        </div>
+
+        <button type="button" class="btn-secondary btn-sm remove-size-btn">
+          Quitar
+        </button>
+      `;
+
+      row.querySelector(".remove-size-btn").addEventListener("click", function () {
+        row.remove();
+      });
+
+      sizesContainer.appendChild(row);
+    }
+
+    function collectSizes(container) {
+      const rows = container.querySelectorAll(".size-row");
+      const sizesMap = new Map();
+
+      rows.forEach((row) => {
+        const talla = row.querySelector(".size-name").value.trim();
+        const stock = Math.max(0, Number(row.querySelector(".size-stock").value || 0));
+
+        if (talla !== "") {
+          const key = talla.toLowerCase();
+          const currentStock = sizesMap.get(key)?.stock || 0;
+
+          sizesMap.set(key, {
+            talla,
+            stock: currentStock + stock
+          });
+        }
+      });
+
+      return Array.from(sizesMap.values());
+    }
+
+    async function loadAdminProducts() {
+      const productsList = document.getElementById("productsList");
+
+      const selectedSchool = schoolFilter.value;
+      const selectedLevel = levelFilter.value;
+      const selectedGrade = gradeFilter.value;
+
+      productsList.innerHTML = `<p>Cargando productos...</p>`;
+
+      try {
+        const response = await fetch("/api/admin/productos");
+        let products = await response.json();
+
+        if (!response.ok) {
+          productsList.innerHTML = `<p>No se pudieron cargar los productos.</p>`;
+          return;
+        }
+
+        products = products.filter(product => {
+          return productMatchesAdminFilters(
+            product,
+            selectedSchool,
+            selectedLevel,
+            selectedGrade
+          );
+        });
+
+        if (!products.length) {
+          productsList.innerHTML = `<p>No hay productos registrados con estos filtros.</p>`;
+          return;
+        }
+
+        productsList.innerHTML = products.map((product) => {
+          const tallasSolo = Array.isArray(product.tallas)
+            ? product.tallas.map((t) => `
+                <span class="size-badge">${escapeHtml(t.talla)}</span>
+              `).join("")
+            : "";
+
+          const stockEditable = Array.isArray(product.tallas) && product.tallas.length
+            ? `
+              <div class="admin-stock-header">
+                <span>Talla / Presentación</span>
+                <span>Stock</span>
+              </div>
+
+              ${product.tallas.map((t) => `
+                <div class="admin-size-item">
+                  <div class="admin-field-group">
+                    <label for="size-name-${product.id}-${escapeId(t.talla)}">
+                      Talla / Presentación
+                    </label>
+                    <input
+                      type="text"
+                      class="size-input-label"
+                      value="${escapeHtmlAttr(t.talla)}"
+                      id="size-name-${product.id}-${escapeId(t.talla)}"
+                    />
+                  </div>
+
+                  <div class="admin-field-group">
+                    <label for="size-stock-${product.id}-${escapeId(t.talla)}">
+                      Stock
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      class="stock-input-value"
+                      value="${Number(t.stock || 0)}"
+                      id="size-stock-${product.id}-${escapeId(t.talla)}"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn-secondary btn-sm"
+                    onclick="removeEditSizeRow(this)"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              `).join("")}
+            `
+            : `<p>Sin tallas</p>`;
+
+          return `
+            <article class="admin-product-card">
+              <div class="admin-product-head">
+                <div>
+                  <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
+                  <p>${escapeHtml(getProductScopeLabel(product))}</p>
+                  <p><strong>Categoría:</strong> ${escapeHtml(product.categoria || "Sin categoría")}</p>
+                  <p><strong>Alcance:</strong> ${isGeneralProduct(product) ? "General" : "Específico"}</p>
+                </div>
+
+                <button
+                  class="btn-secondary btn-sm"
+                  type="button"
+                  onclick="deleteProduct(${product.id})"
+                >
+                  Eliminar
+                </button>
+              </div>
+
+              <p class="admin-product-description">
+                ${escapeHtml(product.descripcion || "Sin descripción")}
+              </p>
+
+              <div class="admin-inline-grid">
+                <div class="form-group">
+                  <label>Precio</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="${Number(product.precio || 0)}"
+                    id="price-${product.id}"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      id="available-${product.id}"
+                      ${product.disponible !== false ? "checked" : ""}
+                    />
+                    Disponible
+                  </label>
+                </div>
+
+                <div class="form-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      id="requires-${product.id}"
+                      ${product.requiere_precio === true ? "checked" : ""}
+                    />
+                    Requiere precio
+                  </label>
+                </div>
+              </div>
+
+              <div class="tabs">
+                <button
+                  type="button"
+                  class="tab-btn active"
+                  onclick="openAdminTab(event, 'sizes-${product.id}')"
+                >
+                  Tallas disponibles
+                </button>
+
+                <button
+                  type="button"
+                  class="tab-btn"
+                  onclick="openAdminTab(event, 'stock-${product.id}')"
+                >
+                  Stock por talla
+                </button>
+              </div>
+
+              <div id="sizes-${product.id}" class="admin-tab-content active">
+                <div class="sizes-badges-wrap">
+                  ${tallasSolo || "<p>Sin tallas registradas</p>"}
+                </div>
+              </div>
+
+              <div id="stock-${product.id}" class="admin-tab-content">
+                <div class="admin-sizes-grid" id="sizes-edit-${product.id}">
+                  ${stockEditable}
+                </div>
+              </div>
+
+              <div class="table-actions">
+                <button
+                  class="btn-outline btn-sm"
+                  type="button"
+                  onclick="addEditSizeRow(${product.id})"
+                >
+                  Agregar talla
+                </button>
+
+                <button
+                  class="btn-primary btn-sm"
+                  type="button"
+                  onclick="updateProduct(${product.id})"
+                >
+                  Guardar cambios
+                </button>
+              </div>
+            </article>
+          `;
+        }).join("");
+      } catch (error) {
+        console.error(error);
+        productsList.innerHTML = `<p>Error al cargar productos.</p>`;
+      }
+    }
+
+    function productMatchesAdminFilters(product, selectedSchool, selectedLevel, selectedGrade) {
+      const productSchool = product.escuela || "General";
+      const productLevel = product.nivel || "General";
+      const productGrade = getProductGrade(product);
+
+      const matchesSchool =
+        selectedSchool === "todos" ||
+        productSchool === selectedSchool ||
+        productSchool === "General";
+
+      const matchesLevel =
+        selectedLevel === "todos" ||
+        productLevel === selectedLevel ||
+        productLevel === "General";
+
+      const matchesGrade =
+        selectedGrade === "todos" ||
+        productGrade === selectedGrade ||
+        productGrade === "General";
+
+      return matchesSchool && matchesLevel && matchesGrade;
+    }
+
+    function isGeneralProduct(product) {
+      return (
+        product.aplica_general === true ||
+        normalizeText(product.escuela) === "general" ||
+        normalizeText(product.nivel) === "general"
+      );
+    }
+
+    function getProductGrade(product) {
+      return String(
+        product.grado ||
+        product.grado_secundaria ||
+        product.grado_prepa ||
+        "General"
+      );
+    }
+
+    function getProductScopeLabel(product) {
+      if (isGeneralProduct(product)) {
+        return "General · Todas las escuelas, niveles y grados";
+      }
+
+      const parts = [];
+
+      if (product.escuela) parts.push(product.escuela);
+      if (product.nivel) parts.push(product.nivel);
+
+      const grade = getProductGrade(product);
+      if (grade) parts.push(formatGrade(grade));
+
+      if (product.area_prepa) parts.push(product.area_prepa);
+
+      return parts.length ? parts.join(" · ") : "Sin alcance definido";
+    }
+
+    function formatGrade(value) {
+      if (!value || value === "General") return "General / Todos";
+      return `${value}°`;
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function openAdminTab(event, tabId) {
+      const card = event.target.closest(".admin-product-card");
+      const tabs = card.querySelectorAll(".admin-tab-content");
+      const buttons = card.querySelectorAll(".tab-btn");
+
+      tabs.forEach(tab => tab.classList.remove("active"));
+      buttons.forEach(btn => btn.classList.remove("active"));
+
+      card.querySelector(`#${tabId}`).classList.add("active");
+      event.target.classList.add("active");
+    }
+
+    function addEditSizeRow(productId) {
+      const container = document.getElementById(`sizes-edit-${productId}`);
+      const uniqueId = `new${Date.now()}`;
+
+      const div = document.createElement("div");
+      div.className = "admin-size-item";
+
+      div.innerHTML = `
+        <div class="admin-field-group">
+          <label for="size-name-${productId}-${uniqueId}">
+            Talla / Presentación
+          </label>
+          <input
+            type="text"
+            class="size-input-label"
+            placeholder="Ej. 12, CH, M, Unitalla, Paquete"
+            id="size-name-${productId}-${uniqueId}"
+          />
+        </div>
+
+        <div class="admin-field-group">
+          <label for="size-stock-${productId}-${uniqueId}">
+            Stock
+          </label>
+          <input
+            type="number"
+            min="0"
+            class="stock-input-value"
+            placeholder="0"
+            id="size-stock-${productId}-${uniqueId}"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="btn-secondary btn-sm"
+          onclick="removeEditSizeRow(this)"
+        >
+          Quitar
+        </button>
+      `;
+
+      container.appendChild(div);
+    }
+
+    function removeEditSizeRow(button) {
+      const row = button.closest(".admin-size-item");
+      if (row) row.remove();
+    }
+
+    async function updateProduct(productId) {
+      const price = Number(document.getElementById(`price-${productId}`).value || 0);
+      const disponible = document.getElementById(`available-${productId}`).checked;
+      const requiere_precio = document.getElementById(`requires-${productId}`).checked;
+      const sizesContainer = document.getElementById(`sizes-edit-${productId}`);
+      const sizeItems = sizesContainer.querySelectorAll(".admin-size-item");
+
+      const tallasMap = new Map();
+
+      sizeItems.forEach((item) => {
+        const inputs = item.querySelectorAll("input");
+        const talla = inputs[0]?.value.trim();
+        const stock = Math.max(0, Number(inputs[1]?.value || 0));
+
+        if (talla) {
+          const key = talla.toLowerCase();
+          const currentStock = tallasMap.get(key)?.stock || 0;
+
+          tallasMap.set(key, {
+            talla,
+            stock: currentStock + stock
+          });
+        }
+      });
+
+      const tallas = Array.from(tallasMap.values());
+
+      try {
+        const response = await fetch(`/api/admin/productos/${productId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            precio: price,
+            disponible,
+            requiere_precio,
+            tallas
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showAdminMessage(data.message || "No se pudo actualizar el producto.", true);
+          return;
+        }
+
+        showAdminMessage("Producto actualizado correctamente.");
+        loadAdminProducts();
+      } catch (error) {
+        console.error(error);
+        showAdminMessage("No se pudo conectar con el servidor.", true);
+      }
+    }
+
+    async function deleteProduct(productId) {
+      const confirmed = confirm("¿Seguro que deseas eliminar este producto?");
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch(`/api/admin/productos/${productId}`, {
+          method: "DELETE"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showAdminMessage(data.message || "No se pudo eliminar el producto.", true);
+          return;
+        }
+
+        showAdminMessage("Producto eliminado correctamente.");
+        loadAdminProducts();
+      } catch (error) {
+        console.error(error);
+        showAdminMessage("No se pudo conectar con el servidor.", true);
+      }
+    }
+
+    function showAdminMessage(text, isError = false) {
+      adminMessage.textContent = text;
+      adminMessage.classList.add("show");
+      adminMessage.style.background = isError ? "#fef2f2" : "#eff6ff";
+      adminMessage.style.color = isError ? "#dc2626" : "#1d4ed8";
+
+      setTimeout(() => {
+        adminMessage.classList.remove("show");
+      }, 4500);
+    }
+
+    function escapeHtmlAttr(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeHtml(value) {
+      return escapeHtmlAttr(value);
+    }
+
+    function escapeId(value) {
+      return String(value || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+  </script>
+</body>
+</html>

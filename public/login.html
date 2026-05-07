@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceso | Tienda Escolar</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="login-body">
+  <div class="login-container">
+    <section class="login-left">
+      <div class="badge">Tienda Escolar</div>
+      <h1>Acceso obligatorio antes de entrar</h1>
+      <p>
+        Antes de ver escuelas, grados, productos o carrito, el usuario debe
+        iniciar sesión, registrarse o entrar como invitado.
+      </p>
+
+      <div class="features">
+        <div class="feature">
+          Administrador: acceso para gestionar escuelas, productos y pedidos.
+        </div>
+        <div class="feature">
+          Cliente: acceso con cuenta para comprar y revisar pedidos.
+        </div>
+        <div class="feature">
+          Invitado: acceso rápido sin registro para comprar directamente.
+        </div>
+      </div>
+    </section>
+
+    <section class="login-right">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="login">Iniciar sesión</button>
+        <button class="tab-btn" data-tab="register">Registrarse</button>
+        <button class="tab-btn" data-tab="guest">Invitado</button>
+      </div>
+
+      <div class="panel active" id="login">
+        <h2>Bienvenido</h2>
+        <p class="subtext">Ingresa para continuar al sistema.</p>
+
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Correo electrónico</label>
+            <input type="email" id="loginEmail" placeholder="correo@ejemplo.com" required />
+          </div>
+
+          <div class="form-group">
+            <label for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="Tu contraseña" required />
+          </div>
+
+          <div class="form-group">
+            <label for="loginRole">Tipo de acceso</label>
+            <select id="loginRole" required>
+              <option value="cliente">Cliente</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-primary">Entrar</button>
+        </form>
+      </div>
+
+      <div class="panel" id="register">
+        <h2>Crear cuenta</h2>
+        <p class="subtext">Regístrate como cliente para comprar y guardar tus datos.</p>
+
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="registerName">Nombre completo</label>
+            <input type="text" id="registerName" placeholder="Tu nombre" required />
+          </div>
+
+          <div class="form-group">
+            <label for="registerEmail">Correo electrónico</label>
+            <input type="email" id="registerEmail" placeholder="correo@ejemplo.com" required />
+          </div>
+
+          <div class="form-group">
+            <label for="registerPassword">Contraseña</label>
+            <input type="password" id="registerPassword" placeholder="Crea una contraseña" required />
+          </div>
+
+          <button type="submit" class="btn-primary">Registrarme</button>
+        </form>
+      </div>
+
+      <div class="panel" id="guest">
+        <h2>Entrar como invitado</h2>
+        <p class="subtext">Podrás comprar sin cuenta, pero igual debes pasar por esta pantalla.</p>
+
+        <div class="guest-box">
+          <form id="guestForm">
+            <div class="form-group">
+              <label for="guestName">Nombre</label>
+              <input type="text" id="guestName" placeholder="Tu nombre" required />
+            </div>
+
+            <div class="form-group">
+              <label for="guestEmail">Correo electrónico</label>
+              <input type="email" id="guestEmail" placeholder="correo@ejemplo.com" required />
+            </div>
+
+            <button type="submit" class="btn-secondary">Continuar como invitado</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="note" id="messageBox"></div>
+    </section>
+  </div>
+
+  <script>
+    const API_URL = "";
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const panels = document.querySelectorAll(".panel");
+    const messageBox = document.getElementById("messageBox");
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        tabButtons.forEach((btn) => btn.classList.remove("active"));
+        panels.forEach((panel) => panel.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(button.dataset.tab).classList.add("active");
+        hideMessage();
+      });
+    });
+
+    function showMessage(text, isError = false) {
+      messageBox.textContent = text;
+      messageBox.classList.add("show");
+      if (isError) {
+        messageBox.style.background = "#fef2f2";
+        messageBox.style.color = "#dc2626";
+      } else {
+        messageBox.style.background = "#eff6ff";
+        messageBox.style.color = "#1d4ed8";
+      }
+    }
+
+    function hideMessage() {
+      messageBox.classList.remove("show");
+      messageBox.textContent = "";
+    }
+
+    function saveSession(user) {
+      localStorage.setItem("sessionActive", "true");
+      localStorage.setItem("userId", user.id || "");
+      localStorage.setItem("userRole", user.rol || "cliente");
+      localStorage.setItem("userName", user.nombre || "");
+      localStorage.setItem("userEmail", user.email || "");
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      hideMessage();
+
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      const role = document.getElementById("loginRole").value;
+
+      try {
+        const response = await fetch(`${API_URL}/api/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, role })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showMessage(data.message || "No se pudo iniciar sesión.", true);
+          return;
+        }
+
+        saveSession(data.user);
+        showMessage("Acceso correcto.");
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 700);
+      } catch (error) {
+        console.error(error);
+        showMessage("No se pudo conectar con el servidor.", true);
+      }
+    });
+
+    document.getElementById("registerForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      hideMessage();
+
+      const nombre = document.getElementById("registerName").value.trim();
+      const email = document.getElementById("registerEmail").value.trim();
+      const password = document.getElementById("registerPassword").value.trim();
+
+      try {
+        const response = await fetch(`${API_URL}/api/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nombre, email, password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showMessage(data.message || "No se pudo registrar el usuario.", true);
+          return;
+        }
+
+        localStorage.setItem("sessionActive", "true");
+        localStorage.setItem("userId", data.userId || "");
+        localStorage.setItem("userRole", "cliente");
+        localStorage.setItem("userName", nombre);
+        localStorage.setItem("userEmail", email);
+
+        showMessage("Registro exitoso.");
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 700);
+      } catch (error) {
+        console.error(error);
+        showMessage("No se pudo conectar con el servidor.", true);
+      }
+    });
+
+    document.getElementById("guestForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      hideMessage();
+
+      const name = document.getElementById("guestName").value.trim();
+      const email = document.getElementById("guestEmail").value.trim();
+
+      localStorage.setItem("sessionActive", "true");
+      localStorage.removeItem("userId");
+      localStorage.setItem("userRole", "guest");
+      localStorage.setItem("userName", name);
+      localStorage.setItem("userEmail", email);
+
+      showMessage("Entrada como invitado correcta.");
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 700);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IAE Primaria | Papelería Sulamita</title>
+  <link rel="icon" href="/img/angel.png" type="image/png">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="/index.html" class="nav-btn">Inicio</a>
+        <a href="/escuela2.html" class="nav-btn">IAE</a>
+        <button class="nav-btn" id="cartBtn">Carrito</button>
+        <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero grade-hero-primary">
+      <div class="page-hero-content">
+        <span class="page-badge">IAE</span>
+        <h1 id="productsTitle">Primaria</h1>
+        <p id="productsSubtitle">Selecciona una sección del catálogo.</p>
+      </div>
+    </section>
+
+    <section class="products-page">
+      <h2 class="section-title">Catálogo</h2>
+
+      <div class="catalog-filter-box">
+        <label for="categoryFilters" class="catalog-filter-label">Explora por sección</label>
+        <select id="categoryFilters" class="catalog-filter-select"></select>
+      </div>
+
+      <div id="productGrid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - IAE Primaria</p>
+  </footer>
+
+  <script src="/tienda.js"></script>
+  <script>
+    protectPage();
+    setupHeader();
+
+    const role = localStorage.getItem("userRole");
+    const adminBtn = document.getElementById("adminBtn");
+
+    if (role === "admin" && adminBtn) {
+      adminBtn.style.display = "inline-block";
+      adminBtn.addEventListener("click", function () {
+        window.location.href = "/admin.html";
+      });
+    }
+
+    loadProductsPage({
+      escuela: "IAE",
+      nivel: "Primaria",
+      title: "IAE Primaria",
+      subtitle: "Selecciona una sección en el menú desplegable"
+    });
+  </script>
+</body>
+</html>
