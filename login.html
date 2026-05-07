@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Acceso | Tienda Escolar</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="./styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body class="login-body">
   <div class="login-container">
@@ -115,6 +115,8 @@
 
   <script>
     const API_URL = "";
+    const isGitHubPages = window.location.hostname.includes("github.io");
+
     const tabButtons = document.querySelectorAll(".tab-btn");
     const panels = document.querySelectorAll(".panel");
     const messageBox = document.getElementById("messageBox");
@@ -132,6 +134,7 @@
     function showMessage(text, isError = false) {
       messageBox.textContent = text;
       messageBox.classList.add("show");
+
       if (isError) {
         messageBox.style.background = "#fef2f2";
         messageBox.style.color = "#dc2626";
@@ -158,6 +161,14 @@
       e.preventDefault();
       hideMessage();
 
+      if (isGitHubPages) {
+        showMessage(
+          "El inicio de sesión con cuenta necesita servidor Node.js. En GitHub Pages usa la pestaña Invitado, o publica el proyecto en Render para usar login real.",
+          true
+        );
+        return;
+      }
+
       const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value.trim();
       const role = document.getElementById("loginRole").value;
@@ -178,6 +189,7 @@
 
         saveSession(data.user);
         showMessage("Acceso correcto.");
+
         setTimeout(() => {
           window.location.href = "index.html";
         }, 700);
@@ -190,6 +202,14 @@
     document.getElementById("registerForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       hideMessage();
+
+      if (isGitHubPages) {
+        showMessage(
+          "El registro necesita servidor Node.js. En GitHub Pages usa la pestaña Invitado, o publica el proyecto en Render para guardar usuarios reales.",
+          true
+        );
+        return;
+      }
 
       const nombre = document.getElementById("registerName").value.trim();
       const email = document.getElementById("registerEmail").value.trim();
@@ -216,6 +236,7 @@
         localStorage.setItem("userEmail", email);
 
         showMessage("Registro exitoso.");
+
         setTimeout(() => {
           window.location.href = "index.html";
         }, 700);
@@ -239,6 +260,7 @@
       localStorage.setItem("userEmail", email);
 
       showMessage("Entrada como invitado correcta.");
+
       setTimeout(() => {
         window.location.href = "index.html";
       }, 700);

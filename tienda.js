@@ -1,5 +1,9 @@
 const API_URL = "";
 
+function isGitHubPages() {
+  return window.location.hostname.includes("github.io");
+}
+
 function goTo(page) {
   window.location.href = page;
 }
@@ -158,6 +162,24 @@ function setupCartPage() {
           precio: Number(item.price)
         }))
       };
+
+      if (isGitHubPages()) {
+        localStorage.setItem(
+          "lastOrder",
+          JSON.stringify({
+            ...payload,
+            pedidoId: Date.now()
+          })
+        );
+
+        alert(
+          "Pedido guardado como prueba en este navegador. Para guardar pedidos reales necesitas publicar el servidor en Render."
+        );
+
+        localStorage.removeItem("cart");
+        goTo("index.html");
+        return;
+      }
 
       try {
         const response = await fetch(`${API_URL}/api/pedidos`, {
@@ -331,6 +353,7 @@ function addProductToCart(product) {
       alert("No hay suficiente stock para esa opción.");
       return;
     }
+
     existingProduct.quantity += 1;
   } else {
     cart.push({
@@ -373,26 +396,58 @@ async function loadProductsPage(config) {
   }
 
   try {
-    const params = new URLSearchParams();
-    if (escuela) params.append("escuela", escuela);
-    if (nivel) params.append("nivel", nivel);
+    let products = [];
 
-    const response = await fetch(`${API_URL}/api/catalogo?${params.toString()}`);
-    const products = await response.json();
+    if (isGitHubPages()) {
+      const response = await fetch("data/productos.json?v=3");
 
-    if (!response.ok) {
-      grid.innerHTML = `
-        <article class="product-card">
-          <div class="product-content">
-            <h3>Error al cargar productos</h3>
-            <p>${escapeHtml(products.message || "No se pudo cargar el catálogo.")}</p>
-          </div>
-        </article>
-      `;
-      return;
+      if (!response.ok) {
+        grid.innerHTML = `
+          <article class="product-card">
+            <div class="product-content">
+              <h3>Error al cargar productos</h3>
+              <p>No se encontró el archivo data/productos.json.</p>
+            </div>
+          </article>
+        `;
+        return;
+      }
+
+      products = await response.json();
+
+      products = products.filter((product) => {
+        const esGeneral =
+          product.aplica_general === true ||
+          product.escuela === "General" ||
+          product.nivel === "General";
+
+        const coincideEscuela = escuela ? product.escuela === escuela : true;
+        const coincideNivel = nivel ? product.nivel === nivel : true;
+
+        return (esGeneral || (coincideEscuela && coincideNivel)) && product.disponible !== false;
+      });
+    } else {
+      const params = new URLSearchParams();
+      if (escuela) params.append("escuela", escuela);
+      if (nivel) params.append("nivel", nivel);
+
+      const response = await fetch(`${API_URL}/api/catalogo?${params.toString()}`);
+      products = await response.json();
+
+      if (!response.ok) {
+        grid.innerHTML = `
+          <article class="product-card">
+            <div class="product-content">
+              <h3>Error al cargar productos</h3>
+              <p>${escapeHtml(products.message || "No se pudo cargar el catálogo.")}</p>
+            </div>
+          </article>
+        `;
+        return;
+      }
     }
 
-    if (!products.length) {
+    if (!Array.isArray(products) || !products.length) {
       grid.innerHTML = `
         <article class="product-card">
           <div class="product-content">
@@ -406,6 +461,7 @@ async function loadProductsPage(config) {
 
     window.currentCatalogProducts = products;
     window.currentCatalogProductsMap = {};
+
     products.forEach((product) => {
       window.currentCatalogProductsMap[product.id] = product;
     });
@@ -434,7 +490,7 @@ async function loadProductsPage(config) {
       <article class="product-card">
         <div class="product-content">
           <h3>Error al cargar productos</h3>
-          <p>No se pudo conectar con el servidor.</p>
+          <p>No se pudo conectar con el servidor o cargar data/productos.json.</p>
         </div>
       </article>
     `;
@@ -449,6 +505,18 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
     selectedCategory === "todos"
       ? Object.entries(grouped)
       : Object.entries(grouped).filter(([groupKey]) => groupKey === selectedCategory);
+
+  if (!entries.length) {
+    grid.innerHTML = `
+      <article class="product-card">
+        <div class="product-content">
+          <h3>No hay productos en esta sección</h3>
+          <p>Selecciona otra sección del catálogo.</p>
+        </div>
+      </article>
+    `;
+    return;
+  }
 
   grid.innerHTML = entries
     .map(([groupKey, categoryProducts]) => {
@@ -475,7 +543,7 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
             <article class="product-card">
               <div class="product-image">${escapeHtml(product.categoria || "Producto")}</div>
               <div class="product-content">
-                <h3>${escapeHtml(product.nombre)}</h3>
+                <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
                 <p>${escapeHtml(product.descripcion || "Sin descripción")}</p>
 
                 <div class="product-price ${status.className}">
@@ -592,6 +660,7 @@ function groupProductsByCategory(products) {
 
 function buildGroupLabel(groupKey) {
   const [section, category] = String(groupKey).split("|||");
+
   if (!category) return section || "Sin categoría";
 
   if (section === "General") {
@@ -624,7 +693,7 @@ function buildGradeLabel(product) {
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")

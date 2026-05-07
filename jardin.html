@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IAE Jardín de niños | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="./styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
   <header>
@@ -13,8 +13,8 @@
       <div class="logo">Papelería Sulamita</div>
       <div class="nav-right">
         <div class="user-badge" id="userInfo">Cargando sesión...</div>
-        <a href="/index.html" class="nav-btn">Inicio</a>
-        <a href="/escuela2.html" class="nav-btn">IAE</a>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="escuela2.html" class="nav-btn">IAE</a>
         <button class="nav-btn" id="cartBtn">Carrito</button>
         <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
         <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
@@ -47,7 +47,7 @@
     <p>© 2026 Papelería Sulamita - IAE Jardín de niños</p>
   </footer>
 
-  <script src="/tienda.js"></script>
+  <script src="tienda.js?v=3"></script>
   <script>
     protectPage();
     setupHeader();
@@ -58,7 +58,7 @@
     if (role === "admin" && adminBtn) {
       adminBtn.style.display = "inline-block";
       adminBtn.addEventListener("click", function () {
-        window.location.href = "/admin.html";
+        window.location.href = "admin.html";
       });
     }
 
