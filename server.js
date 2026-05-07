@@ -7,7 +7,9 @@ const app = express();
 const PORT = 3000;
 
 const dataDir = path.join(__dirname, "data");
-const publicDir = path.join(__dirname, "public");
+
+// Tus archivos HTML, CSS, JS e imágenes ahora están en la raíz del proyecto
+const publicDir = __dirname;
 
 app.use(cors());
 app.use(express.json());
@@ -507,12 +509,35 @@ app.get("/api/pedidos", async (req, res) => {
 });
 
 /* =========================
-   HOME
+   PÁGINAS
 ========================= */
 app.get("/", (req, res) => {
+  res.sendFile(path.join(publicDir, "index.html"));
+});
+
+app.get("/login", (req, res) => {
   res.sendFile(path.join(publicDir, "login.html"));
 });
 
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(publicDir, "admin.html"));
+});
+
+app.get("/carrito", (req, res) => {
+  res.sendFile(path.join(publicDir, "carrito.html"));
+});
+
+app.get("/contacto", (req, res) => {
+  res.sendFile(path.join(publicDir, "contacto.html"));
+});
+
+app.get("/pedidos-admin", (req, res) => {
+  res.sendFile(path.join(publicDir, "pedidos-admin.html"));
+});
+
+/* =========================
+   INICIAR SERVIDOR
+========================= */
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
