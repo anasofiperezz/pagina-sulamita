@@ -95,6 +95,21 @@ function getProductStatus(product) {
   };
 }
 
+function isUnitallaProduct(product) {
+  if (!Array.isArray(product.tallas) || product.tallas.length !== 1) {
+    return false;
+  }
+
+  const talla = String(product.tallas[0].talla || "").trim().toLowerCase();
+
+  return (
+    talla === "unitalla" ||
+    talla === "unidad" ||
+    talla === "sin talla" ||
+    talla === "n/a"
+  );
+}
+
 function setupCartPage() {
   renderCart();
 
@@ -243,11 +258,16 @@ function renderCart() {
     const itemElement = document.createElement("div");
     itemElement.className = "cart-item";
 
+    const optionHtml =
+      item.talla && item.talla !== "Unidad"
+        ? `<p>Opción: <strong>${escapeHtml(item.talla)}</strong></p>`
+        : "";
+
     itemElement.innerHTML = `
       <div class="cart-item-info">
         <h4>${escapeHtml(item.name)}</h4>
         <p>Escuela/Nivel: ${escapeHtml(item.grade)}</p>
-        <p>Opción: <strong>${escapeHtml(item.talla)}</strong></p>
+        ${optionHtml}
         <p>Precio unitario: $${Number(item.price).toFixed(2)}</p>
       </div>
 
@@ -323,20 +343,30 @@ function updateCartTotals() {
 }
 
 function addProductToCart(product) {
-  const select = document.getElementById(`size-${product.id}`);
-  const talla = select ? select.value : "";
+  const isUnitalla = isUnitallaProduct(product);
 
-  if (!talla) {
-    alert("Selecciona una opción.");
-    return;
+  let talla = "Unidad";
+  let tallaData = null;
+
+  if (isUnitalla) {
+    tallaData = product.tallas[0];
+    talla = "Unidad";
+  } else {
+    const select = document.getElementById(`size-${product.id}`);
+    talla = select ? select.value : "";
+
+    if (!talla) {
+      alert("Selecciona una opción.");
+      return;
+    }
+
+    tallaData = Array.isArray(product.tallas)
+      ? product.tallas.find((t) => String(t.talla) === String(talla))
+      : null;
   }
 
-  const tallaData = Array.isArray(product.tallas)
-    ? product.tallas.find((t) => String(t.talla) === String(talla))
-    : null;
-
   if (!tallaData || Number(tallaData.stock) <= 0) {
-    alert("Esa opción no está disponible.");
+    alert("Ese producto no está disponible.");
     return;
   }
 
@@ -350,7 +380,7 @@ function addProductToCart(product) {
 
   if (existingProduct) {
     if (existingProduct.quantity + 1 > Number(tallaData.stock)) {
-      alert("No hay suficiente stock para esa opción.");
+      alert("No hay suficiente stock para ese producto.");
       return;
     }
 
@@ -399,7 +429,7 @@ async function loadProductsPage(config) {
     let products = [];
 
     if (isGitHubPages()) {
-      const response = await fetch("data/productos.json?v=3");
+      const response = await fetch("data/productos.json?v=4");
 
       if (!response.ok) {
         grid.innerHTML = `
@@ -525,10 +555,16 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
       const categoryCards = categoryProducts
         .map((product) => {
           const status = getProductStatus(product);
+          const isUnitalla = isUnitallaProduct(product);
 
           const tallasDisponibles = Array.isArray(product.tallas)
             ? product.tallas.filter((t) => Number(t.stock) > 0)
             : [];
+
+          const stockUnitalla =
+            isUnitalla && product.tallas[0]
+              ? Number(product.tallas[0].stock || 0)
+              : 0;
 
           const optionsHtml = tallasDisponibles.length
             ? tallasDisponibles
@@ -538,6 +574,38 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
                 )
                 .join("")
             : `<option value="">Sin disponibles</option>`;
+
+          const productOptionsHtml = isUnitalla
+            ? `
+              <div class="product-sizes-info">
+                <strong>Disponibles:</strong>
+                <span class="customer-size-badge">${stockUnitalla} piezas</span>
+              </div>
+            `
+            : `
+              <div class="product-sizes-info">
+                <strong>Opciones disponibles:</strong>
+                ${
+                  tallasDisponibles.length
+                    ? tallasDisponibles
+                        .map(
+                          (t) =>
+                            `<span class="customer-size-badge">${escapeHtml(t.talla)}</span>`
+                        )
+                        .join("")
+                    : `<span class="customer-size-badge empty">Sin disponibles</span>`
+                }
+              </div>
+
+              <div class="form-group">
+                <label for="size-${product.id}">Selecciona opción</label>
+                <select id="size-${product.id}" ${
+                  status.disabled || !tallasDisponibles.length ? "disabled" : ""
+                }>
+                  ${optionsHtml}
+                </select>
+              </div>
+            `;
 
           return `
             <article class="product-card">
@@ -550,28 +618,7 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
                   ${status.text}
                 </div>
 
-                <div class="product-sizes-info">
-                  <strong>Opciones disponibles:</strong>
-                  ${
-                    tallasDisponibles.length
-                      ? tallasDisponibles
-                          .map(
-                            (t) =>
-                              `<span class="customer-size-badge">${escapeHtml(t.talla)}</span>`
-                          )
-                          .join("")
-                      : `<span class="customer-size-badge empty">Sin disponibles</span>`
-                  }
-                </div>
-
-                <div class="form-group">
-                  <label for="size-${product.id}">Selecciona opción</label>
-                  <select id="size-${product.id}" ${
-                    status.disabled || !tallasDisponibles.length ? "disabled" : ""
-                  }>
-                    ${optionsHtml}
-                  </select>
-                </div>
+                ${productOptionsHtml}
 
                 <button
                   class="btn-primary"
