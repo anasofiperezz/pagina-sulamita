@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="./styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <header>
@@ -13,8 +13,8 @@
       <div class="logo">Papelería Sulamita - Admin</div>
       <div class="nav-right">
         <div class="user-badge" id="userInfo">Cargando sesión...</div>
-        <a href="/index.html" class="nav-btn">Inicio</a>
-        <a href="/pedidos-admin.html" class="nav-btn">Pedidos</a>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="pedidos-admin.html" class="nav-btn">Pedidos</a>
         <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
       </div>
     </div>
@@ -26,8 +26,8 @@
         <span class="page-badge">Administrador</span>
         <h1>Gestión de catálogo e inventario</h1>
         <p>
-          Aquí puedes agregar productos, asignar tallas con stock,
-          actualizar precios y mantener el catálogo organizado por escuela, nivel y grado.
+          Aquí puedes agregar productos, asignar stock, actualizar precios
+          y mantener el catálogo organizado por escuela, nivel y grado.
         </p>
       </div>
     </section>
@@ -123,13 +123,37 @@
 
             <div class="form-group">
               <label>
-                <input type="checkbox" id="productRequiresPrice" checked />
+                <input type="checkbox" id="productRequiresPrice" />
                 Requiere definir precio después
               </label>
             </div>
 
             <div class="form-group">
-              <label>Tallas / Presentación y stock</label>
+              <label>
+                <input type="checkbox" id="productNoSize" />
+                Producto sin talla / por unidad
+              </label>
+              <p class="subtext">
+                Usa esta opción para cuadernos, libros, lápices, paquetes y materiales que no manejan talla.
+              </p>
+            </div>
+
+            <div class="form-group" id="unitStockGroup" style="display: none;">
+              <label for="unitStock">Stock disponible</label>
+              <input
+                type="number"
+                id="unitStock"
+                min="0"
+                placeholder="Ej. 30"
+                value="0"
+              />
+            </div>
+
+            <div class="form-group" id="sizesGroup">
+              <label>Tallas por número y stock</label>
+              <p class="subtext">
+                Para uniformes escribe números de talla, por ejemplo: 2, 4, 6, 8, 10, 12, 14.
+              </p>
               <div id="sizesContainer" class="sizes-editor"></div>
               <button type="button" class="btn-outline btn-sm" id="addSizeBtn">
                 Agregar talla
@@ -192,7 +216,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="/tienda.js"></script>
+  <script src="tienda.js?v=4"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -203,6 +227,10 @@
     const reloadProductsBtn = document.getElementById("reloadProductsBtn");
     const addSizeBtn = document.getElementById("addSizeBtn");
     const sizesContainer = document.getElementById("sizesContainer");
+    const sizesGroup = document.getElementById("sizesGroup");
+    const productNoSize = document.getElementById("productNoSize");
+    const unitStockGroup = document.getElementById("unitStockGroup");
+    const unitStock = document.getElementById("unitStock");
 
     const productGeneral = document.getElementById("productGeneral");
     const schoolSelect = document.getElementById("schoolName");
@@ -210,6 +238,7 @@
     const gradeSelect = document.getElementById("gradeName");
     const prepaAreaGroup = document.getElementById("prepaAreaGroup");
     const prepaArea = document.getElementById("prepaArea");
+    const categorySelect = document.getElementById("categoryName");
 
     const schoolFilter = document.getElementById("schoolFilter");
     const levelFilter = document.getElementById("levelFilter");
@@ -217,10 +246,14 @@
 
     updateGradeOptions();
     toggleGeneralProductFields();
+    toggleNoSizeFields();
     createSizeRow();
     loadAdminProducts();
 
-    addSizeBtn.addEventListener("click", createSizeRow);
+    addSizeBtn.addEventListener("click", function () {
+      createSizeRow();
+    });
+
     reloadProductsBtn.addEventListener("click", loadAdminProducts);
 
     schoolFilter.addEventListener("change", loadAdminProducts);
@@ -229,11 +262,34 @@
 
     levelSelect.addEventListener("change", updateGradeOptions);
     productGeneral.addEventListener("change", toggleGeneralProductFields);
+    productNoSize.addEventListener("change", toggleNoSizeFields);
+
+    categorySelect.addEventListener("change", function () {
+      const category = categorySelect.value;
+
+      if (
+        category === "Cuadernos" ||
+        category === "Cuadernos institucionales" ||
+        category === "Libros" ||
+        category === "Material general" ||
+        category === "Material para entregar" ||
+        category === "Laboratorio" ||
+        category === "Especial"
+      ) {
+        productNoSize.checked = true;
+      }
+
+      if (category === "Uniformes") {
+        productNoSize.checked = false;
+      }
+
+      toggleNoSizeFields();
+    });
 
     productForm.addEventListener("submit", async function (e) {
       e.preventDefault();
 
-      const tallas = collectSizes(sizesContainer);
+      const tallas = collectProductStock();
       const isGeneral = productGeneral.checked;
       const selectedLevel = levelSelect.value;
       const selectedGrade = gradeSelect.value || "General";
@@ -280,7 +336,7 @@
       }
 
       if (!payload.tallas.length) {
-        showAdminMessage("Agrega al menos una talla o presentación con stock.", true);
+        showAdminMessage("Agrega stock para el producto.", true);
         return;
       }
 
@@ -307,9 +363,11 @@
         createSizeRow();
         updateGradeOptions();
         toggleGeneralProductFields();
+        toggleNoSizeFields();
 
         document.getElementById("productAvailable").checked = true;
-        document.getElementById("productRequiresPrice").checked = true;
+        document.getElementById("productRequiresPrice").checked = false;
+        unitStock.value = "0";
 
         loadAdminProducts();
       } catch (error) {
@@ -397,17 +455,49 @@
       }
     }
 
+    function toggleNoSizeFields() {
+      const noSize = productNoSize.checked;
+
+      unitStockGroup.style.display = noSize ? "block" : "none";
+      sizesGroup.style.display = noSize ? "none" : "block";
+
+      if (noSize) {
+        sizesContainer.innerHTML = "";
+      } else if (!sizesContainer.querySelector(".size-row")) {
+        createSizeRow();
+      }
+    }
+
+    function collectProductStock() {
+      if (productNoSize.checked) {
+        const stock = Math.max(0, Number(unitStock.value || 0));
+
+        if (stock <= 0) {
+          return [];
+        }
+
+        return [
+          {
+            talla: "Unidad",
+            stock
+          }
+        ];
+      }
+
+      return collectSizes(sizesContainer);
+    }
+
     function createSizeRow(talla = "", stock = "") {
       const row = document.createElement("div");
       row.className = "size-row";
 
       row.innerHTML = `
         <div class="admin-field-group">
-          <label>Talla / Presentación</label>
+          <label>Talla / Número</label>
           <input
             type="text"
             class="size-name size-input-label"
-            placeholder="Ej. 12, CH, M, Unitalla, Paquete"
+            placeholder="Ej. 2, 4, 6, 8, 10, 12, 14"
             value="${escapeHtmlAttr(talla)}"
           />
         </div>
@@ -443,7 +533,7 @@
         const talla = row.querySelector(".size-name").value.trim();
         const stock = Math.max(0, Number(row.querySelector(".size-stock").value || 0));
 
-        if (talla !== "") {
+        if (talla !== "" && stock > 0) {
           const key = talla.toLowerCase();
           const currentStock = sizesMap.get(key)?.stock || 0;
 
@@ -490,16 +580,20 @@
         }
 
         productsList.innerHTML = products.map((product) => {
+          const noSizeProduct = isNoSizeProduct(product);
+
           const tallasSolo = Array.isArray(product.tallas)
             ? product.tallas.map((t) => `
-                <span class="size-badge">${escapeHtml(t.talla)}</span>
+                <span class="size-badge">
+                  ${noSizeProduct ? "Por unidad" : escapeHtml(t.talla)}
+                </span>
               `).join("")
             : "";
 
           const stockEditable = Array.isArray(product.tallas) && product.tallas.length
             ? `
               <div class="admin-stock-header">
-                <span>Talla / Presentación</span>
+                <span>${noSizeProduct ? "Producto" : "Talla / Número"}</span>
                 <span>Stock</span>
               </div>
 
@@ -507,13 +601,14 @@
                 <div class="admin-size-item">
                   <div class="admin-field-group">
                     <label for="size-name-${product.id}-${escapeId(t.talla)}">
-                      Talla / Presentación
+                      ${noSizeProduct ? "Producto" : "Talla / Número"}
                     </label>
                     <input
                       type="text"
                       class="size-input-label"
-                      value="${escapeHtmlAttr(t.talla)}"
+                      value="${noSizeProduct ? "Unidad" : escapeHtmlAttr(t.talla)}"
                       id="size-name-${product.id}-${escapeId(t.talla)}"
+                      ${noSizeProduct ? "readonly" : ""}
                     />
                   </div>
 
@@ -530,17 +625,23 @@
                     />
                   </div>
 
-                  <button
-                    type="button"
-                    class="btn-secondary btn-sm"
-                    onclick="removeEditSizeRow(this)"
-                  >
-                    Quitar
-                  </button>
+                  ${
+                    noSizeProduct
+                      ? ""
+                      : `
+                        <button
+                          type="button"
+                          class="btn-secondary btn-sm"
+                          onclick="removeEditSizeRow(this)"
+                        >
+                          Quitar
+                        </button>
+                      `
+                  }
                 </div>
               `).join("")}
             `
-            : `<p>Sin tallas</p>`;
+            : `<p>Sin stock registrado</p>`;
 
           return `
             <article class="admin-product-card">
@@ -549,6 +650,7 @@
                   <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
                   <p>${escapeHtml(getProductScopeLabel(product))}</p>
                   <p><strong>Categoría:</strong> ${escapeHtml(product.categoria || "Sin categoría")}</p>
+                  <p><strong>Tipo:</strong> ${noSizeProduct ? "Sin talla / por unidad" : "Con tallas por número"}</p>
                   <p><strong>Alcance:</strong> ${isGeneralProduct(product) ? "General" : "Específico"}</p>
                 </div>
 
@@ -606,7 +708,7 @@
                   class="tab-btn active"
                   onclick="openAdminTab(event, 'sizes-${product.id}')"
                 >
-                  Tallas disponibles
+                  ${noSizeProduct ? "Stock disponible" : "Tallas disponibles"}
                 </button>
 
                 <button
@@ -614,13 +716,13 @@
                   class="tab-btn"
                   onclick="openAdminTab(event, 'stock-${product.id}')"
                 >
-                  Stock por talla
+                  ${noSizeProduct ? "Editar stock" : "Stock por talla"}
                 </button>
               </div>
 
               <div id="sizes-${product.id}" class="admin-tab-content active">
                 <div class="sizes-badges-wrap">
-                  ${tallasSolo || "<p>Sin tallas registradas</p>"}
+                  ${tallasSolo || "<p>Sin stock registrado</p>"}
                 </div>
               </div>
 
@@ -631,13 +733,19 @@
               </div>
 
               <div class="table-actions">
-                <button
-                  class="btn-outline btn-sm"
-                  type="button"
-                  onclick="addEditSizeRow(${product.id})"
-                >
-                  Agregar talla
-                </button>
+                ${
+                  noSizeProduct
+                    ? ""
+                    : `
+                      <button
+                        class="btn-outline btn-sm"
+                        type="button"
+                        onclick="addEditSizeRow(${product.id})"
+                      >
+                        Agregar talla
+                      </button>
+                    `
+                }
 
                 <button
                   class="btn-primary btn-sm"
@@ -684,6 +792,21 @@
         product.aplica_general === true ||
         normalizeText(product.escuela) === "general" ||
         normalizeText(product.nivel) === "general"
+      );
+    }
+
+    function isNoSizeProduct(product) {
+      if (!Array.isArray(product.tallas) || product.tallas.length !== 1) {
+        return false;
+      }
+
+      const talla = normalizeText(product.tallas[0].talla);
+
+      return (
+        talla === "unidad" ||
+        talla === "unitalla" ||
+        talla === "sin talla" ||
+        talla === "n/a"
       );
     }
 
@@ -749,12 +872,12 @@
       div.innerHTML = `
         <div class="admin-field-group">
           <label for="size-name-${productId}-${uniqueId}">
-            Talla / Presentación
+            Talla / Número
           </label>
           <input
             type="text"
             class="size-input-label"
-            placeholder="Ej. 12, CH, M, Unitalla, Paquete"
+            placeholder="Ej. 2, 4, 6, 8, 10, 12, 14"
             id="size-name-${productId}-${uniqueId}"
           />
         </div>
@@ -793,8 +916,8 @@
       const price = Number(document.getElementById(`price-${productId}`).value || 0);
       const disponible = document.getElementById(`available-${productId}`).checked;
       const requiere_precio = document.getElementById(`requires-${productId}`).checked;
-      const sizesContainer = document.getElementById(`sizes-edit-${productId}`);
-      const sizeItems = sizesContainer.querySelectorAll(".admin-size-item");
+      const editSizesContainer = document.getElementById(`sizes-edit-${productId}`);
+      const sizeItems = editSizesContainer.querySelectorAll(".admin-size-item");
 
       const tallasMap = new Map();
 
@@ -803,7 +926,7 @@
         const talla = inputs[0]?.value.trim();
         const stock = Math.max(0, Number(inputs[1]?.value || 0));
 
-        if (talla) {
+        if (talla && stock >= 0) {
           const key = talla.toLowerCase();
           const currentStock = tallasMap.get(key)?.stock || 0;
 
