@@ -1208,5 +1208,137 @@
         "stock": 30
       }
     ]
+  },
+  {
+    "id": 56,
+    "escuela": "IAE",
+    "nivel": "Secundaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional rayado 100 hojas c/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 57,
+    "escuela": "IAE",
+    "nivel": "Secundaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 100 hojas c/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 58,
+    "escuela": "IAE",
+    "nivel": "Secundaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional blanco 100 hojas c/espiral",
+    "descripcion": "",
+    "precio": 110,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 59,
+    "escuela": "IAE",
+    "nivel": "Secundaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c7 200 hojas",
+    "descripcion": "",
+    "precio": 165,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 60,
+    "escuela": "IAE",
+    "nivel": "Secundaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "Cuaderno profesional c5 200 hojas",
+    "descripcion": "",
+    "precio": 165,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
+  },
+  {
+    "id": 61,
+    "escuela": "IAE",
+    "nivel": "Secundaria",
+    "grado": "General",
+    "grado_secundaria": "",
+    "grado_prepa": "",
+    "area_prepa": "",
+    "categoria": "Cuadernos",
+    "nombre": "CBlock papel albanene 90/95 35 hojas",
+    "descripcion": "",
+    "precio": 75,
+    "disponible": true,
+    "requiere_precio": false,
+    "aplica_general": false,
+    "tallas": [
+      {
+        "talla": "Unitalla",
+        "stock": 30
+      }
+    ]
   }
 ]
