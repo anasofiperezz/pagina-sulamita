@@ -1,41 +1,101 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const fs = require("fs/promises");
+const pool = require("./db");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const dataDir = path.join(__dirname, "data");
-
-// Tus archivos HTML, CSS, JS e imágenes ahora están en la raíz del proyecto
+// Tus archivos HTML, CSS, JS e imágenes están en la raíz del proyecto
 const publicDir = __dirname;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(publicDir));
 
-async function readJson(filename) {
-  const filePath = path.join(dataDir, filename);
-  const content = await fs.readFile(filePath, "utf8");
-  return JSON.parse(content);
+/* =========================
+   HELPERS
+========================= */
+
+function normalizeProduct(row) {
+  return {
+    id: Number(row.id),
+    escuela: row.escuela,
+    nivel: row.nivel,
+    grado: row.grado || "General",
+    grado_secundaria: row.grado_secundaria || "",
+    grado_prepa: row.grado_prepa || "",
+    area_prepa: row.area_prepa || "",
+    categoria: row.categoria,
+    nombre: row.nombre,
+    descripcion: row.descripcion || "",
+    precio: Number(row.precio || 0),
+    disponible: row.disponible !== false,
+    requiere_precio: row.requiere_precio === true,
+    aplica_general: row.aplica_general === true,
+    creado_en: row.creado_en,
+    tallas: Array.isArray(row.tallas)
+      ? row.tallas.map((t) => ({
+          talla: String(t.talla || "Unidad"),
+          stock: Number(t.stock || 0)
+        }))
+      : []
+  };
 }
 
-async function writeJson(filename, data) {
-  const filePath = path.join(dataDir, filename);
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
+async function getProductsWithSizes(whereSql = "", params = []) {
+  const query = `
+    SELECT
+      p.*,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'talla', pt.talla,
+            'stock', pt.stock
+          )
+          ORDER BY pt.id
+        ) FILTER (WHERE pt.id IS NOT NULL),
+        '[]'
+      ) AS tallas
+    FROM productos p
+    LEFT JOIN producto_tallas pt ON pt.producto_id = p.id
+    ${whereSql}
+    GROUP BY p.id
+    ORDER BY p.id DESC
+  `;
+
+  const result = await pool.query(query, params);
+  return result.rows.map(normalizeProduct);
 }
 
-function nextId(items) {
-  if (!items.length) return 1;
-  return Math.max(...items.map(item => Number(item.id) || 0)) + 1;
+function cleanTallas(tallas) {
+  if (!Array.isArray(tallas)) return [];
+
+  const map = new Map();
+
+  tallas.forEach((item) => {
+    const talla = String(item.talla || "Unidad").trim();
+    const stock = Math.max(0, Number(item.stock || 0));
+
+    if (!talla) return;
+
+    const key = talla.toLowerCase();
+    const current = map.get(key);
+
+    map.set(key, {
+      talla,
+      stock: (current?.stock || 0) + stock
+    });
+  });
+
+  return Array.from(map.values());
 }
 
 /* =========================
    STATUS
 ========================= */
 app.get("/api", (req, res) => {
-  res.json({ message: "Papelería Sulamita API working" });
+  res.json({ message: "Papelería Sulamita API working with PostgreSQL" });
 });
 
 /* =========================
@@ -49,11 +109,17 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ message: "Faltan datos para iniciar sesión." });
     }
 
-    const usuarios = await readJson("usuarios.json");
-
-    const user = usuarios.find(
-      (u) => u.email === email && u.password === password && u.rol === role
+    const result = await pool.query(
+      `
+      SELECT id, nombre, email, rol
+      FROM usuarios
+      WHERE email = $1 AND password = $2 AND rol = $3
+      LIMIT 1
+      `,
+      [email, password, role]
     );
+
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(401).json({ message: "Credenciales incorrectas" });
@@ -85,27 +151,27 @@ app.post("/api/register", async (req, res) => {
       return res.status(400).json({ message: "Faltan datos obligatorios." });
     }
 
-    const usuarios = await readJson("usuarios.json");
-    const exists = usuarios.some((u) => u.email === email);
+    const exists = await pool.query(
+      "SELECT id FROM usuarios WHERE email = $1 LIMIT 1",
+      [email]
+    );
 
-    if (exists) {
+    if (exists.rows.length) {
       return res.status(400).json({ message: "El correo ya está registrado" });
     }
 
-    const newUser = {
-      id: nextId(usuarios),
-      nombre,
-      email,
-      password,
-      rol: "cliente"
-    };
-
-    usuarios.push(newUser);
-    await writeJson("usuarios.json", usuarios);
+    const result = await pool.query(
+      `
+      INSERT INTO usuarios (nombre, email, password, rol)
+      VALUES ($1, $2, $3, 'cliente')
+      RETURNING id
+      `,
+      [nombre, email, password]
+    );
 
     res.status(201).json({
       message: "Usuario registrado correctamente",
-      userId: newUser.id
+      userId: result.rows[0].id
     });
   } catch (error) {
     console.error("Error en /api/register:", error);
@@ -119,21 +185,47 @@ app.post("/api/register", async (req, res) => {
 app.get("/api/catalogo", async (req, res) => {
   try {
     const { escuela, nivel } = req.query;
-    let productos = await readJson("productos.json");
 
-    productos = productos.filter((p) => {
-      const esGeneral =
-        p.aplica_general === true ||
-        p.escuela === "General" ||
-        p.nivel === "General";
+    const conditions = ["p.disponible IS NOT FALSE"];
+    const params = [];
 
-      const coincideEscuela = escuela ? p.escuela === escuela : true;
-      const coincideNivel = nivel ? p.nivel === nivel : true;
+    if (escuela && nivel) {
+      params.push(escuela, nivel);
 
-      return esGeneral || (coincideEscuela && coincideNivel);
-    });
+      conditions.push(`
+        (
+          p.aplica_general = TRUE
+          OR p.escuela = 'General'
+          OR p.nivel = 'General'
+          OR (p.escuela = $1 AND p.nivel = $2)
+        )
+      `);
+    } else if (escuela) {
+      params.push(escuela);
 
-    productos = productos.filter((p) => p.disponible !== false);
+      conditions.push(`
+        (
+          p.aplica_general = TRUE
+          OR p.escuela = 'General'
+          OR p.escuela = $1
+        )
+      `);
+    } else if (nivel) {
+      params.push(nivel);
+
+      conditions.push(`
+        (
+          p.aplica_general = TRUE
+          OR p.nivel = 'General'
+          OR p.nivel = $1
+        )
+      `);
+    }
+
+    const productos = await getProductsWithSizes(
+      `WHERE ${conditions.join(" AND ")}`,
+      params
+    );
 
     res.json(productos);
   } catch (error) {
@@ -147,8 +239,8 @@ app.get("/api/catalogo", async (req, res) => {
 ========================= */
 app.get("/api/admin/productos", async (req, res) => {
   try {
-    const productos = await readJson("productos.json");
-    res.json([...productos].sort((a, b) => b.id - a.id));
+    const productos = await getProductsWithSizes();
+    res.json(productos);
   } catch (error) {
     console.error("Error en /api/admin/productos:", error);
     res.status(500).json({ message: "Error al obtener productos" });
@@ -159,6 +251,8 @@ app.get("/api/admin/productos", async (req, res) => {
    ADMIN - AGREGAR PRODUCTO
 ========================= */
 app.post("/api/admin/productos", async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const {
       escuela,
@@ -192,56 +286,88 @@ app.post("/api/admin/productos", async (req, res) => {
       });
     }
 
-    const productos = await readJson("productos.json");
+    const tallasLimpias = cleanTallas(tallas);
 
-    const newProduct = {
-      id: nextId(productos),
+    if (!tallasLimpias.length) {
+      return res.status(400).json({ message: "Agrega stock para el producto." });
+    }
 
-      escuela: esGeneral ? "General" : escuela,
-      nivel: esGeneral ? "General" : nivel,
-      grado: esGeneral ? "General" : (grado || "General"),
+    await client.query("BEGIN");
 
-      grado_secundaria:
+    const productResult = await client.query(
+      `
+      INSERT INTO productos (
+        escuela,
+        nivel,
+        grado,
+        grado_secundaria,
+        grado_prepa,
+        area_prepa,
+        categoria,
+        nombre,
+        descripcion,
+        precio,
+        disponible,
+        requiere_precio,
+        aplica_general
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6,
+        $7, $8, $9, $10, $11, $12, $13
+      )
+      RETURNING id
+      `,
+      [
+        esGeneral ? "General" : escuela,
+        esGeneral ? "General" : nivel,
+        esGeneral ? "General" : (grado || "General"),
+
         !esGeneral && nivel === "Secundaria"
           ? String(grado_secundaria || grado || "")
           : "",
 
-      grado_prepa:
         !esGeneral && nivel === "Preparatoria"
           ? String(grado_prepa || grado || "")
           : "",
 
-      area_prepa:
         !esGeneral && nivel === "Preparatoria"
           ? String(area_prepa || "")
           : "",
 
-      categoria,
-      nombre,
-      descripcion: descripcion || "",
-      precio: Number(precio) || 0,
-      disponible: disponible !== false,
-      requiere_precio: Boolean(requiere_precio),
-      aplica_general: esGeneral,
+        categoria,
+        nombre,
+        descripcion || "",
+        Number(precio) || 0,
+        disponible !== false,
+        Boolean(requiere_precio),
+        esGeneral
+      ]
+    );
 
-      tallas: Array.isArray(tallas)
-        ? tallas.map((t) => ({
-            talla: String(t.talla || "Unitalla"),
-            stock: Number(t.stock) || 0
-          }))
-        : []
-    };
+    const productId = productResult.rows[0].id;
 
-    productos.push(newProduct);
-    await writeJson("productos.json", productos);
+    for (const tallaItem of tallasLimpias) {
+      await client.query(
+        `
+        INSERT INTO producto_tallas (producto_id, talla, stock)
+        VALUES ($1, $2, $3)
+        `,
+        [productId, tallaItem.talla, tallaItem.stock]
+      );
+    }
+
+    await client.query("COMMIT");
 
     res.status(201).json({
       message: "Producto agregado correctamente",
-      productId: newProduct.id
+      productId
     });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error en POST /api/admin/productos:", error);
     res.status(500).json({ message: "Error al agregar producto" });
+  } finally {
+    client.release();
   }
 });
 
@@ -249,6 +375,8 @@ app.post("/api/admin/productos", async (req, res) => {
    ADMIN - ACTUALIZAR PRODUCTO
 ========================= */
 app.put("/api/admin/productos/:id", async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const productId = Number(req.params.id);
 
@@ -269,64 +397,110 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       tallas
     } = req.body;
 
-    const productos = await readJson("productos.json");
-    const product = productos.find((p) => Number(p.id) === productId);
+    const exists = await client.query(
+      "SELECT * FROM productos WHERE id = $1 LIMIT 1",
+      [productId]
+    );
 
-    if (!product) {
+    if (!exists.rows.length) {
       return res.status(404).json({ message: "Producto no encontrado." });
     }
 
-    if (aplica_general != null) {
-      product.aplica_general = Boolean(aplica_general);
+    const current = exists.rows[0];
 
-      if (product.aplica_general) {
-        product.escuela = "General";
-        product.nivel = "General";
-        product.grado = "General";
-        product.grado_secundaria = "";
-        product.grado_prepa = "";
-        product.area_prepa = "";
+    let newAplicaGeneral =
+      aplica_general != null ? Boolean(aplica_general) : current.aplica_general;
+
+    let newEscuela = current.escuela;
+    let newNivel = current.nivel;
+    let newGrado = current.grado;
+    let newGradoSecundaria = current.grado_secundaria;
+    let newGradoPrepa = current.grado_prepa;
+    let newAreaPrepa = current.area_prepa;
+
+    if (newAplicaGeneral) {
+      newEscuela = "General";
+      newNivel = "General";
+      newGrado = "General";
+      newGradoSecundaria = "";
+      newGradoPrepa = "";
+      newAreaPrepa = "";
+    } else {
+      if (escuela != null) newEscuela = escuela;
+      if (nivel != null) newNivel = nivel;
+      if (grado != null) newGrado = grado || "General";
+      if (grado_secundaria != null) newGradoSecundaria = String(grado_secundaria || "");
+      if (grado_prepa != null) newGradoPrepa = String(grado_prepa || "");
+      if (area_prepa != null) newAreaPrepa = String(area_prepa || "");
+    }
+
+    await client.query("BEGIN");
+
+    await client.query(
+      `
+      UPDATE productos
+      SET
+        escuela = $1,
+        nivel = $2,
+        grado = $3,
+        grado_secundaria = $4,
+        grado_prepa = $5,
+        area_prepa = $6,
+        categoria = $7,
+        nombre = $8,
+        descripcion = $9,
+        precio = $10,
+        disponible = $11,
+        requiere_precio = $12,
+        aplica_general = $13
+      WHERE id = $14
+      `,
+      [
+        newEscuela,
+        newNivel,
+        newGrado,
+        newGradoSecundaria || "",
+        newGradoPrepa || "",
+        newAreaPrepa || "",
+        categoria != null ? categoria : current.categoria,
+        nombre != null ? nombre : current.nombre,
+        descripcion != null ? descripcion : current.descripcion,
+        precio != null ? Number(precio) || 0 : Number(current.precio) || 0,
+        disponible != null ? Boolean(disponible) : current.disponible,
+        requiere_precio != null ? Boolean(requiere_precio) : current.requiere_precio,
+        newAplicaGeneral,
+        productId
+      ]
+    );
+
+    if (Array.isArray(tallas)) {
+      const tallasLimpias = cleanTallas(tallas);
+
+      await client.query(
+        "DELETE FROM producto_tallas WHERE producto_id = $1",
+        [productId]
+      );
+
+      for (const tallaItem of tallasLimpias) {
+        await client.query(
+          `
+          INSERT INTO producto_tallas (producto_id, talla, stock)
+          VALUES ($1, $2, $3)
+          `,
+          [productId, tallaItem.talla, tallaItem.stock]
+        );
       }
     }
 
-    if (!product.aplica_general) {
-      if (escuela != null) product.escuela = escuela;
-      if (nivel != null) product.nivel = nivel;
-      if (grado != null) product.grado = grado || "General";
-      if (grado_secundaria != null) product.grado_secundaria = String(grado_secundaria || "");
-      if (grado_prepa != null) product.grado_prepa = String(grado_prepa || "");
-      if (area_prepa != null) product.area_prepa = String(area_prepa || "");
-    }
-
-    if (categoria != null) product.categoria = categoria;
-    if (nombre != null) product.nombre = nombre;
-    if (descripcion != null) product.descripcion = descripcion;
-
-    if (precio != null) {
-      product.precio = Number(precio) || 0;
-    }
-
-    if (disponible != null) {
-      product.disponible = Boolean(disponible);
-    }
-
-    if (requiere_precio != null) {
-      product.requiere_precio = Boolean(requiere_precio);
-    }
-
-    if (Array.isArray(tallas)) {
-      product.tallas = tallas.map((t) => ({
-        talla: String(t.talla || "Unitalla"),
-        stock: Number(t.stock) || 0
-      }));
-    }
-
-    await writeJson("productos.json", productos);
+    await client.query("COMMIT");
 
     res.json({ message: "Producto actualizado correctamente" });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error en PUT /api/admin/productos/:id:", error);
     res.status(500).json({ message: "Error al actualizar producto" });
+  } finally {
+    client.release();
   }
 });
 
@@ -336,16 +510,15 @@ app.put("/api/admin/productos/:id", async (req, res) => {
 app.delete("/api/admin/productos/:id", async (req, res) => {
   try {
     const productId = Number(req.params.id);
-    const productos = await readJson("productos.json");
 
-    const index = productos.findIndex((p) => Number(p.id) === productId);
+    const result = await pool.query(
+      "DELETE FROM productos WHERE id = $1 RETURNING id",
+      [productId]
+    );
 
-    if (index === -1) {
+    if (!result.rows.length) {
       return res.status(404).json({ message: "Producto no encontrado." });
     }
-
-    productos.splice(index, 1);
-    await writeJson("productos.json", productos);
 
     res.json({ message: "Producto eliminado correctamente" });
   } catch (error) {
@@ -358,6 +531,8 @@ app.delete("/api/admin/productos/:id", async (req, res) => {
    PEDIDOS
 ========================= */
 app.post("/api/pedidos", async (req, res) => {
+  const client = await pool.connect();
+
   try {
     const {
       usuario_id,
@@ -387,78 +562,209 @@ app.post("/api/pedidos", async (req, res) => {
       return res.status(400).json({ message: "Faltan datos del pedido." });
     }
 
-    const pedidos = await readJson("pedidos.json");
-    const inventario = await readJson("productos.json");
+    await client.query("BEGIN");
 
     for (const item of productos) {
-      const product = inventario.find((p) => Number(p.id) === Number(item.producto_id));
+      const productResult = await client.query(
+        `
+        SELECT *
+        FROM productos
+        WHERE id = $1
+        LIMIT 1
+        `,
+        [Number(item.producto_id)]
+      );
+
+      const product = productResult.rows[0];
 
       if (!product) {
-        return res.status(400).json({ message: `Producto ${item.producto_id} no encontrado.` });
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: `Producto ${item.producto_id} no encontrado.`
+        });
       }
 
       if (product.disponible === false) {
-        return res.status(400).json({ message: `${product.nombre} no está disponible.` });
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: `${product.nombre} no está disponible.`
+        });
       }
 
       if (product.requiere_precio === true || Number(product.precio) <= 0) {
-        return res.status(400).json({ message: `${product.nombre} aún no tiene precio configurado.` });
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: `${product.nombre} aún no tiene precio configurado.`
+        });
       }
 
       if (!item.talla) {
-        return res.status(400).json({ message: `Debes seleccionar talla para ${product.nombre}.` });
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: `Debes seleccionar talla para ${product.nombre}.`
+        });
       }
 
-      const tallaData = Array.isArray(product.tallas)
-        ? product.tallas.find((t) => String(t.talla) === String(item.talla))
-        : null;
+      const tallaResult = await client.query(
+        `
+        SELECT *
+        FROM producto_tallas
+        WHERE producto_id = $1 AND talla = $2
+        LIMIT 1
+        `,
+        [Number(item.producto_id), String(item.talla)]
+      );
+
+      const tallaData = tallaResult.rows[0];
 
       if (!tallaData) {
-        return res.status(400).json({ message: `La talla ${item.talla} no existe para ${product.nombre}.` });
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: `La opción ${item.talla} no existe para ${product.nombre}.`
+        });
       }
 
       if (Number(tallaData.stock) < Number(item.cantidad)) {
+        await client.query("ROLLBACK");
         return res.status(400).json({
-          message: `Stock insuficiente para ${product.nombre} talla ${item.talla}.`
+          message: `Stock insuficiente para ${product.nombre}.`
         });
       }
     }
 
+    const orderResult = await client.query(
+      `
+      INSERT INTO pedidos (
+        usuario_id,
+        nombre_cliente,
+        email_cliente,
+        telefono_cliente,
+        direccion_envio,
+        tipo_entrega,
+        metodo_pago,
+        subtotal,
+        envio,
+        total,
+        estado
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pendiente')
+      RETURNING id
+      `,
+      [
+        usuario_id || null,
+        nombre_cliente,
+        email_cliente,
+        telefono_cliente || "",
+        direccion_envio || "",
+        tipo_entrega,
+        metodo_pago,
+        Number(subtotal),
+        Number(envio),
+        Number(total)
+      ]
+    );
+
+    const pedidoId = orderResult.rows[0].id;
+
     for (const item of productos) {
-      const product = inventario.find((p) => Number(p.id) === Number(item.producto_id));
-      const tallaData = product.tallas.find((t) => String(t.talla) === String(item.talla));
-      tallaData.stock = Number(tallaData.stock) - Number(item.cantidad);
+      await client.query(
+        `
+        INSERT INTO pedido_productos (
+          pedido_id,
+          producto_id,
+          talla,
+          cantidad,
+          precio
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        `,
+        [
+          pedidoId,
+          Number(item.producto_id),
+          String(item.talla),
+          Number(item.cantidad),
+          Number(item.precio)
+        ]
+      );
+
+      await client.query(
+        `
+        UPDATE producto_tallas
+        SET stock = stock - $1
+        WHERE producto_id = $2 AND talla = $3
+        `,
+        [
+          Number(item.cantidad),
+          Number(item.producto_id),
+          String(item.talla)
+        ]
+      );
     }
 
-    const newOrder = {
-      id: nextId(pedidos),
-      usuario_id: usuario_id || null,
-      nombre_cliente,
-      email_cliente,
-      telefono_cliente: telefono_cliente || "",
-      direccion_envio: direccion_envio || "",
-      tipo_entrega,
-      metodo_pago,
-      subtotal,
-      envio,
-      total,
-      estado: "pendiente",
-      creado_en: new Date().toISOString(),
-      productos
-    };
-
-    pedidos.push(newOrder);
-
-    await writeJson("pedidos.json", pedidos);
-    await writeJson("productos.json", inventario);
+    await client.query("COMMIT");
 
     res.status(201).json({
       message: "Pedido creado correctamente",
-      pedidoId: newOrder.id
+      pedidoId
     });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("Error en /api/pedidos:", error);
     res.status(500).json({ message: "Error al crear pedido" });
+  } finally {
+    client.release();
+  }
+});
+
+/* =========================
+   VER PEDIDOS
+========================= */
+app.get("/api/pedidos", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        p.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'producto_id', pp.producto_id,
+              'talla', pp.talla,
+              'cantidad', pp.cantidad,
+              'precio', pp.precio
+            )
+            ORDER BY pp.id
+          ) FILTER (WHERE pp.id IS NOT NULL),
+          '[]'
+        ) AS productos
+      FROM pedidos p
+      LEFT JOIN pedido_productos pp ON pp.pedido_id = p.id
+      GROUP BY p.id
+      ORDER BY p.id DESC
+      `
+    );
+
+    const pedidos = result.rows.map((order) => ({
+      id: Number(order.id),
+      usuario_id: order.usuario_id,
+      nombre_cliente: order.nombre_cliente,
+      email_cliente: order.email_cliente,
+      telefono_cliente: order.telefono_cliente || "",
+      direccion_envio: order.direccion_envio || "",
+      tipo_entrega: order.tipo_entrega,
+      metodo_pago: order.metodo_pago,
+      subtotal: Number(order.subtotal || 0),
+      envio: Number(order.envio || 0),
+      total: Number(order.total || 0),
+      estado: order.estado || "pendiente",
+      creado_en: order.creado_en,
+      productos: Array.isArray(order.productos) ? order.productos : []
+    }));
+
+    res.json(pedidos);
+  } catch (error) {
+    console.error("Error en GET /api/pedidos:", error);
+    res.status(500).json({ message: "Error al obtener pedidos" });
   }
 });
 
@@ -473,38 +779,18 @@ app.post("/api/contacto", async (req, res) => {
       return res.status(400).json({ message: "Faltan campos obligatorios." });
     }
 
-    const contactos = await readJson("contactos.json");
-
-    const newMessage = {
-      id: nextId(contactos),
-      nombre,
-      email,
-      telefono: telefono || "",
-      asunto,
-      mensaje,
-      creado_en: new Date().toISOString()
-    };
-
-    contactos.push(newMessage);
-    await writeJson("contactos.json", contactos);
+    await pool.query(
+      `
+      INSERT INTO contactos (nombre, email, telefono, asunto, mensaje)
+      VALUES ($1, $2, $3, $4, $5)
+      `,
+      [nombre, email, telefono || "", asunto, mensaje]
+    );
 
     res.status(201).json({ message: "Mensaje enviado correctamente" });
   } catch (error) {
     console.error("Error en /api/contacto:", error);
     res.status(500).json({ message: "Error al enviar mensaje" });
-  }
-});
-
-/* =========================
-   VER PEDIDOS
-========================= */
-app.get("/api/pedidos", async (req, res) => {
-  try {
-    const pedidos = await readJson("pedidos.json");
-    res.json([...pedidos].reverse());
-  } catch (error) {
-    console.error("Error en GET /api/pedidos:", error);
-    res.status(500).json({ message: "Error al obtener pedidos" });
   }
 });
 
