@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IPAE Secundaria | Papelería Sulamita</title>
+  <title>IAE Secundaria | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=3">
 </head>
@@ -14,7 +14,7 @@
       <div class="nav-right">
         <div class="user-badge" id="userInfo">Cargando sesión...</div>
         <a href="index.html" class="nav-btn">Inicio</a>
-        <a href="escuela1.html" class="nav-btn">IPAE</a>
+        <a href="escuela1.html" class="nav-btn">IAE</a>
         <button class="nav-btn" id="cartBtn">Carrito</button>
         <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
         <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
@@ -25,7 +25,7 @@
   <main>
     <section class="page-hero grade-hero-secondary">
       <div class="page-hero-content">
-        <span class="page-badge">IPAE</span>
+        <span class="page-badge">IAE</span>
         <h1 id="productsTitle">Secundaria</h1>
         <p id="productsSubtitle">Selecciona una sección del catálogo.</p>
       </div>
@@ -44,7 +44,7 @@
   </main>
 
   <footer>
-    <p>© 2026 Papelería Sulamita - IPAE Secundaria</p>
+    <p>© 2026 Papelería Sulamita - IAE Secundaria</p>
   </footer>
 
   <script src="tienda.js?v=3"></script>
@@ -63,9 +63,9 @@
     }
 
     loadProductsPage({
-      escuela: "IPAE",
+      escuela: "IAE",
       nivel: "Secundaria",
-      title: "IPAE Secundaria",
+      title: "IAE Secundaria",
       subtitle: "Selecciona una sección en el menú desplegable"
     });
   </script>
