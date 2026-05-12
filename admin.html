@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
   <header>
@@ -49,19 +49,15 @@
               <label for="schoolName">Escuela</label>
               <select id="schoolName" required>
                 <option value="">Selecciona una escuela</option>
-                <option value="IPAE">IPAE</option>
                 <option value="IAE">IAE</option>
+                <option value="IPAE">IPAE</option>
               </select>
             </div>
 
             <div class="form-group">
               <label for="levelName">Nivel</label>
               <select id="levelName" required>
-                <option value="">Selecciona un nivel</option>
-                <option value="Jardín de niños">Jardín de niños</option>
-                <option value="Primaria">Primaria</option>
-                <option value="Secundaria">Secundaria</option>
-                <option value="Preparatoria">Preparatoria</option>
+                <option value="">Primero selecciona una escuela</option>
               </select>
             </div>
 
@@ -190,8 +186,8 @@
               <select id="schoolFilter">
                 <option value="todos">Todas las escuelas</option>
                 <option value="General">General</option>
-                <option value="IPAE">IPAE</option>
                 <option value="IAE">IAE</option>
+                <option value="IPAE">IPAE</option>
               </select>
 
               <select id="levelFilter">
@@ -230,7 +226,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=7"></script>
+  <script src="tienda.js?v=8"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -261,6 +257,7 @@
     const uniformGenderGroup = document.getElementById("uniformGenderGroup");
     const uniformGender = document.getElementById("uniformGender");
 
+    updateLevelOptions();
     updateGradeOptions();
     toggleGeneralProductFields();
     toggleNoSizeFields();
@@ -278,6 +275,7 @@
     levelFilter.addEventListener("change", loadAdminProducts);
     gradeFilter.addEventListener("change", loadAdminProducts);
 
+    schoolSelect.addEventListener("change", updateLevelOptions);
     levelSelect.addEventListener("change", updateGradeOptions);
     productGeneral.addEventListener("change", toggleGeneralProductFields);
     productNoSize.addEventListener("change", toggleNoSizeFields);
@@ -399,6 +397,7 @@
         productForm.reset();
         sizesContainer.innerHTML = "";
         createSizeRow();
+        updateLevelOptions();
         updateGradeOptions();
         toggleGeneralProductFields();
         toggleNoSizeFields();
@@ -414,6 +413,50 @@
         showAdminMessage("No se pudo conectar con el servidor.", true);
       }
     });
+
+    function updateLevelOptions() {
+      const school = schoolSelect.value;
+      const currentLevel = levelSelect.value;
+
+      let options = [
+        { value: "", text: "Primero selecciona una escuela" }
+      ];
+
+      if (school === "IAE") {
+        options = [
+          { value: "", text: "Selecciona un nivel" },
+          { value: "Jardín de niños", text: "Jardín de niños" },
+          { value: "Primaria", text: "Primaria" },
+          { value: "Secundaria", text: "Secundaria" }
+        ];
+      }
+
+      if (school === "IPAE") {
+        options = [
+          { value: "", text: "Selecciona un nivel" },
+          { value: "Secundaria", text: "Secundaria" },
+          { value: "Preparatoria", text: "Preparatoria" }
+        ];
+      }
+
+      levelSelect.innerHTML = options
+        .map(option => `
+          <option value="${escapeHtmlAttr(option.value)}">
+            ${escapeHtml(option.text)}
+          </option>
+        `)
+        .join("");
+
+      const validValues = options.map(option => option.value);
+
+      if (validValues.includes(currentLevel)) {
+        levelSelect.value = currentLevel;
+      } else {
+        levelSelect.value = "";
+      }
+
+      updateGradeOptions();
+    }
 
     function updateGradeOptions() {
       const currentValue = gradeSelect.value || "General";
@@ -480,16 +523,24 @@
 
       if (isGeneral) {
         schoolSelect.value = "";
-        levelSelect.value = "";
+        levelSelect.innerHTML = `
+          <option value="General">
+            General / Todas las escuelas y niveles
+          </option>
+        `;
+        levelSelect.value = "General";
+
         gradeSelect.innerHTML = `
           <option value="General">
             General / Todas las escuelas, niveles y grados
           </option>
         `;
         gradeSelect.value = "General";
+
         prepaArea.value = "";
         prepaAreaGroup.style.display = "none";
       } else {
+        updateLevelOptions();
         updateGradeOptions();
       }
     }
@@ -518,8 +569,6 @@
     }
 
     function collectProductStock() {
-      const generalPrice = Number(document.getElementById("productPrice").value || 0);
-
       if (productNoSize.checked) {
         const stock = Math.max(0, Number(unitStock.value || 0));
 
