@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
   <header>
@@ -123,7 +123,8 @@
               <label for="productPrice">Precio general / precio base</label>
               <input type="number" id="productPrice" step="0.01" min="0" value="0" />
               <p class="subtext">
-                Para uniformes con precios diferentes por talla, puedes dejar este precio en 0 y poner el precio en cada talla.
+                Si todas las tallas cuestan lo mismo, pon aquí el precio general y deja el precio de cada talla en 0.
+                Si cada talla tiene precio diferente, deja este precio en 0 y pon precio en cada talla.
               </p>
             </div>
 
@@ -165,7 +166,7 @@
             <div class="form-group" id="sizesGroup">
               <label>Tallas, precio y stock</label>
               <p class="subtext">
-                Para uniformes escribe la talla, el precio de esa talla y el stock.
+                Si la talla tiene precio propio, escríbelo. Si no, deja precio 0 y se usará el precio general.
               </p>
               <div id="sizesContainer" class="sizes-editor"></div>
               <button type="button" class="btn-outline btn-sm" id="addSizeBtn">
@@ -229,7 +230,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=6"></script>
+  <script src="tienda.js?v=7"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -362,14 +363,18 @@
       }
 
       if (!payload.tallas.length) {
-        showAdminMessage("Agrega talla, precio y stock para el producto.", true);
+        showAdminMessage("Agrega talla/opción y stock para el producto.", true);
         return;
       }
 
-      const hasInvalidPrice = payload.tallas.some(item => Number(item.precio || 0) <= 0);
+      const hasInvalidPrice = payload.tallas.some((item) => {
+        const sizePrice = Number(item.precio || 0);
+        const basePrice = Number(payload.precio || 0);
+        return sizePrice <= 0 && basePrice <= 0;
+      });
 
       if (!payload.requiere_precio && hasInvalidPrice) {
-        showAdminMessage("Agrega precio mayor a 0 en cada talla/opción.", true);
+        showAdminMessage("Agrega precio general o precio en cada talla/opción.", true);
         return;
       }
 
@@ -525,7 +530,7 @@
         return [
           {
             talla: "Unidad",
-            precio: generalPrice,
+            precio: 0,
             stock
           }
         ];
@@ -544,7 +549,7 @@
           <input
             type="text"
             class="size-name size-input-label"
-            placeholder="Ej. 4-10, 12-14, 16-36"
+            placeholder="Ej. Unitalla, 4-10, 12-14"
             value="${escapeHtmlAttr(talla)}"
           />
         </div>
@@ -554,7 +559,7 @@
           <input
             type="number"
             class="size-price price-input-value"
-            placeholder="Ej. 576"
+            placeholder="0 si usa precio general"
             min="0"
             step="0.01"
             value="${precio}"
@@ -656,12 +661,16 @@
               : "";
 
           const tallasSolo = Array.isArray(product.tallas)
-            ? product.tallas.map((t) => `
-                <span class="size-badge">
-                  ${noSizeProduct ? "Por unidad" : escapeHtml(t.talla)}
-                  · $${Number(t.precio || product.precio || 0).toFixed(2)}
-                </span>
-              `).join("")
+            ? product.tallas.map((t) => {
+                const finalPrice = Number(t.precio || product.precio || 0);
+
+                return `
+                  <span class="size-badge">
+                    ${noSizeProduct ? "Por unidad" : escapeHtml(t.talla)}
+                    · $${finalPrice.toFixed(2)}
+                  </span>
+                `;
+              }).join("")
             : "";
 
           const stockEditable = Array.isArray(product.tallas) && product.tallas.length
@@ -696,7 +705,7 @@
                       min="0"
                       step="0.01"
                       class="price-input-value"
-                      value="${Number(t.precio || product.precio || 0)}"
+                      value="${Number(t.precio || 0)}"
                       id="size-price-${product.id}-${escapeId(t.talla)}"
                     />
                   </div>
@@ -967,7 +976,7 @@
           <input
             type="text"
             class="size-input-label"
-            placeholder="Ej. 4-10, 12-14, 16-36"
+            placeholder="Ej. Unitalla, 4-10, 12-14"
             id="size-name-${productId}-${uniqueId}"
           />
         </div>
@@ -981,7 +990,7 @@
             min="0"
             step="0.01"
             class="price-input-value"
-            placeholder="Ej. 576"
+            placeholder="0 si usa precio general"
             id="size-price-${productId}-${uniqueId}"
           />
         </div>
@@ -1052,6 +1061,16 @@
       });
 
       const tallas = Array.from(tallasMap.values());
+
+      const hasInvalidPrice = tallas.some((item) => {
+        const sizePrice = Number(item.precio || 0);
+        return sizePrice <= 0 && price <= 0;
+      });
+
+      if (!requiere_precio && hasInvalidPrice) {
+        showAdminMessage("Agrega precio general o precio en cada talla/opción.", true);
+        return;
+      }
 
       try {
         const response = await fetch(`/api/admin/productos/${productId}`, {
