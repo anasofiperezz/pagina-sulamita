@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <header>
@@ -226,7 +226,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=4"></script>
+  <script src="tienda.js?v=5"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -256,10 +256,11 @@
 
     const uniformGenderGroup = document.getElementById("uniformGenderGroup");
     const uniformGender = document.getElementById("uniformGender");
-    
+
     updateGradeOptions();
     toggleGeneralProductFields();
     toggleNoSizeFields();
+    toggleUniformGenderField();
     createSizeRow();
     loadAdminProducts();
 
@@ -297,6 +298,7 @@
       }
 
       toggleNoSizeFields();
+      toggleUniformGenderField();
     });
 
     productForm.addEventListener("submit", async function (e) {
@@ -307,6 +309,7 @@
       const selectedLevel = levelSelect.value;
       const selectedGrade = gradeSelect.value || "General";
       const selectedArea = prepaArea.value;
+      const selectedCategory = document.getElementById("categoryName").value;
 
       const payload = {
         escuela: isGeneral ? "General" : schoolSelect.value,
@@ -328,7 +331,8 @@
             ? selectedArea
             : "",
 
-        categoria: document.getElementById("categoryName").value,
+        categoria: selectedCategory,
+        genero_uniforme: selectedCategory === "Uniformes" ? uniformGender.value : "",
         nombre: document.getElementById("productName").value.trim(),
         descripcion: document.getElementById("productDescription").value.trim(),
         precio: Number(document.getElementById("productPrice").value || 0),
@@ -340,6 +344,11 @@
 
       if (!payload.nombre || !payload.categoria) {
         showAdminMessage("Completa el nombre y la categoría del producto.", true);
+        return;
+      }
+
+      if (payload.categoria === "Uniformes" && !payload.genero_uniforme) {
+        showAdminMessage("Selecciona si el uniforme es para Mujer, Hombre o Unisex.", true);
         return;
       }
 
@@ -377,6 +386,7 @@
         updateGradeOptions();
         toggleGeneralProductFields();
         toggleNoSizeFields();
+        toggleUniformGenderField();
 
         document.getElementById("productAvailable").checked = true;
         document.getElementById("productRequiresPrice").checked = false;
@@ -478,6 +488,16 @@
         sizesContainer.innerHTML = "";
       } else if (!sizesContainer.querySelector(".size-row")) {
         createSizeRow();
+      }
+    }
+
+    function toggleUniformGenderField() {
+      const isUniform = categorySelect.value === "Uniformes";
+
+      uniformGenderGroup.style.display = isUniform ? "block" : "none";
+
+      if (!isUniform) {
+        uniformGender.value = "";
       }
     }
 
@@ -594,6 +614,10 @@
 
         productsList.innerHTML = products.map((product) => {
           const noSizeProduct = isNoSizeProduct(product);
+          const uniformText =
+            product.categoria === "Uniformes" && product.genero_uniforme
+              ? `<p><strong>Uniforme para:</strong> ${escapeHtml(product.genero_uniforme)}</p>`
+              : "";
 
           const tallasSolo = Array.isArray(product.tallas)
             ? product.tallas.map((t) => `
@@ -663,6 +687,7 @@
                   <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
                   <p>${escapeHtml(getProductScopeLabel(product))}</p>
                   <p><strong>Categoría:</strong> ${escapeHtml(product.categoria || "Sin categoría")}</p>
+                  ${uniformText}
                   <p><strong>Tipo:</strong> ${noSizeProduct ? "Sin talla / por unidad" : "Con tallas por número"}</p>
                   <p><strong>Alcance:</strong> ${isGeneralProduct(product) ? "General" : "Específico"}</p>
                 </div>
