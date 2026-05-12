@@ -37,7 +37,8 @@ function normalizeProduct(row) {
     tallas: Array.isArray(row.tallas)
       ? row.tallas.map((t) => ({
           talla: String(t.talla || "Unidad"),
-          stock: Number(t.stock || 0)
+          stock: Number(t.stock || 0),
+          precio: Number(t.precio || 0)
         }))
       : []
   };
@@ -51,7 +52,8 @@ async function getProductsWithSizes(whereSql = "", params = []) {
         json_agg(
           json_build_object(
             'talla', pt.talla,
-            'stock', pt.stock
+            'stock', pt.stock,
+            'precio', pt.precio
           )
           ORDER BY pt.id
         ) FILTER (WHERE pt.id IS NOT NULL),
@@ -68,7 +70,7 @@ async function getProductsWithSizes(whereSql = "", params = []) {
   return result.rows.map(normalizeProduct);
 }
 
-function cleanTallas(tallas) {
+function cleanTallas(tallas, productPrice = 0) {
   if (!Array.isArray(tallas)) return [];
 
   const map = new Map();
@@ -76,16 +78,26 @@ function cleanTallas(tallas) {
   tallas.forEach((item) => {
     const talla = String(item.talla || "Unidad").trim();
     const stock = Math.max(0, Number(item.stock || 0));
+    const precio = Math.max(0, Number(item.precio ?? productPrice ?? 0));
 
     if (!talla) return;
 
     const key = talla.toLowerCase();
     const current = map.get(key);
 
-    map.set(key, {
-      talla,
-      stock: (current?.stock || 0) + stock
-    });
+    if (current) {
+      map.set(key, {
+        talla,
+        stock: current.stock + stock,
+        precio: precio || current.precio
+      });
+    } else {
+      map.set(key, {
+        talla,
+        stock,
+        precio
+      });
+    }
   });
 
   return Array.from(map.values());
@@ -101,6 +113,13 @@ function cleanUniformGender(categoria, generoUniforme) {
   }
 
   return "";
+}
+
+function effectiveSizePrice(tallaData, product) {
+  const sizePrice = Number(tallaData?.precio || 0);
+  const productPrice = Number(product?.precio || 0);
+
+  return sizePrice > 0 ? sizePrice : productPrice;
 }
 
 /* =========================
@@ -299,7 +318,8 @@ app.post("/api/admin/productos", async (req, res) => {
       });
     }
 
-    const tallasLimpias = cleanTallas(tallas);
+    const productPrice = Number(precio) || 0;
+    const tallasLimpias = cleanTallas(tallas, productPrice);
 
     if (!tallasLimpias.length) {
       return res.status(400).json({ message: "Agrega stock para el producto." });
@@ -354,7 +374,7 @@ app.post("/api/admin/productos", async (req, res) => {
         generoFinal,
         nombre,
         descripcion || "",
-        Number(precio) || 0,
+        productPrice,
         disponible !== false,
         Boolean(requiere_precio),
         esGeneral
@@ -366,10 +386,10 @@ app.post("/api/admin/productos", async (req, res) => {
     for (const tallaItem of tallasLimpias) {
       await client.query(
         `
-        INSERT INTO producto_tallas (producto_id, talla, stock)
-        VALUES ($1, $2, $3)
+        INSERT INTO producto_tallas (producto_id, talla, stock, precio)
+        VALUES ($1, $2, $3, $4)
         `,
-        [productId, tallaItem.talla, tallaItem.stock]
+        [productId, tallaItem.talla, tallaItem.stock, tallaItem.precio]
       );
     }
 
@@ -458,6 +478,9 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       if (area_prepa != null) newAreaPrepa = String(area_prepa || "");
     }
 
+    const newPrice =
+      precio != null ? Number(precio) || 0 : Number(current.precio) || 0;
+
     await client.query("BEGIN");
 
     await client.query(
@@ -491,7 +514,7 @@ app.put("/api/admin/productos/:id", async (req, res) => {
         newGeneroUniforme,
         nombre != null ? nombre : current.nombre,
         descripcion != null ? descripcion : current.descripcion,
-        precio != null ? Number(precio) || 0 : Number(current.precio) || 0,
+        newPrice,
         disponible != null ? Boolean(disponible) : current.disponible,
         requiere_precio != null ? Boolean(requiere_precio) : current.requiere_precio,
         newAplicaGeneral,
@@ -500,7 +523,7 @@ app.put("/api/admin/productos/:id", async (req, res) => {
     );
 
     if (Array.isArray(tallas)) {
-      const tallasLimpias = cleanTallas(tallas);
+      const tallasLimpias = cleanTallas(tallas, newPrice);
 
       await client.query(
         "DELETE FROM producto_tallas WHERE producto_id = $1",
@@ -510,10 +533,10 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       for (const tallaItem of tallasLimpias) {
         await client.query(
           `
-          INSERT INTO producto_tallas (producto_id, talla, stock)
-          VALUES ($1, $2, $3)
+          INSERT INTO producto_tallas (producto_id, talla, stock, precio)
+          VALUES ($1, $2, $3, $4)
           `,
-          [productId, tallaItem.talla, tallaItem.stock]
+          [productId, tallaItem.talla, tallaItem.stock, tallaItem.precio]
         );
       }
     }
@@ -617,7 +640,7 @@ app.post("/api/pedidos", async (req, res) => {
         });
       }
 
-      if (product.requiere_precio === true || Number(product.precio) <= 0) {
+      if (product.requiere_precio === true) {
         await client.query("ROLLBACK");
         return res.status(400).json({
           message: `${product.nombre} aún no tiene precio configurado.`
@@ -647,6 +670,15 @@ app.post("/api/pedidos", async (req, res) => {
         await client.query("ROLLBACK");
         return res.status(400).json({
           message: `La opción ${item.talla} no existe para ${product.nombre}.`
+        });
+      }
+
+      const selectedPrice = effectiveSizePrice(tallaData, product);
+
+      if (selectedPrice <= 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({
+          message: `${product.nombre} aún no tiene precio configurado.`
         });
       }
 
@@ -693,6 +725,30 @@ app.post("/api/pedidos", async (req, res) => {
     const pedidoId = orderResult.rows[0].id;
 
     for (const item of productos) {
+      const tallaResult = await client.query(
+        `
+        SELECT *
+        FROM producto_tallas
+        WHERE producto_id = $1 AND talla = $2
+        LIMIT 1
+        `,
+        [Number(item.producto_id), String(item.talla)]
+      );
+
+      const productResult = await client.query(
+        `
+        SELECT *
+        FROM productos
+        WHERE id = $1
+        LIMIT 1
+        `,
+        [Number(item.producto_id)]
+      );
+
+      const tallaData = tallaResult.rows[0];
+      const product = productResult.rows[0];
+      const selectedPrice = effectiveSizePrice(tallaData, product);
+
       await client.query(
         `
         INSERT INTO pedido_productos (
@@ -709,7 +765,7 @@ app.post("/api/pedidos", async (req, res) => {
           Number(item.producto_id),
           String(item.talla),
           Number(item.cantidad),
-          Number(item.precio)
+          selectedPrice
         ]
       );
 

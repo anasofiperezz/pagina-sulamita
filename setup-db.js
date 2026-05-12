@@ -11,9 +11,15 @@ async function setupDatabase() {
     await pool.query(schema);
 
     console.log("Verificando columnas nuevas...");
+
     await pool.query(`
       ALTER TABLE productos
       ADD COLUMN IF NOT EXISTS genero_uniforme TEXT DEFAULT '';
+    `);
+
+    await pool.query(`
+      ALTER TABLE producto_tallas
+      ADD COLUMN IF NOT EXISTS precio NUMERIC(10, 2) DEFAULT 0;
     `);
 
     console.log("Tablas creadas correctamente.");
