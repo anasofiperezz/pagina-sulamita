@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS productos (
   grado_prepa TEXT DEFAULT '',
   area_prepa TEXT DEFAULT '',
   categoria TEXT NOT NULL,
+  genero_uniforme TEXT DEFAULT '',
   nombre TEXT NOT NULL,
   descripcion TEXT DEFAULT '',
   precio NUMERIC(10, 2) DEFAULT 0,

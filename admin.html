@@ -99,6 +99,16 @@
               </select>
             </div>
 
+            <div class="form-group" id="uniformGenderGroup" style="display: none;">
+              <label for="uniformGender">Uniforme para</label>
+              <select id="uniformGender">
+                <option value="">Selecciona una opción</option>
+                <option value="Mujer">Mujer</option>
+                <option value="Hombre">Hombre</option>
+                <option value="Unisex">Unisex</option>
+              </select>
+            </div>
+
             <div class="form-group">
               <label for="productName">Nombre del producto</label>
               <input type="text" id="productName" required />
@@ -244,6 +254,9 @@
     const levelFilter = document.getElementById("levelFilter");
     const gradeFilter = document.getElementById("gradeFilter");
 
+    const uniformGenderGroup = document.getElementById("uniformGenderGroup");
+    const uniformGender = document.getElementById("uniformGender");
+    
     updateGradeOptions();
     toggleGeneralProductFields();
     toggleNoSizeFields();

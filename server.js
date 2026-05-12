@@ -6,7 +6,6 @@ const pool = require("./db");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Tus archivos HTML, CSS, JS e imágenes están en la raíz del proyecto
 const publicDir = __dirname;
 
 app.use(cors());
@@ -27,6 +26,7 @@ function normalizeProduct(row) {
     grado_prepa: row.grado_prepa || "",
     area_prepa: row.area_prepa || "",
     categoria: row.categoria,
+    genero_uniforme: row.genero_uniforme || "",
     nombre: row.nombre,
     descripcion: row.descripcion || "",
     precio: Number(row.precio || 0),
@@ -89,6 +89,18 @@ function cleanTallas(tallas) {
   });
 
   return Array.from(map.values());
+}
+
+function cleanUniformGender(categoria, generoUniforme) {
+  if (categoria !== "Uniformes") return "";
+
+  const value = String(generoUniforme || "").trim();
+
+  if (value === "Mujer" || value === "Hombre" || value === "Unisex") {
+    return value;
+  }
+
+  return "";
 }
 
 /* =========================
@@ -262,6 +274,7 @@ app.post("/api/admin/productos", async (req, res) => {
       grado_prepa,
       area_prepa,
       categoria,
+      genero_uniforme,
       nombre,
       descripcion,
       precio,
@@ -292,6 +305,8 @@ app.post("/api/admin/productos", async (req, res) => {
       return res.status(400).json({ message: "Agrega stock para el producto." });
     }
 
+    const generoFinal = cleanUniformGender(categoria, genero_uniforme);
+
     await client.query("BEGIN");
 
     const productResult = await client.query(
@@ -304,6 +319,7 @@ app.post("/api/admin/productos", async (req, res) => {
         grado_prepa,
         area_prepa,
         categoria,
+        genero_uniforme,
         nombre,
         descripcion,
         precio,
@@ -313,7 +329,7 @@ app.post("/api/admin/productos", async (req, res) => {
       )
       VALUES (
         $1, $2, $3, $4, $5, $6,
-        $7, $8, $9, $10, $11, $12, $13
+        $7, $8, $9, $10, $11, $12, $13, $14
       )
       RETURNING id
       `,
@@ -335,6 +351,7 @@ app.post("/api/admin/productos", async (req, res) => {
           : "",
 
         categoria,
+        generoFinal,
         nombre,
         descripcion || "",
         Number(precio) || 0,
@@ -388,6 +405,7 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       grado_prepa,
       area_prepa,
       categoria,
+      genero_uniforme,
       nombre,
       descripcion,
       precio,
@@ -407,6 +425,12 @@ app.put("/api/admin/productos/:id", async (req, res) => {
     }
 
     const current = exists.rows[0];
+
+    const newCategoria = categoria != null ? categoria : current.categoria;
+    const newGeneroUniforme =
+      genero_uniforme != null
+        ? cleanUniformGender(newCategoria, genero_uniforme)
+        : cleanUniformGender(newCategoria, current.genero_uniforme);
 
     let newAplicaGeneral =
       aplica_general != null ? Boolean(aplica_general) : current.aplica_general;
@@ -447,13 +471,14 @@ app.put("/api/admin/productos/:id", async (req, res) => {
         grado_prepa = $5,
         area_prepa = $6,
         categoria = $7,
-        nombre = $8,
-        descripcion = $9,
-        precio = $10,
-        disponible = $11,
-        requiere_precio = $12,
-        aplica_general = $13
-      WHERE id = $14
+        genero_uniforme = $8,
+        nombre = $9,
+        descripcion = $10,
+        precio = $11,
+        disponible = $12,
+        requiere_precio = $13,
+        aplica_general = $14
+      WHERE id = $15
       `,
       [
         newEscuela,
@@ -462,7 +487,8 @@ app.put("/api/admin/productos/:id", async (req, res) => {
         newGradoSecundaria || "",
         newGradoPrepa || "",
         newAreaPrepa || "",
-        categoria != null ? categoria : current.categoria,
+        newCategoria,
+        newGeneroUniforme,
         nombre != null ? nombre : current.nombre,
         descripcion != null ? descripcion : current.descripcion,
         precio != null ? Number(precio) || 0 : Number(current.precio) || 0,
@@ -601,7 +627,7 @@ app.post("/api/pedidos", async (req, res) => {
       if (!item.talla) {
         await client.query("ROLLBACK");
         return res.status(400).json({
-          message: `Debes seleccionar talla para ${product.nombre}.`
+          message: `Debes seleccionar opción para ${product.nombre}.`
         });
       }
 
