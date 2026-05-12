@@ -125,6 +125,7 @@ function effectiveSizePrice(tallaData, product) {
 /* =========================
    STATUS
 ========================= */
+
 app.get("/api", (req, res) => {
   res.json({ message: "Papelería Sulamita API working with PostgreSQL" });
 });
@@ -132,6 +133,7 @@ app.get("/api", (req, res) => {
 /* =========================
    LOGIN
 ========================= */
+
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -174,6 +176,7 @@ app.post("/api/login", async (req, res) => {
 /* =========================
    REGISTRO
 ========================= */
+
 app.post("/api/register", async (req, res) => {
   try {
     const { nombre, email, password } = req.body;
@@ -213,6 +216,7 @@ app.post("/api/register", async (req, res) => {
 /* =========================
    CATÁLOGO
 ========================= */
+
 app.get("/api/catalogo", async (req, res) => {
   try {
     const { escuela, nivel } = req.query;
@@ -268,6 +272,7 @@ app.get("/api/catalogo", async (req, res) => {
 /* =========================
    ADMIN - VER PRODUCTOS
 ========================= */
+
 app.get("/api/admin/productos", async (req, res) => {
   try {
     const productos = await getProductsWithSizes();
@@ -281,6 +286,7 @@ app.get("/api/admin/productos", async (req, res) => {
 /* =========================
    ADMIN - AGREGAR PRODUCTO
 ========================= */
+
 app.post("/api/admin/productos", async (req, res) => {
   const client = await pool.connect();
 
@@ -411,6 +417,7 @@ app.post("/api/admin/productos", async (req, res) => {
 /* =========================
    ADMIN - ACTUALIZAR PRODUCTO
 ========================= */
+
 app.put("/api/admin/productos/:id", async (req, res) => {
   const client = await pool.connect();
 
@@ -556,6 +563,7 @@ app.put("/api/admin/productos/:id", async (req, res) => {
 /* =========================
    ADMIN - ELIMINAR PRODUCTO
 ========================= */
+
 app.delete("/api/admin/productos/:id", async (req, res) => {
   try {
     const productId = Number(req.params.id);
@@ -579,6 +587,7 @@ app.delete("/api/admin/productos/:id", async (req, res) => {
 /* =========================
    PEDIDOS
 ========================= */
+
 app.post("/api/pedidos", async (req, res) => {
   const client = await pool.connect();
 
@@ -801,6 +810,7 @@ app.post("/api/pedidos", async (req, res) => {
 /* =========================
    VER PEDIDOS
 ========================= */
+
 app.get("/api/pedidos", async (req, res) => {
   try {
     const result = await pool.query(
@@ -853,6 +863,7 @@ app.get("/api/pedidos", async (req, res) => {
 /* =========================
    CONTACTO
 ========================= */
+
 app.post("/api/contacto", async (req, res) => {
   try {
     const { nombre, email, telefono, asunto, mensaje } = req.body;
@@ -879,6 +890,7 @@ app.post("/api/contacto", async (req, res) => {
 /* =========================
    PÁGINAS
 ========================= */
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
@@ -906,6 +918,7 @@ app.get("/pedidos-admin", (req, res) => {
 /* =========================
    INICIAR SERVIDOR
 ========================= */
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

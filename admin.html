@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
   <header>
@@ -120,8 +120,11 @@
             </div>
 
             <div class="form-group">
-              <label for="productPrice">Precio</label>
+              <label for="productPrice">Precio general / precio base</label>
               <input type="number" id="productPrice" step="0.01" min="0" value="0" />
+              <p class="subtext">
+                Para uniformes con precios diferentes por talla, puedes dejar este precio en 0 y poner el precio en cada talla.
+              </p>
             </div>
 
             <div class="form-group">
@@ -160,9 +163,9 @@
             </div>
 
             <div class="form-group" id="sizesGroup">
-              <label>Tallas por número y stock</label>
+              <label>Tallas, precio y stock</label>
               <p class="subtext">
-                Para uniformes escribe números de talla, por ejemplo: 2, 4, 6, 8, 10, 12, 14.
+                Para uniformes escribe la talla, el precio de esa talla y el stock.
               </p>
               <div id="sizesContainer" class="sizes-editor"></div>
               <button type="button" class="btn-outline btn-sm" id="addSizeBtn">
@@ -226,7 +229,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=5"></script>
+  <script src="tienda.js?v=6"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -309,7 +312,8 @@
       const selectedLevel = levelSelect.value;
       const selectedGrade = gradeSelect.value || "General";
       const selectedArea = prepaArea.value;
-      const selectedCategory = document.getElementById("categoryName").value;
+      const selectedCategory = categorySelect.value;
+      const generalPrice = Number(document.getElementById("productPrice").value || 0);
 
       const payload = {
         escuela: isGeneral ? "General" : schoolSelect.value,
@@ -335,7 +339,7 @@
         genero_uniforme: selectedCategory === "Uniformes" ? uniformGender.value : "",
         nombre: document.getElementById("productName").value.trim(),
         descripcion: document.getElementById("productDescription").value.trim(),
-        precio: Number(document.getElementById("productPrice").value || 0),
+        precio: generalPrice,
         disponible: document.getElementById("productAvailable").checked,
         requiere_precio: document.getElementById("productRequiresPrice").checked,
         aplica_general: isGeneral,
@@ -358,7 +362,14 @@
       }
 
       if (!payload.tallas.length) {
-        showAdminMessage("Agrega stock para el producto.", true);
+        showAdminMessage("Agrega talla, precio y stock para el producto.", true);
+        return;
+      }
+
+      const hasInvalidPrice = payload.tallas.some(item => Number(item.precio || 0) <= 0);
+
+      if (!payload.requiere_precio && hasInvalidPrice) {
+        showAdminMessage("Agrega precio mayor a 0 en cada talla/opción.", true);
         return;
       }
 
@@ -502,6 +513,8 @@
     }
 
     function collectProductStock() {
+      const generalPrice = Number(document.getElementById("productPrice").value || 0);
+
       if (productNoSize.checked) {
         const stock = Math.max(0, Number(unitStock.value || 0));
 
@@ -512,6 +525,7 @@
         return [
           {
             talla: "Unidad",
+            precio: generalPrice,
             stock
           }
         ];
@@ -520,7 +534,7 @@
       return collectSizes(sizesContainer);
     }
 
-    function createSizeRow(talla = "", stock = "") {
+    function createSizeRow(talla = "", precio = "", stock = "") {
       const row = document.createElement("div");
       row.className = "size-row";
 
@@ -530,8 +544,20 @@
           <input
             type="text"
             class="size-name size-input-label"
-            placeholder="Ej. 2, 4, 6, 8, 10, 12, 14"
+            placeholder="Ej. 4-10, 12-14, 16-36"
             value="${escapeHtmlAttr(talla)}"
+          />
+        </div>
+
+        <div class="admin-field-group">
+          <label>Precio</label>
+          <input
+            type="number"
+            class="size-price price-input-value"
+            placeholder="Ej. 576"
+            min="0"
+            step="0.01"
+            value="${precio}"
           />
         </div>
 
@@ -564,16 +590,26 @@
 
       rows.forEach((row) => {
         const talla = row.querySelector(".size-name").value.trim();
+        const precio = Math.max(0, Number(row.querySelector(".size-price").value || 0));
         const stock = Math.max(0, Number(row.querySelector(".size-stock").value || 0));
 
         if (talla !== "" && stock > 0) {
           const key = talla.toLowerCase();
-          const currentStock = sizesMap.get(key)?.stock || 0;
+          const current = sizesMap.get(key);
 
-          sizesMap.set(key, {
-            talla,
-            stock: currentStock + stock
-          });
+          if (current) {
+            sizesMap.set(key, {
+              talla,
+              precio: precio || current.precio,
+              stock: current.stock + stock
+            });
+          } else {
+            sizesMap.set(key, {
+              talla,
+              precio,
+              stock
+            });
+          }
         }
       });
 
@@ -623,6 +659,7 @@
             ? product.tallas.map((t) => `
                 <span class="size-badge">
                   ${noSizeProduct ? "Por unidad" : escapeHtml(t.talla)}
+                  · $${Number(t.precio || product.precio || 0).toFixed(2)}
                 </span>
               `).join("")
             : "";
@@ -631,6 +668,7 @@
             ? `
               <div class="admin-stock-header">
                 <span>${noSizeProduct ? "Producto" : "Talla / Número"}</span>
+                <span>Precio</span>
                 <span>Stock</span>
               </div>
 
@@ -646,6 +684,20 @@
                       value="${noSizeProduct ? "Unidad" : escapeHtmlAttr(t.talla)}"
                       id="size-name-${product.id}-${escapeId(t.talla)}"
                       ${noSizeProduct ? "readonly" : ""}
+                    />
+                  </div>
+
+                  <div class="admin-field-group">
+                    <label for="size-price-${product.id}-${escapeId(t.talla)}">
+                      Precio
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      class="price-input-value"
+                      value="${Number(t.precio || product.precio || 0)}"
+                      id="size-price-${product.id}-${escapeId(t.talla)}"
                     />
                   </div>
 
@@ -707,7 +759,7 @@
 
               <div class="admin-inline-grid">
                 <div class="form-group">
-                  <label>Precio</label>
+                  <label>Precio general</label>
                   <input
                     type="number"
                     min="0"
@@ -915,8 +967,22 @@
           <input
             type="text"
             class="size-input-label"
-            placeholder="Ej. 2, 4, 6, 8, 10, 12, 14"
+            placeholder="Ej. 4-10, 12-14, 16-36"
             id="size-name-${productId}-${uniqueId}"
+          />
+        </div>
+
+        <div class="admin-field-group">
+          <label for="size-price-${productId}-${uniqueId}">
+            Precio
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            class="price-input-value"
+            placeholder="Ej. 576"
+            id="size-price-${productId}-${uniqueId}"
           />
         </div>
 
@@ -962,16 +1028,26 @@
       sizeItems.forEach((item) => {
         const inputs = item.querySelectorAll("input");
         const talla = inputs[0]?.value.trim();
-        const stock = Math.max(0, Number(inputs[1]?.value || 0));
+        const precio = Math.max(0, Number(inputs[1]?.value || 0));
+        const stock = Math.max(0, Number(inputs[2]?.value || 0));
 
         if (talla && stock >= 0) {
           const key = talla.toLowerCase();
-          const currentStock = tallasMap.get(key)?.stock || 0;
+          const current = tallasMap.get(key);
 
-          tallasMap.set(key, {
-            talla,
-            stock: currentStock + stock
-          });
+          if (current) {
+            tallasMap.set(key, {
+              talla,
+              precio: precio || current.precio,
+              stock: current.stock + stock
+            });
+          } else {
+            tallasMap.set(key, {
+              talla,
+              precio,
+              stock
+            });
+          }
         }
       });
 
