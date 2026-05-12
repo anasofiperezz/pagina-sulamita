@@ -55,17 +55,46 @@ function setupHeader() {
   }
 }
 
-function getCart() {
-  try {
-    return JSON.parse(localStorage.getItem("cart")) || [];
-  } catch (error) {
-    console.error("Error leyendo carrito:", error);
-    return [];
-  }
+/* =========================
+   PRECIOS POR TALLA
+========================= */
+
+function formatMoney(value) {
+  return `$${Number(value || 0).toFixed(2)}`;
 }
 
-function saveCart(cart) {
-  localStorage.setItem("cart", JSON.stringify(cart));
+function getTallasDisponibles(product) {
+  if (!product || !Array.isArray(product.tallas)) return [];
+  return product.tallas.filter((t) => Number(t.stock || 0) > 0);
+}
+
+function getFirstAvailablePrice(product) {
+  if (!product) return 0;
+
+  const tallasDisponibles = getTallasDisponibles(product);
+  const optionWithPrice = tallasDisponibles.find((t) => Number(t.precio || 0) > 0);
+
+  if (optionWithPrice) {
+    return Number(optionWithPrice.precio || 0);
+  }
+
+  return Number(product.precio || 0);
+}
+
+function getOptionPrice(product, optionName) {
+  if (!product) return 0;
+
+  if (Array.isArray(product.tallas)) {
+    const selectedOption = product.tallas.find(
+      (t) => String(t.talla) === String(optionName)
+    );
+
+    if (selectedOption && Number(selectedOption.precio || 0) > 0) {
+      return Number(selectedOption.precio || 0);
+    }
+  }
+
+  return Number(product.precio || 0);
 }
 
 function getProductStatus(product) {
@@ -78,7 +107,9 @@ function getProductStatus(product) {
     };
   }
 
-  if (product.requiere_precio === true || Number(product.precio || 0) <= 0) {
+  const firstPrice = getFirstAvailablePrice(product);
+
+  if (product.requiere_precio === true || firstPrice <= 0) {
     return {
       text: "Precio pendiente",
       buttonText: "Precio pendiente",
@@ -88,11 +119,38 @@ function getProductStatus(product) {
   }
 
   return {
-    text: `$${Number(product.precio).toFixed(2)}`,
+    text: formatMoney(firstPrice),
     buttonText: "Agregar al carrito",
     disabled: false,
     className: "status-available"
   };
+}
+
+function updateDisplayedPrice(productId) {
+  const product = window.currentCatalogProductsMap?.[productId];
+  if (!product) return;
+
+  const priceNode = document.getElementById(`price-display-${productId}`);
+  const buttonNode = document.getElementById(`add-btn-${productId}`);
+  const selectNode = document.getElementById(`size-${productId}`);
+
+  if (!priceNode || !buttonNode || !selectNode) return;
+
+  const selectedSize = selectNode.value;
+  const selectedPrice = getOptionPrice(product, selectedSize);
+
+  if (product.requiere_precio === true || selectedPrice <= 0) {
+    priceNode.textContent = "Precio pendiente";
+    priceNode.className = "product-price status-pending";
+    buttonNode.textContent = "Precio pendiente";
+    buttonNode.disabled = true;
+    return;
+  }
+
+  priceNode.textContent = formatMoney(selectedPrice);
+  priceNode.className = "product-price status-available";
+  buttonNode.textContent = "Agregar al carrito";
+  buttonNode.disabled = false;
 }
 
 function isUnitallaProduct(product) {
@@ -108,6 +166,23 @@ function isUnitallaProduct(product) {
     talla === "sin talla" ||
     talla === "n/a"
   );
+}
+
+/* =========================
+   CARRITO
+========================= */
+
+function getCart() {
+  try {
+    return JSON.parse(localStorage.getItem("cart")) || [];
+  } catch (error) {
+    console.error("Error leyendo carrito:", error);
+    return [];
+  }
+}
+
+function saveCart(cart) {
+  localStorage.setItem("cart", JSON.stringify(cart));
 }
 
 function setupCartPage() {
@@ -268,7 +343,7 @@ function renderCart() {
         <h4>${escapeHtml(item.name)}</h4>
         <p>Escuela/Nivel: ${escapeHtml(item.grade)}</p>
         ${optionHtml}
-        <p>Precio unitario: $${Number(item.price).toFixed(2)}</p>
+        <p>Precio unitario: ${formatMoney(item.price)}</p>
       </div>
 
       <div class="cart-item-actions">
@@ -279,7 +354,7 @@ function renderCart() {
         </div>
 
         <div class="cart-item-total">
-          $${(Number(item.price) * Number(item.quantity)).toFixed(2)}
+          ${formatMoney(Number(item.price) * Number(item.quantity))}
         </div>
 
         <button class="remove-btn" type="button" onclick="removeFromCart(${index})">Eliminar</button>
@@ -337,9 +412,9 @@ function updateCartTotals() {
   const shippingElement = document.getElementById("shippingCost");
   const totalElement = document.getElementById("total");
 
-  if (subtotalElement) subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
-  if (shippingElement) shippingElement.textContent = `$${shipping.toFixed(2)}`;
-  if (totalElement) totalElement.textContent = `$${total.toFixed(2)}`;
+  if (subtotalElement) subtotalElement.textContent = formatMoney(subtotal);
+  if (shippingElement) shippingElement.textContent = formatMoney(shipping);
+  if (totalElement) totalElement.textContent = formatMoney(total);
 }
 
 function addProductToCart(product) {
@@ -350,7 +425,7 @@ function addProductToCart(product) {
 
   if (isUnitalla) {
     tallaData = product.tallas[0];
-    talla = "Unidad";
+    talla = String(tallaData.talla || "Unidad");
   } else {
     const select = document.getElementById(`size-${product.id}`);
     talla = select ? select.value : "";
@@ -370,6 +445,13 @@ function addProductToCart(product) {
     return;
   }
 
+  const selectedPrice = getOptionPrice(product, talla);
+
+  if (product.requiere_precio === true || selectedPrice <= 0) {
+    alert("Este producto todavía no tiene precio configurado.");
+    return;
+  }
+
   const cart = getCart();
 
   const existingProduct = cart.find(
@@ -385,11 +467,12 @@ function addProductToCart(product) {
     }
 
     existingProduct.quantity += 1;
+    existingProduct.price = selectedPrice;
   } else {
     cart.push({
       producto_id: Number(product.id),
       name: product.nombre,
-      price: Number(product.precio),
+      price: selectedPrice,
       grade: buildGradeLabel(product),
       talla: String(talla),
       quantity: 1
@@ -399,6 +482,10 @@ function addProductToCart(product) {
   saveCart(cart);
   alert(`${product.nombre} agregado al carrito`);
 }
+
+/* =========================
+   CATÁLOGO CLIENTE
+========================= */
 
 async function loadProductsPage(config) {
   const { escuela, nivel, title = "", subtitle = "" } = config;
@@ -557,9 +644,7 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
           const status = getProductStatus(product);
           const isUnitalla = isUnitallaProduct(product);
 
-          const tallasDisponibles = Array.isArray(product.tallas)
-            ? product.tallas.filter((t) => Number(t.stock) > 0)
-            : [];
+          const tallasDisponibles = getTallasDisponibles(product);
 
           const stockUnitalla =
             isUnitalla && product.tallas[0]
@@ -568,10 +653,17 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
 
           const optionsHtml = tallasDisponibles.length
             ? tallasDisponibles
-                .map(
-                  (t) =>
-                    `<option value="${escapeHtmlAttr(t.talla)}">${escapeHtml(t.talla)} (${Number(t.stock)})</option>`
-                )
+                .map((t) => {
+                  const optionPrice = Number(t.precio || product.precio || 0);
+                  return `
+                    <option
+                      value="${escapeHtmlAttr(t.talla)}"
+                      data-price="${optionPrice}"
+                    >
+                      ${escapeHtml(t.talla)} - ${formatMoney(optionPrice)} (${Number(t.stock)})
+                    </option>
+                  `;
+                })
                 .join("")
             : `<option value="">Sin disponibles</option>`;
 
@@ -588,10 +680,14 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
                 ${
                   tallasDisponibles.length
                     ? tallasDisponibles
-                        .map(
-                          (t) =>
-                            `<span class="customer-size-badge">${escapeHtml(t.talla)}</span>`
-                        )
+                        .map((t) => {
+                          const optionPrice = Number(t.precio || product.precio || 0);
+                          return `
+                            <span class="customer-size-badge">
+                              ${escapeHtml(t.talla)} · ${formatMoney(optionPrice)}
+                            </span>
+                          `;
+                        })
                         .join("")
                     : `<span class="customer-size-badge empty">Sin disponibles</span>`
                 }
@@ -599,9 +695,11 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
 
               <div class="form-group">
                 <label for="size-${product.id}">Selecciona opción</label>
-                <select id="size-${product.id}" ${
-                  status.disabled || !tallasDisponibles.length ? "disabled" : ""
-                }>
+                <select
+                  id="size-${product.id}"
+                  ${status.disabled || !tallasDisponibles.length ? "disabled" : ""}
+                  onchange="updateDisplayedPrice(${product.id})"
+                >
                   ${optionsHtml}
                 </select>
               </div>
@@ -614,7 +712,10 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
                 <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
                 <p>${escapeHtml(product.descripcion || "Sin descripción")}</p>
 
-                <div class="product-price ${status.className}">
+                <div
+                  class="product-price ${status.className}"
+                  id="price-display-${product.id}"
+                >
                   ${status.text}
                 </div>
 
@@ -622,6 +723,7 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
 
                 <button
                   class="btn-primary"
+                  id="add-btn-${product.id}"
                   type="button"
                   ${status.disabled || !tallasDisponibles.length ? "disabled" : ""}
                   onclick="addProductToCart(window.currentCatalogProductsMap[${product.id}])"
@@ -646,6 +748,13 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
       `;
     })
     .join("");
+
+  Object.values(window.currentCatalogProductsMap || {}).forEach((product) => {
+    const selectNode = document.getElementById(`size-${product.id}`);
+    if (selectNode) {
+      updateDisplayedPrice(product.id);
+    }
+  });
 }
 
 function groupProductsByCategory(products) {
@@ -693,7 +802,12 @@ function groupProductsByCategory(products) {
       section = "Jardín de niños";
     }
 
-    const category = product.categoria || "Sin categoría";
+    let category = product.categoria || "Sin categoría";
+
+    if (category === "Uniformes" && product.genero_uniforme) {
+      category = `${category} · ${product.genero_uniforme}`;
+    }
+
     const key = `${section}|||${category}`;
 
     if (!acc[key]) {
