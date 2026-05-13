@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
   <header>
@@ -65,17 +65,6 @@
               <label for="gradeName">Grado / Sección</label>
               <select id="gradeName">
                 <option value="General">General / Todos los grados del nivel</option>
-              </select>
-            </div>
-
-            <div class="form-group" id="prepaAreaGroup" style="display: none;">
-              <label for="prepaArea">Área de preparatoria</label>
-              <select id="prepaArea">
-                <option value="">Sin área específica</option>
-                <option value="Área I">Área I</option>
-                <option value="Área II">Área II</option>
-                <option value="Área III">Área III</option>
-                <option value="Área IV">Área IV</option>
               </select>
             </div>
 
@@ -226,7 +215,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=8"></script>
+  <script src="tienda.js?v=9"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -246,8 +235,6 @@
     const schoolSelect = document.getElementById("schoolName");
     const levelSelect = document.getElementById("levelName");
     const gradeSelect = document.getElementById("gradeName");
-    const prepaAreaGroup = document.getElementById("prepaAreaGroup");
-    const prepaArea = document.getElementById("prepaArea");
     const categorySelect = document.getElementById("categoryName");
 
     const schoolFilter = document.getElementById("schoolFilter");
@@ -310,7 +297,6 @@
       const isGeneral = productGeneral.checked;
       const selectedLevel = levelSelect.value;
       const selectedGrade = gradeSelect.value || "General";
-      const selectedArea = prepaArea.value;
       const selectedCategory = categorySelect.value;
       const generalPrice = Number(document.getElementById("productPrice").value || 0);
 
@@ -329,10 +315,7 @@
             ? selectedGrade
             : "",
 
-        area_prepa:
-          !isGeneral && selectedLevel === "Preparatoria"
-            ? selectedArea
-            : "",
+        area_prepa: "",
 
         categoria: selectedCategory,
         genero_uniforme: selectedCategory === "Uniformes" ? uniformGender.value : "",
@@ -503,11 +486,6 @@
 
       const optionValues = options.map(option => option.value);
       gradeSelect.value = optionValues.includes(currentValue) ? currentValue : "General";
-
-      prepaAreaGroup.style.display =
-        level === "Preparatoria" && !productGeneral.checked
-          ? "block"
-          : "none";
     }
 
     function toggleGeneralProductFields() {
@@ -516,7 +494,6 @@
       schoolSelect.disabled = isGeneral;
       levelSelect.disabled = isGeneral;
       gradeSelect.disabled = isGeneral;
-      prepaArea.disabled = isGeneral;
 
       schoolSelect.required = !isGeneral;
       levelSelect.required = !isGeneral;
@@ -536,9 +513,6 @@
           </option>
         `;
         gradeSelect.value = "General";
-
-        prepaArea.value = "";
-        prepaAreaGroup.style.display = "none";
       } else {
         updateLevelOptions();
         updateGradeOptions();
@@ -979,8 +953,6 @@
 
       const grade = getProductGrade(product);
       if (grade) parts.push(formatGrade(grade));
-
-      if (product.area_prepa) parts.push(product.area_prepa);
 
       return parts.length ? parts.join(" · ") : "Sin alcance definido";
     }
