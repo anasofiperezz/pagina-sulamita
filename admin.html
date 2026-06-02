@@ -116,15 +116,28 @@
             </div>
 
             <div class="form-group">
-              <label for="productImage">Fotografía del producto</label>
+              <label for="productImageFile">Fotografía del producto</label>
+
+              <input type="hidden" id="productImage" />
+
               <input
-                type="url"
-                id="productImage"
-                placeholder="Pega aquí la URL de la imagen"
+                type="file"
+                id="productImageFile"
+                accept="image/png, image/jpeg, image/jpg, image/webp"
               />
+
               <p class="subtext">
-                Pega una URL directa de imagen. Ejemplo: una imagen subida a tu hosting, Cloudinary o carpeta pública.
+                Sube una imagen JPG, PNG o WEBP. Máximo 5 MB.
               </p>
+
+              <div id="productImagePreview" style="display: none; margin-top: 12px;">
+                <img
+                  id="productImagePreviewImg"
+                  src=""
+                  alt="Vista previa del producto"
+                  style="width: 140px; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe3f0;"
+                />
+              </div>
             </div>
 
             <div class="form-group">
@@ -256,7 +269,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=11"></script>
+  <script src="tienda.js?v=12"></script>
 
   <script>
     protectPage();
@@ -296,6 +309,11 @@
 
     const uniformGenderGroup = document.getElementById("uniformGenderGroup");
     const uniformGender = document.getElementById("uniformGender");
+
+    const productImage = document.getElementById("productImage");
+    const productImageFile = document.getElementById("productImageFile");
+    const productImagePreview = document.getElementById("productImagePreview");
+    const productImagePreviewImg = document.getElementById("productImagePreviewImg");
 
     updateLevelOptions();
     updateGradeOptions();
@@ -361,6 +379,18 @@
 
     productNoSize.addEventListener("change", toggleNoSizeFields);
 
+    productImageFile.addEventListener("change", function () {
+      const file = productImageFile.files && productImageFile.files[0];
+
+      if (!file) {
+        updateImagePreview(productImage.value);
+        return;
+      }
+
+      const previewUrl = URL.createObjectURL(file);
+      updateImagePreview(previewUrl);
+    });
+
     categorySelect.addEventListener("change", function () {
       const category = categorySelect.value;
 
@@ -395,6 +425,57 @@
       const selectedArea = sixthPrepaArea.value;
       const generalPrice = Number(document.getElementById("productPrice").value || 0);
 
+      if (!document.getElementById("productName").value.trim() || !selectedCategory) {
+        showAdminMessage("Completa el nombre y la categoría del producto.", true);
+        return;
+      }
+
+      if (selectedCategory === "Uniformes" && !uniformGender.value) {
+        showAdminMessage("Selecciona si el uniforme es para Mujer, Hombre o Unisex.", true);
+        return;
+      }
+
+      if (!isGeneral && (!schoolSelect.value || !selectedLevel)) {
+        showAdminMessage("Selecciona escuela y nivel, o marca el producto como general.", true);
+        return;
+      }
+
+      if (
+        !isGeneral &&
+        selectedLevel === "Preparatoria" &&
+        selectedGrade === "6" &&
+        !selectedArea
+      ) {
+        showAdminMessage("Selecciona el área de 6° Preparatoria.", true);
+        return;
+      }
+
+      if (!tallas.length) {
+        showAdminMessage("Agrega talla/opción y stock para el producto.", true);
+        return;
+      }
+
+      const hasInvalidPrice = tallas.some((item) => {
+        const sizePrice = Number(item.precio || 0);
+        const basePrice = Number(generalPrice || 0);
+        return sizePrice <= 0 && basePrice <= 0;
+      });
+
+      if (!document.getElementById("productRequiresPrice").checked && hasInvalidPrice) {
+        showAdminMessage("Agrega precio general o precio en cada talla/opción.", true);
+        return;
+      }
+
+      let uploadedImageUrl = "";
+
+      try {
+        uploadedImageUrl = await uploadSelectedProductImage();
+      } catch (error) {
+        console.error(error);
+        showAdminMessage(error.message || "No se pudo subir la imagen.", true);
+        return;
+      }
+
       const payload = {
         escuela: isGeneral ? "General" : schoolSelect.value,
         nivel: isGeneral ? "General" : selectedLevel,
@@ -419,54 +500,13 @@
         genero_uniforme: selectedCategory === "Uniformes" ? uniformGender.value : "",
         nombre: document.getElementById("productName").value.trim(),
         descripcion: document.getElementById("productDescription").value.trim(),
-        imagen_url: document.getElementById("productImage").value.trim(),
+        imagen_url: uploadedImageUrl,
         precio: generalPrice,
         disponible: document.getElementById("productAvailable").checked,
         requiere_precio: document.getElementById("productRequiresPrice").checked,
         aplica_general: isGeneral,
         tallas
       };
-
-      if (!payload.nombre || !payload.categoria) {
-        showAdminMessage("Completa el nombre y la categoría del producto.", true);
-        return;
-      }
-
-      if (payload.categoria === "Uniformes" && !payload.genero_uniforme) {
-        showAdminMessage("Selecciona si el uniforme es para Mujer, Hombre o Unisex.", true);
-        return;
-      }
-
-      if (!isGeneral && (!payload.escuela || !payload.nivel)) {
-        showAdminMessage("Selecciona escuela y nivel, o marca el producto como general.", true);
-        return;
-      }
-
-      if (
-        !isGeneral &&
-        selectedLevel === "Preparatoria" &&
-        selectedGrade === "6" &&
-        !selectedArea
-      ) {
-        showAdminMessage("Selecciona el área de 6° Preparatoria.", true);
-        return;
-      }
-
-      if (!payload.tallas.length) {
-        showAdminMessage("Agrega talla/opción y stock para el producto.", true);
-        return;
-      }
-
-      const hasInvalidPrice = payload.tallas.some((item) => {
-        const sizePrice = Number(item.precio || 0);
-        const basePrice = Number(payload.precio || 0);
-        return sizePrice <= 0 && basePrice <= 0;
-      });
-
-      if (!payload.requiere_precio && hasInvalidPrice) {
-        showAdminMessage("Agrega precio general o precio en cada talla/opción.", true);
-        return;
-      }
 
       try {
         const url = editingProductId
@@ -1174,8 +1214,10 @@
 
       document.getElementById("productName").value = product.nombre || "";
       document.getElementById("productDescription").value = product.descripcion || "";
-      document.getElementById("productImage").value =
-        product.imagen_url || product.imagen || product.image_url || "";
+
+      productImage.value = product.imagen_url || product.imagen || product.image_url || "";
+      productImageFile.value = "";
+      updateImagePreview(productImage.value);
 
       document.getElementById("productPrice").value = Number(product.precio || 0);
       document.getElementById("productAvailable").checked = product.disponible !== false;
@@ -1239,6 +1281,50 @@
       document.getElementById("productAvailable").checked = true;
       document.getElementById("productRequiresPrice").checked = false;
       unitStock.value = "0";
+
+      productImage.value = "";
+      productImageFile.value = "";
+      updateImagePreview("");
+    }
+
+    function updateImagePreview(imageUrl) {
+      const url = String(imageUrl || "").trim();
+
+      if (!url) {
+        productImagePreview.style.display = "none";
+        productImagePreviewImg.src = "";
+        return;
+      }
+
+      productImagePreview.style.display = "block";
+      productImagePreviewImg.src = url;
+    }
+
+    async function uploadSelectedProductImage() {
+      const file = productImageFile.files && productImageFile.files[0];
+
+      if (!file) {
+        return productImage.value || "";
+      }
+
+      const formData = new FormData();
+      formData.append("imagen", file);
+
+      const response = await fetch("/api/admin/subir-imagen", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "No se pudo subir la imagen.");
+      }
+
+      productImage.value = data.imagen_url || "";
+      updateImagePreview(productImage.value);
+
+      return productImage.value;
     }
 
     function showAdminMessage(message, isError = false) {

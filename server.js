@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const multer = require("multer");
+const { Readable } = require("stream");
+const { v2: cloudinary } = require("cloudinary");
 const pool = require("./db");
 
 const app = express();
@@ -11,6 +14,53 @@ const publicDir = __dirname;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(publicDir));
+
+/* =========================
+   CLOUDINARY / SUBIDA IMÁGENES
+========================= */
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Solo se permiten imágenes JPG, PNG o WEBP."));
+    }
+
+    cb(null, true);
+  }
+});
+
+function uploadBufferToCloudinary(buffer) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "papeleria-sulamita/productos",
+        resource_type: "image"
+      },
+      function (error, result) {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(result);
+      }
+    );
+
+    Readable.from(buffer).pipe(stream);
+  });
+}
 
 /* =========================
    HELPERS
@@ -288,6 +338,45 @@ app.get("/api/catalogo", async (req, res) => {
 });
 
 /* =========================
+   ADMIN - SUBIR IMAGEN
+========================= */
+
+app.post("/api/admin/subir-imagen", function (req, res) {
+  upload.single("imagen")(req, res, async function (error) {
+    try {
+      if (error) {
+        return res.status(400).json({
+          message: error.message || "No se pudo procesar la imagen."
+        });
+      }
+
+      if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+        return res.status(500).json({
+          message: "Faltan las variables de Cloudinary en Render."
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No se recibió ninguna imagen." });
+      }
+
+      const result = await uploadBufferToCloudinary(req.file.buffer);
+
+      res.status(201).json({
+        message: "Imagen subida correctamente",
+        imagen_url: result.secure_url
+      });
+    } catch (uploadError) {
+      console.error("Error en POST /api/admin/subir-imagen:", uploadError);
+
+      res.status(500).json({
+        message: uploadError.message || "Error al subir imagen."
+      });
+    }
+  });
+});
+
+/* =========================
    ADMIN - VER PRODUCTOS
 ========================= */
 
@@ -502,12 +591,15 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       if (escuela != null) newEscuela = escuela;
       if (nivel != null) newNivel = nivel;
       if (grado != null) newGrado = grado || "General";
+
       if (grado_secundaria != null) {
         newGradoSecundaria = String(grado_secundaria || "");
       }
+
       if (grado_prepa != null) {
         newGradoPrepa = String(grado_prepa || "");
       }
+
       if (area_prepa != null) {
         newAreaPrepa = String(area_prepa || "");
       }
