@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS productos (
   genero_uniforme TEXT DEFAULT '',
   nombre TEXT NOT NULL,
   descripcion TEXT DEFAULT '',
+  imagen_url TEXT DEFAULT '',
   precio NUMERIC(10, 2) DEFAULT 0,
   disponible BOOLEAN DEFAULT TRUE,
   requiere_precio BOOLEAN DEFAULT FALSE,

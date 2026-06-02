@@ -29,6 +29,7 @@ function normalizeProduct(row) {
     genero_uniforme: row.genero_uniforme || "",
     nombre: row.nombre,
     descripcion: row.descripcion || "",
+    imagen_url: row.imagen_url || "",
     precio: Number(row.precio || 0),
     disponible: row.disponible !== false,
     requiere_precio: row.requiere_precio === true,
@@ -120,6 +121,23 @@ function effectiveSizePrice(tallaData, product) {
   const productPrice = Number(product?.precio || 0);
 
   return sizePrice > 0 ? sizePrice : productPrice;
+}
+
+/* =========================
+   ACTUALIZACIONES DE BASE DE DATOS
+========================= */
+
+async function ensureDatabaseUpdates() {
+  try {
+    await pool.query(`
+      ALTER TABLE productos
+      ADD COLUMN IF NOT EXISTS imagen_url TEXT DEFAULT '';
+    `);
+
+    console.log("Base de datos actualizada: columna imagen_url lista.");
+  } catch (error) {
+    console.error("Error actualizando base de datos:", error);
+  }
 }
 
 /* =========================
@@ -302,6 +320,7 @@ app.post("/api/admin/productos", async (req, res) => {
       genero_uniforme,
       nombre,
       descripcion,
+      imagen_url,
       precio,
       disponible,
       requiere_precio,
@@ -348,6 +367,7 @@ app.post("/api/admin/productos", async (req, res) => {
         genero_uniforme,
         nombre,
         descripcion,
+        imagen_url,
         precio,
         disponible,
         requiere_precio,
@@ -355,7 +375,7 @@ app.post("/api/admin/productos", async (req, res) => {
       )
       VALUES (
         $1, $2, $3, $4, $5, $6,
-        $7, $8, $9, $10, $11, $12, $13, $14
+        $7, $8, $9, $10, $11, $12, $13, $14, $15
       )
       RETURNING id
       `,
@@ -380,6 +400,7 @@ app.post("/api/admin/productos", async (req, res) => {
         generoFinal,
         nombre,
         descripcion || "",
+        imagen_url || "",
         productPrice,
         disponible !== false,
         Boolean(requiere_precio),
@@ -435,6 +456,7 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       genero_uniforme,
       nombre,
       descripcion,
+      imagen_url,
       precio,
       disponible,
       requiere_precio,
@@ -480,9 +502,15 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       if (escuela != null) newEscuela = escuela;
       if (nivel != null) newNivel = nivel;
       if (grado != null) newGrado = grado || "General";
-      if (grado_secundaria != null) newGradoSecundaria = String(grado_secundaria || "");
-      if (grado_prepa != null) newGradoPrepa = String(grado_prepa || "");
-      if (area_prepa != null) newAreaPrepa = String(area_prepa || "");
+      if (grado_secundaria != null) {
+        newGradoSecundaria = String(grado_secundaria || "");
+      }
+      if (grado_prepa != null) {
+        newGradoPrepa = String(grado_prepa || "");
+      }
+      if (area_prepa != null) {
+        newAreaPrepa = String(area_prepa || "");
+      }
     }
 
     const newPrice =
@@ -504,11 +532,12 @@ app.put("/api/admin/productos/:id", async (req, res) => {
         genero_uniforme = $8,
         nombre = $9,
         descripcion = $10,
-        precio = $11,
-        disponible = $12,
-        requiere_precio = $13,
-        aplica_general = $14
-      WHERE id = $15
+        imagen_url = $11,
+        precio = $12,
+        disponible = $13,
+        requiere_precio = $14,
+        aplica_general = $15
+      WHERE id = $16
       `,
       [
         newEscuela,
@@ -521,6 +550,7 @@ app.put("/api/admin/productos/:id", async (req, res) => {
         newGeneroUniforme,
         nombre != null ? nombre : current.nombre,
         descripcion != null ? descripcion : current.descripcion,
+        imagen_url != null ? imagen_url : current.imagen_url || "",
         newPrice,
         disponible != null ? Boolean(disponible) : current.disponible,
         requiere_precio != null ? Boolean(requiere_precio) : current.requiere_precio,
@@ -919,6 +949,8 @@ app.get("/pedidos-admin", (req, res) => {
    INICIAR SERVIDOR
 ========================= */
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+ensureDatabaseUpdates().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  });
 });
