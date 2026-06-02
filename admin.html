@@ -35,7 +35,7 @@
     <section class="admin-page">
       <div class="admin-layout">
         <div class="admin-form-card">
-          <h2>Agregar producto</h2>
+          <h2 id="formTitle">Agregar producto</h2>
 
           <form id="productForm">
             <div class="form-group">
@@ -116,6 +116,18 @@
             </div>
 
             <div class="form-group">
+              <label for="productImage">Fotografía del producto</label>
+              <input
+                type="url"
+                id="productImage"
+                placeholder="Pega aquí la URL de la imagen"
+              />
+              <p class="subtext">
+                Pega una URL directa de imagen. Ejemplo: una imagen subida a tu hosting, Cloudinary o carpeta pública.
+              </p>
+            </div>
+
+            <div class="form-group">
               <label for="productPrice">Precio general / precio base</label>
               <input type="number" id="productPrice" step="0.01" min="0" value="0" />
               <p class="subtext">
@@ -170,8 +182,17 @@
               </button>
             </div>
 
-            <button type="submit" class="btn-primary full-width">
+            <button type="submit" class="btn-primary full-width" id="saveProductBtn">
               Guardar producto
+            </button>
+
+            <button
+              type="button"
+              class="btn-outline full-width"
+              id="cancelEditBtn"
+              style="display: none; margin-top: 10px;"
+            >
+              Cancelar edición
             </button>
           </form>
 
@@ -252,6 +273,12 @@
     const unitStockGroup = document.getElementById("unitStockGroup");
     const unitStock = document.getElementById("unitStock");
 
+    const formTitle = document.getElementById("formTitle");
+    const saveProductBtn = document.getElementById("saveProductBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
+
+    let editingProductId = null;
+
     const productGeneral = document.getElementById("productGeneral");
     const schoolSelect = document.getElementById("schoolName");
     const levelSelect = document.getElementById("levelName");
@@ -289,6 +316,10 @@
     });
 
     reloadProductsBtn.addEventListener("click", loadAdminProducts);
+
+    cancelEditBtn.addEventListener("click", function () {
+      resetProductFormToCreateMode();
+    });
 
     schoolFilter.addEventListener("change", function () {
       updateInventoryLevelFilter();
@@ -388,6 +419,7 @@
         genero_uniforme: selectedCategory === "Uniformes" ? uniformGender.value : "",
         nombre: document.getElementById("productName").value.trim(),
         descripcion: document.getElementById("productDescription").value.trim(),
+        imagen_url: document.getElementById("productImage").value.trim(),
         precio: generalPrice,
         disponible: document.getElementById("productAvailable").checked,
         requiere_precio: document.getElementById("productRequiresPrice").checked,
@@ -437,8 +469,14 @@
       }
 
       try {
-        const response = await fetch("/api/admin/productos", {
-          method: "POST",
+        const url = editingProductId
+          ? `/api/admin/productos/${editingProductId}`
+          : "/api/admin/productos";
+
+        const method = editingProductId ? "PUT" : "POST";
+
+        const response = await fetch(url, {
+          method,
           headers: {
             "Content-Type": "application/json"
           },
@@ -452,21 +490,13 @@
           return;
         }
 
-        showAdminMessage("Producto guardado correctamente.");
+        showAdminMessage(
+          editingProductId
+            ? "Producto actualizado correctamente."
+            : "Producto guardado correctamente."
+        );
 
-        productForm.reset();
-        sizesContainer.innerHTML = "";
-        createSizeRow();
-        updateLevelOptions();
-        updateGradeOptions();
-        toggleGeneralProductFields();
-        toggleNoSizeFields();
-        toggleUniformGenderField();
-        toggleSixthPrepaAreaField();
-
-        document.getElementById("productAvailable").checked = true;
-        document.getElementById("productRequiresPrice").checked = false;
-        unitStock.value = "0";
+        resetProductFormToCreateMode();
 
         updateInventoryLevelFilter();
         updateInventoryGradeFilter();
@@ -917,6 +947,12 @@
           products = [];
         }
 
+        window.adminProductsMap = {};
+
+        products.forEach((product) => {
+          window.adminProductsMap[String(product.id)] = product;
+        });
+
         const filteredProducts = products.filter(productMatchesInventoryFilters);
 
         if (!filteredProducts.length) {
@@ -981,6 +1017,29 @@
     function renderAdminProductCard(product) {
       const tallas = Array.isArray(product.tallas) ? product.tallas : [];
 
+      const imageUrl = String(
+        product.imagen_url ||
+        product.imagen ||
+        product.image_url ||
+        ""
+      ).trim();
+
+      const imageHtml = imageUrl
+        ? `
+          <div class="admin-product-thumb">
+            <img
+              src="${escapeHtmlAttr(imageUrl)}"
+              alt="${escapeHtmlAttr(product.nombre || "Producto")}"
+              loading="lazy"
+            />
+          </div>
+        `
+        : `
+          <div class="admin-product-thumb admin-product-thumb-placeholder">
+            ${escapeHtml(product.categoria || "Producto")}
+          </div>
+        `;
+
       const tallasHtml = tallas.length
         ? tallas
             .map(item => `
@@ -997,19 +1056,37 @@
         ? "Precio pendiente"
         : formatMoney(product.precio || getFirstAvailablePrice(product));
 
+      const productId = escapeHtmlAttr(product.id);
+
       return `
         <article class="admin-product-card">
-          <div>
-            <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
-            <p>${escapeHtml(product.descripcion || "Sin descripción")}</p>
-            <p><strong>Ubicación:</strong> ${escapeHtml(meta)}</p>
-            <p><strong>Categoría:</strong> ${escapeHtml(product.categoria || "Sin categoría")}</p>
-            ${product.genero_uniforme ? `<p><strong>Uniforme:</strong> ${escapeHtml(product.genero_uniforme)}</p>` : ""}
-            <p><strong>Precio base:</strong> ${priceText}</p>
-            <p><strong>Estado:</strong> ${escapeHtml(availabilityText)}</p>
-            <div class="product-sizes-info">
-              <strong>Tallas / opciones:</strong>
-              ${tallasHtml}
+          <div class="admin-product-card-content">
+            ${imageHtml}
+
+            <div class="admin-product-info">
+              <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
+              <p>${escapeHtml(product.descripcion || "Sin descripción")}</p>
+              <p><strong>Ubicación:</strong> ${escapeHtml(meta)}</p>
+              <p><strong>Categoría:</strong> ${escapeHtml(product.categoria || "Sin categoría")}</p>
+              ${product.genero_uniforme ? `<p><strong>Uniforme:</strong> ${escapeHtml(product.genero_uniforme)}</p>` : ""}
+              ${product.area_prepa ? `<p><strong>Área:</strong> ${escapeHtml(product.area_prepa)}</p>` : ""}
+              <p><strong>Precio base:</strong> ${priceText}</p>
+              <p><strong>Estado:</strong> ${escapeHtml(availabilityText)}</p>
+
+              <div class="product-sizes-info">
+                <strong>Tallas / opciones:</strong>
+                ${tallasHtml}
+              </div>
+
+              <div style="margin-top: 18px;">
+                <button
+                  type="button"
+                  class="btn-outline btn-sm"
+                  onclick="startEditProduct('${productId}')"
+                >
+                  Editar producto
+                </button>
+              </div>
             </div>
           </div>
         </article>
@@ -1037,6 +1114,131 @@
       if (product.area_prepa) parts.push(product.area_prepa);
 
       return parts.join(" - ") || "Sin ubicación";
+    }
+
+    function startEditProduct(productId) {
+      const product = window.adminProductsMap?.[String(productId)];
+
+      if (!product) {
+        showAdminMessage("No se encontró el producto para editar.", true);
+        return;
+      }
+
+      editingProductId = product.id;
+
+      formTitle.textContent = "Editar producto";
+      saveProductBtn.textContent = "Actualizar producto";
+      cancelEditBtn.style.display = "block";
+
+      productForm.reset();
+      sizesContainer.innerHTML = "";
+
+      const isGeneral =
+        product.aplica_general === true ||
+        product.escuela === "General" ||
+        product.nivel === "General";
+
+      productGeneral.checked = isGeneral;
+
+      if (isGeneral) {
+        toggleGeneralProductFields();
+      } else {
+        toggleGeneralProductFields();
+
+        schoolSelect.value = product.escuela || "";
+        updateLevelOptions();
+
+        levelSelect.value = product.nivel || "";
+        updateGradeOptions();
+
+        const productGrade =
+          product.grado ||
+          product.grado_secundaria ||
+          product.grado_prepa ||
+          "General";
+
+        gradeSelect.value = productGrade || "General";
+        toggleSixthPrepaAreaField();
+
+        if (product.area_prepa) {
+          sixthPrepaArea.value = product.area_prepa;
+        }
+      }
+
+      categorySelect.value = product.categoria || "";
+      toggleUniformGenderField();
+
+      if (product.categoria === "Uniformes") {
+        uniformGender.value = product.genero_uniforme || "";
+      }
+
+      document.getElementById("productName").value = product.nombre || "";
+      document.getElementById("productDescription").value = product.descripcion || "";
+      document.getElementById("productImage").value =
+        product.imagen_url || product.imagen || product.image_url || "";
+
+      document.getElementById("productPrice").value = Number(product.precio || 0);
+      document.getElementById("productAvailable").checked = product.disponible !== false;
+      document.getElementById("productRequiresPrice").checked = product.requiere_precio === true;
+
+      const tallas = Array.isArray(product.tallas) ? product.tallas : [];
+
+      const isUnitProduct =
+        tallas.length === 1 &&
+        ["unidad", "unitalla", "sin talla", "n/a"].includes(
+          String(tallas[0].talla || "").trim().toLowerCase()
+        );
+
+      productNoSize.checked = isUnitProduct;
+      toggleNoSizeFields();
+
+      if (isUnitProduct) {
+        unitStock.value = Number(tallas[0].stock || 0);
+      } else {
+        sizesContainer.innerHTML = "";
+
+        if (tallas.length) {
+          tallas.forEach((item) => {
+            createSizeRow(
+              item.talla || "",
+              Number(item.precio || 0),
+              Number(item.stock || 0)
+            );
+          });
+        } else {
+          createSizeRow();
+        }
+      }
+
+      window.scrollTo({
+        top: productForm.getBoundingClientRect().top + window.scrollY - 130,
+        behavior: "smooth"
+      });
+
+      showAdminMessage("Editando producto. Haz los cambios y presiona Actualizar producto.");
+    }
+
+    function resetProductFormToCreateMode() {
+      editingProductId = null;
+
+      formTitle.textContent = "Agregar producto";
+      saveProductBtn.textContent = "Guardar producto";
+      cancelEditBtn.style.display = "none";
+
+      productForm.reset();
+      sizesContainer.innerHTML = "";
+      createSizeRow();
+
+      updateLevelOptions();
+      updateGradeOptions();
+      toggleGeneralProductFields();
+      toggleNoSizeFields();
+      toggleUniformGenderField();
+      toggleSixthPrepaAreaField();
+
+      document.getElementById("productAvailable").checked = true;
+      document.getElementById("productRequiresPrice").checked = false;
+      unitStock.value = "0";
     }
 
     function showAdminMessage(message, isError = false) {

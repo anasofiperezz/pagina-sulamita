@@ -614,6 +614,33 @@ async function loadProductsPage(config) {
   }
 }
 
+function renderProductImage(product) {
+  const imageUrl = String(
+    product.imagen_url ||
+    product.imagen ||
+    product.image_url ||
+    ""
+  ).trim();
+
+  if (!imageUrl) {
+    return `
+      <div class="product-image product-image-placeholder">
+        ${escapeHtml(product.categoria || "Producto")}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="product-image product-photo">
+      <img
+        src="${escapeHtmlAttr(imageUrl)}"
+        alt="${escapeHtmlAttr(product.nombre || "Producto")}"
+        loading="lazy"
+      />
+    </div>
+  `;
+}
+
 function renderCustomerCatalog(grouped, selectedCategory = "todos") {
   const grid = document.getElementById("productGrid");
   if (!grid) return;
@@ -707,7 +734,8 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
 
           return `
             <article class="product-card">
-              <div class="product-image">${escapeHtml(product.categoria || "Producto")}</div>
+              ${renderProductImage(product)}
+
               <div class="product-content">
                 <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
                 <p>${escapeHtml(product.descripcion || "Sin descripción")}</p>
