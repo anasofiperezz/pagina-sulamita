@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
   <header>
@@ -27,7 +27,7 @@
         <h1>Gestión de catálogo e inventario</h1>
         <p>
           Aquí puedes agregar productos, asignar stock, actualizar precios
-          y mantener el catálogo organizado por escuela, nivel y grado.
+          y mantener el catálogo organizado por escuela, nivel, grado y área.
         </p>
       </div>
     </section>
@@ -65,6 +65,17 @@
               <label for="gradeName">Grado / Sección</label>
               <select id="gradeName">
                 <option value="General">General / Todos los grados del nivel</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="sixthPrepaAreaGroup" style="display: none;">
+              <label for="sixthPrepaArea">Área de 6° Preparatoria</label>
+              <select id="sixthPrepaArea">
+                <option value="">Selecciona un área</option>
+                <option value="Área I">Área I</option>
+                <option value="Área II">Área II</option>
+                <option value="Área III">Área III</option>
+                <option value="Área VI">Área VI</option>
               </select>
             </div>
 
@@ -215,7 +226,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=9"></script>
+  <script src="tienda.js?v=10"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -237,6 +248,9 @@
     const gradeSelect = document.getElementById("gradeName");
     const categorySelect = document.getElementById("categoryName");
 
+    const sixthPrepaAreaGroup = document.getElementById("sixthPrepaAreaGroup");
+    const sixthPrepaArea = document.getElementById("sixthPrepaArea");
+
     const schoolFilter = document.getElementById("schoolFilter");
     const levelFilter = document.getElementById("levelFilter");
     const gradeFilter = document.getElementById("gradeFilter");
@@ -249,6 +263,7 @@
     toggleGeneralProductFields();
     toggleNoSizeFields();
     toggleUniformGenderField();
+    toggleSixthPrepaAreaField();
     createSizeRow();
     loadAdminProducts();
 
@@ -262,9 +277,23 @@
     levelFilter.addEventListener("change", loadAdminProducts);
     gradeFilter.addEventListener("change", loadAdminProducts);
 
-    schoolSelect.addEventListener("change", updateLevelOptions);
-    levelSelect.addEventListener("change", updateGradeOptions);
-    productGeneral.addEventListener("change", toggleGeneralProductFields);
+    schoolSelect.addEventListener("change", function () {
+      updateLevelOptions();
+      toggleSixthPrepaAreaField();
+    });
+
+    levelSelect.addEventListener("change", function () {
+      updateGradeOptions();
+      toggleSixthPrepaAreaField();
+    });
+
+    gradeSelect.addEventListener("change", toggleSixthPrepaAreaField);
+
+    productGeneral.addEventListener("change", function () {
+      toggleGeneralProductFields();
+      toggleSixthPrepaAreaField();
+    });
+
     productNoSize.addEventListener("change", toggleNoSizeFields);
 
     categorySelect.addEventListener("change", function () {
@@ -298,6 +327,7 @@
       const selectedLevel = levelSelect.value;
       const selectedGrade = gradeSelect.value || "General";
       const selectedCategory = categorySelect.value;
+      const selectedArea = sixthPrepaArea.value;
       const generalPrice = Number(document.getElementById("productPrice").value || 0);
 
       const payload = {
@@ -315,7 +345,10 @@
             ? selectedGrade
             : "",
 
-        area_prepa: "",
+        area_prepa:
+          !isGeneral && selectedLevel === "Preparatoria" && selectedGrade === "6"
+            ? selectedArea
+            : "",
 
         categoria: selectedCategory,
         genero_uniforme: selectedCategory === "Uniformes" ? uniformGender.value : "",
@@ -340,6 +373,16 @@
 
       if (!isGeneral && (!payload.escuela || !payload.nivel)) {
         showAdminMessage("Selecciona escuela y nivel, o marca el producto como general.", true);
+        return;
+      }
+
+      if (
+        !isGeneral &&
+        selectedLevel === "Preparatoria" &&
+        selectedGrade === "6" &&
+        !selectedArea
+      ) {
+        showAdminMessage("Selecciona el área de 6° Preparatoria.", true);
         return;
       }
 
@@ -385,6 +428,7 @@
         toggleGeneralProductFields();
         toggleNoSizeFields();
         toggleUniformGenderField();
+        toggleSixthPrepaAreaField();
 
         document.getElementById("productAvailable").checked = true;
         document.getElementById("productRequiresPrice").checked = false;
@@ -439,6 +483,7 @@
       }
 
       updateGradeOptions();
+      toggleSixthPrepaAreaField();
     }
 
     function updateGradeOptions() {
@@ -486,6 +531,21 @@
 
       const optionValues = options.map(option => option.value);
       gradeSelect.value = optionValues.includes(currentValue) ? currentValue : "General";
+
+      toggleSixthPrepaAreaField();
+    }
+
+    function toggleSixthPrepaAreaField() {
+      const shouldShow =
+        !productGeneral.checked &&
+        levelSelect.value === "Preparatoria" &&
+        gradeSelect.value === "6";
+
+      sixthPrepaAreaGroup.style.display = shouldShow ? "block" : "none";
+
+      if (!shouldShow) {
+        sixthPrepaArea.value = "";
+      }
     }
 
     function toggleGeneralProductFields() {
@@ -513,9 +573,13 @@
           </option>
         `;
         gradeSelect.value = "General";
+
+        sixthPrepaArea.value = "";
+        sixthPrepaAreaGroup.style.display = "none";
       } else {
         updateLevelOptions();
         updateGradeOptions();
+        toggleSixthPrepaAreaField();
       }
     }
 
@@ -953,6 +1017,8 @@
 
       const grade = getProductGrade(product);
       if (grade) parts.push(formatGrade(grade));
+
+      if (product.area_prepa) parts.push(product.area_prepa);
 
       return parts.length ? parts.join(" · ") : "Sin alcance definido";
     }
