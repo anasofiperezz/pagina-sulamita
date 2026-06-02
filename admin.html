@@ -137,6 +137,15 @@
                   alt="Vista previa del producto"
                   style="width: 140px; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe3f0;"
                 />
+
+                <button
+                  type="button"
+                  class="btn-outline btn-sm"
+                  id="removeProductImageBtn"
+                  style="display: none; margin-top: 10px;"
+                >
+                  Eliminar imagen
+                </button>
               </div>
             </div>
 
@@ -314,6 +323,7 @@
     const productImageFile = document.getElementById("productImageFile");
     const productImagePreview = document.getElementById("productImagePreview");
     const productImagePreviewImg = document.getElementById("productImagePreviewImg");
+    const removeProductImageBtn = document.getElementById("removeProductImageBtn");
 
     updateLevelOptions();
     updateGradeOptions();
@@ -389,6 +399,13 @@
 
       const previewUrl = URL.createObjectURL(file);
       updateImagePreview(previewUrl);
+    });
+
+    removeProductImageBtn.addEventListener("click", function () {
+      productImage.value = "";
+      productImageFile.value = "";
+      updateImagePreview("");
+      showAdminMessage("Imagen eliminada. Presiona Actualizar producto para guardar el cambio.");
     });
 
     categorySelect.addEventListener("change", function () {
@@ -1293,11 +1310,13 @@
       if (!url) {
         productImagePreview.style.display = "none";
         productImagePreviewImg.src = "";
+        removeProductImageBtn.style.display = "none";
         return;
       }
 
       productImagePreview.style.display = "block";
       productImagePreviewImg.src = url;
+      removeProductImageBtn.style.display = "inline-block";
     }
 
     async function uploadSelectedProductImage() {
