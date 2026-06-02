@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pedidos | Administrador</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
   <header>
@@ -34,7 +34,9 @@
     <section class="orders-admin-page">
       <div class="orders-admin-header">
         <h2 class="section-title">Lista de pedidos</h2>
-        <button class="btn-outline" id="reloadOrdersBtn">Actualizar pedidos</button>
+        <button class="btn-outline" id="reloadOrdersBtn" type="button">
+          Actualizar pedidos
+        </button>
       </div>
 
       <div id="ordersContainer" class="orders-grid">
@@ -49,36 +51,36 @@
     <p>© 2026 Papelería Sulamita - Pedidos administrador</p>
   </footer>
 
-  <script src="tienda.js?v=3"></script>
+  <script src="tienda.js?v=13"></script>
+
   <script>
     protectPage();
     protectAdminPage();
     setupHeader();
 
-    const isGitHubPages = window.location.hostname.includes("github.io");
+    const runningOnGitHubPages = window.location.hostname.includes("github.io");
 
-    document.getElementById("reloadOrdersBtn").addEventListener("click", loadAdminOrders);
+    const reloadOrdersBtn = document.getElementById("reloadOrdersBtn");
+    const ordersContainer = document.getElementById("ordersContainer");
+
+    reloadOrdersBtn.addEventListener("click", loadAdminOrders);
 
     loadAdminOrders();
 
     async function loadAdminOrders() {
-      const container = document.getElementById("ordersContainer");
-
-      container.innerHTML = `
+      ordersContainer.innerHTML = `
         <div class="info-card">
           <p>Cargando pedidos...</p>
         </div>
       `;
 
-      if (isGitHubPages) {
-        container.innerHTML = `
+      if (runningOnGitHubPages) {
+        ordersContainer.innerHTML = `
           <div class="info-card">
             <h3>Pedidos no disponibles en GitHub Pages</h3>
             <p>
               Esta sección necesita el servidor Node.js porque carga datos desde
-              <strong>/api/pedidos</strong>. En GitHub Pages solo se publican archivos estáticos.
-              Para ver pedidos reales, ejecuta el proyecto localmente con <strong>node server.js</strong>
-              o publícalo en Render.
+              <strong>/api/pedidos</strong>. Para ver pedidos reales, usa la página publicada en Render.
             </p>
           </div>
         `;
@@ -86,20 +88,24 @@
       }
 
       try {
-        const response = await fetch("api/pedidos");
+        reloadOrdersBtn.disabled = true;
+        reloadOrdersBtn.textContent = "Cargando...";
+
+        const response = await fetch("/api/pedidos");
         const orders = await response.json();
 
         if (!response.ok) {
-          container.innerHTML = `
+          ordersContainer.innerHTML = `
             <div class="info-card">
-              <p>No se pudieron cargar los pedidos.</p>
+              <h3>No se pudieron cargar los pedidos</h3>
+              <p>${safeHtml(orders.message || "Intenta actualizar nuevamente.")}</p>
             </div>
           `;
           return;
         }
 
-        if (!orders.length) {
-          container.innerHTML = `
+        if (!Array.isArray(orders) || !orders.length) {
+          ordersContainer.innerHTML = `
             <div class="info-card">
               <p>No hay pedidos registrados todavía.</p>
             </div>
@@ -107,54 +113,88 @@
           return;
         }
 
-        container.innerHTML = orders.map(order => {
-          const productosHtml = Array.isArray(order.productos)
-            ? order.productos.map(item => `
-                <li>
-                  Producto ID: <strong>${escapeHtml(item.producto_id)}</strong> |
-                  Talla/Opción: <strong>${escapeHtml(item.talla || "Sin talla")}</strong> |
-                  Cantidad: <strong>${escapeHtml(item.cantidad)}</strong> |
-                  Precio: <strong>$${Number(item.precio || 0).toFixed(2)}</strong>
-                </li>
-              `).join("")
-            : "<li>Sin detalle de productos</li>";
-
-          return `
-            <article class="order-card">
-              <div class="order-card-top">
-                <h3>Pedido #${escapeHtml(order.id)}</h3>
-                <span class="order-status">${escapeHtml(order.estado || "pendiente")}</span>
-              </div>
-
-              <div class="order-card-body">
-                <p><strong>Cliente:</strong> ${escapeHtml(order.nombre_cliente || "")}</p>
-                <p><strong>Correo:</strong> ${escapeHtml(order.email_cliente || "")}</p>
-                <p><strong>Entrega:</strong> ${escapeHtml(order.tipo_entrega || "")}</p>
-                <p><strong>Dirección:</strong> ${escapeHtml(order.direccion_envio || "No aplica")}</p>
-                <p><strong>Pago:</strong> ${escapeHtml(order.metodo_pago || "")}</p>
-                <p><strong>Subtotal:</strong> $${Number(order.subtotal || 0).toFixed(2)}</p>
-                <p><strong>Envío:</strong> $${Number(order.envio || 0).toFixed(2)}</p>
-                <p><strong>Total:</strong> $${Number(order.total || 0).toFixed(2)}</p>
-                <p><strong>Fecha:</strong> ${order.creado_en ? new Date(order.creado_en).toLocaleString() : "Sin fecha"}</p>
-
-                <div class="order-products">
-                  <h4>Productos</h4>
-                  <ul>
-                    ${productosHtml}
-                  </ul>
-                </div>
-              </div>
-            </article>
-          `;
-        }).join("");
+        ordersContainer.innerHTML = orders.map(renderOrderCard).join("");
       } catch (error) {
-        console.error(error);
-        container.innerHTML = `
+        console.error("Error cargando pedidos:", error);
+
+        ordersContainer.innerHTML = `
           <div class="info-card">
-            <p>Error al cargar pedidos.</p>
+            <h3>Error al cargar pedidos</h3>
+            <p>No se pudo conectar con el servidor.</p>
           </div>
         `;
+      } finally {
+        reloadOrdersBtn.disabled = false;
+        reloadOrdersBtn.textContent = "Actualizar pedidos";
       }
+    }
+
+    function renderOrderCard(order) {
+      const productosHtml = Array.isArray(order.productos) && order.productos.length
+        ? order.productos.map(item => `
+            <li>
+              Producto ID: <strong>${safeHtml(item.producto_id)}</strong> |
+              Talla/Opción: <strong>${safeHtml(item.talla || "Sin talla")}</strong> |
+              Cantidad: <strong>${safeHtml(item.cantidad)}</strong> |
+              Precio: <strong>${formatMoney(item.precio || 0)}</strong>
+            </li>
+          `).join("")
+        : "<li>Sin detalle de productos</li>";
+
+      const fecha = order.creado_en
+        ? new Date(order.creado_en).toLocaleString("es-MX")
+        : "Sin fecha";
+
+      return `
+        <article class="order-card">
+          <div class="order-card-top">
+            <h3>Pedido #${safeHtml(order.id)}</h3>
+            <span class="order-status">${safeHtml(order.estado || "pendiente")}</span>
+          </div>
+
+          <div class="order-card-body">
+            <p><strong>Cliente:</strong> ${safeHtml(order.nombre_cliente || "")}</p>
+            <p><strong>Correo:</strong> ${safeHtml(order.email_cliente || "")}</p>
+            <p><strong>Teléfono:</strong> ${safeHtml(order.telefono_cliente || "No registrado")}</p>
+            <p><strong>Entrega:</strong> ${safeHtml(formatDelivery(order.tipo_entrega))}</p>
+            <p><strong>Dirección:</strong> ${safeHtml(order.direccion_envio || "No aplica")}</p>
+            <p><strong>Pago:</strong> ${safeHtml(formatPayment(order.metodo_pago))}</p>
+            <p><strong>Subtotal:</strong> ${formatMoney(order.subtotal || 0)}</p>
+            <p><strong>Envío:</strong> ${formatMoney(order.envio || 0)}</p>
+            <p><strong>Total:</strong> ${formatMoney(order.total || 0)}</p>
+            <p><strong>Fecha:</strong> ${safeHtml(fecha)}</p>
+
+            <div class="order-products">
+              <h4>Productos</h4>
+              <ul>
+                ${productosHtml}
+              </ul>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function formatDelivery(value) {
+      if (value === "delivery") return "Envío a domicilio";
+      if (value === "pickup") return "Recoger en papelería";
+      return value || "";
+    }
+
+    function formatPayment(value) {
+      if (value === "efectivo") return "Efectivo";
+      if (value === "transferencia") return "Transferencia";
+      if (value === "tarjeta") return "Tarjeta";
+      return value || "";
+    }
+
+    function safeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
   </script>
 </body>
