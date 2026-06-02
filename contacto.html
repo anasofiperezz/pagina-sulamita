@@ -5,18 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Contacto | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
       <div class="nav-right">
-        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <div class="user-badge" id="userInfo">Bienvenido</div>
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="carrito.html" class="nav-btn">Carrito</a>
         <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+        <button class="nav-btn" id="logoutBtn" style="display: none;">Cerrar sesión</button>
       </div>
     </div>
   </header>
@@ -79,7 +79,9 @@
               ></textarea>
             </div>
 
-            <button type="submit" class="btn-primary full-width">Enviar mensaje</button>
+            <button type="submit" class="btn-primary full-width" id="sendContactBtn">
+              Enviar mensaje
+            </button>
           </form>
 
           <div class="note" id="contactResponse"></div>
@@ -130,15 +132,35 @@
     <p>© 2026 Papelería Sulamita - Contacto</p>
   </footer>
 
-  <script src="tienda.js?v=3"></script>
+  <script src="tienda.js?v=13"></script>
+
   <script>
-    protectPage();
     setupHeader();
 
-    const isGitHubPages = window.location.hostname.includes("github.io");
+    const runningOnGitHubPages = window.location.hostname.includes("github.io");
 
     const role = localStorage.getItem("userRole");
+    const isSessionActive = localStorage.getItem("sessionActive");
     const adminBtn = document.getElementById("adminBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("userInfo");
+
+    if (userInfo) {
+      const savedName = localStorage.getItem("userName");
+      const savedEmail = localStorage.getItem("userEmail");
+
+      if (isSessionActive && savedName) {
+        userInfo.textContent = savedName;
+      } else if (isSessionActive && savedEmail) {
+        userInfo.textContent = savedEmail;
+      } else {
+        userInfo.textContent = "Bienvenido";
+      }
+    }
+
+    if (isSessionActive && logoutBtn) {
+      logoutBtn.style.display = "inline-block";
+    }
 
     if (role === "admin" && adminBtn) {
       adminBtn.style.display = "inline-block";
@@ -149,6 +171,7 @@
 
     const contactForm = document.getElementById("contactForm");
     const contactResponse = document.getElementById("contactResponse");
+    const sendContactBtn = document.getElementById("sendContactBtn");
 
     const savedName = localStorage.getItem("userName");
     const savedEmail = localStorage.getItem("userEmail");
@@ -163,15 +186,14 @@
 
     function showContactResponse(text, isError = false) {
       contactResponse.textContent = text;
-      contactResponse.classList.add("show");
-      contactResponse.style.background = isError ? "#fef2f2" : "#eff6ff";
-      contactResponse.style.color = isError ? "#dc2626" : "#1d4ed8";
+      contactResponse.className = isError ? "note error show" : "note success show";
+      contactResponse.style.display = "block";
     }
 
     contactForm.addEventListener("submit", async function (e) {
       e.preventDefault();
 
-      if (isGitHubPages) {
+      if (runningOnGitHubPages) {
         showContactResponse(
           "El formulario de contacto necesita servidor Node.js para guardar mensajes. En GitHub Pages solo se muestra la página; para enviar mensajes reales publícalo en Render.",
           true
@@ -187,8 +209,16 @@
         mensaje: document.getElementById("contactMessage").value.trim()
       };
 
+      if (!payload.nombre || !payload.email || !payload.asunto || !payload.mensaje) {
+        showContactResponse("Completa nombre, correo, asunto y mensaje.", true);
+        return;
+      }
+
       try {
-        const response = await fetch("api/contacto", {
+        sendContactBtn.disabled = true;
+        sendContactBtn.textContent = "Enviando...";
+
+        const response = await fetch("/api/contacto", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -217,6 +247,9 @@
       } catch (error) {
         console.error(error);
         showContactResponse("No se pudo conectar con el servidor.", true);
+      } finally {
+        sendContactBtn.disabled = false;
+        sendContactBtn.textContent = "Enviar mensaje";
       }
     });
   </script>
