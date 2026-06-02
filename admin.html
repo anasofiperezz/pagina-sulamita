@@ -192,22 +192,31 @@
 
               <select id="levelFilter">
                 <option value="todos">Todos los niveles</option>
-                <option value="General">General</option>
-                <option value="Jardín de niños">Jardín de niños</option>
-                <option value="Primaria">Primaria</option>
-                <option value="Secundaria">Secundaria</option>
-                <option value="Preparatoria">Preparatoria</option>
               </select>
 
               <select id="gradeFilter">
                 <option value="todos">Todos los grados</option>
-                <option value="General">General / Todos</option>
-                <option value="1">1°</option>
-                <option value="2">2°</option>
-                <option value="3">3°</option>
-                <option value="4">4°</option>
-                <option value="5">5°</option>
-                <option value="6">6°</option>
+              </select>
+
+              <select id="areaFilter" style="display: none;">
+                <option value="todos">Todas las áreas</option>
+                <option value="Área I">Área I</option>
+                <option value="Área II">Área II</option>
+                <option value="Área III">Área III</option>
+                <option value="Área IV">Área IV</option>
+              </select>
+
+              <select id="categoryFilter">
+                <option value="todos">Todas las categorías</option>
+                <option value="Uniformes">Uniformes</option>
+                <option value="Accesorios">Accesorios</option>
+                <option value="Especial">Especial</option>
+                <option value="Libros">Libros</option>
+                <option value="Cuadernos">Cuadernos</option>
+                <option value="Cuadernos institucionales">Cuadernos institucionales</option>
+                <option value="Material general">Material general</option>
+                <option value="Material para entregar">Material para entregar</option>
+                <option value="Laboratorio">Laboratorio</option>
               </select>
 
               <button class="btn-outline" id="reloadProductsBtn" type="button">
@@ -227,6 +236,7 @@
   </footer>
 
   <script src="tienda.js?v=11"></script>
+
   <script>
     protectPage();
     protectAdminPage();
@@ -254,6 +264,8 @@
     const schoolFilter = document.getElementById("schoolFilter");
     const levelFilter = document.getElementById("levelFilter");
     const gradeFilter = document.getElementById("gradeFilter");
+    const areaFilter = document.getElementById("areaFilter");
+    const categoryFilter = document.getElementById("categoryFilter");
 
     const uniformGenderGroup = document.getElementById("uniformGenderGroup");
     const uniformGender = document.getElementById("uniformGender");
@@ -265,6 +277,11 @@
     toggleUniformGenderField();
     toggleSixthPrepaAreaField();
     createSizeRow();
+
+    updateInventoryLevelFilter();
+    updateInventoryGradeFilter();
+    updateInventoryAreaFilter();
+
     loadAdminProducts();
 
     addSizeBtn.addEventListener("click", function () {
@@ -273,9 +290,26 @@
 
     reloadProductsBtn.addEventListener("click", loadAdminProducts);
 
-    schoolFilter.addEventListener("change", loadAdminProducts);
-    levelFilter.addEventListener("change", loadAdminProducts);
-    gradeFilter.addEventListener("change", loadAdminProducts);
+    schoolFilter.addEventListener("change", function () {
+      updateInventoryLevelFilter();
+      updateInventoryGradeFilter();
+      updateInventoryAreaFilter();
+      loadAdminProducts();
+    });
+
+    levelFilter.addEventListener("change", function () {
+      updateInventoryGradeFilter();
+      updateInventoryAreaFilter();
+      loadAdminProducts();
+    });
+
+    gradeFilter.addEventListener("change", function () {
+      updateInventoryAreaFilter();
+      loadAdminProducts();
+    });
+
+    areaFilter.addEventListener("change", loadAdminProducts);
+    categoryFilter.addEventListener("change", loadAdminProducts);
 
     schoolSelect.addEventListener("change", function () {
       updateLevelOptions();
@@ -434,6 +468,9 @@
         document.getElementById("productRequiresPrice").checked = false;
         unitStock.value = "0";
 
+        updateInventoryLevelFilter();
+        updateInventoryGradeFilter();
+        updateInventoryAreaFilter();
         loadAdminProducts();
       } catch (error) {
         console.error(error);
@@ -706,6 +743,307 @@
       });
 
       return Array.from(sizesMap.values());
+    }
+
+    function renderSelectOptions(select, options) {
+      select.innerHTML = options
+        .map(option => `
+          <option value="${escapeHtmlAttr(option.value)}">
+            ${escapeHtml(option.text)}
+          </option>
+        `)
+        .join("");
+    }
+
+    function getInventoryLevelOptionsBySchool(school) {
+      if (school === "General") {
+        return [
+          { value: "General", text: "General" }
+        ];
+      }
+
+      if (school === "IAE") {
+        return [
+          { value: "todos", text: "Todos los niveles" },
+          { value: "General", text: "General" },
+          { value: "Jardín de niños", text: "Jardín de niños" },
+          { value: "Primaria", text: "Primaria" },
+          { value: "Secundaria", text: "Secundaria" }
+        ];
+      }
+
+      if (school === "IPAE") {
+        return [
+          { value: "todos", text: "Todos los niveles" },
+          { value: "General", text: "General" },
+          { value: "Secundaria", text: "Secundaria" },
+          { value: "Preparatoria", text: "Preparatoria" }
+        ];
+      }
+
+      return [
+        { value: "todos", text: "Todos los niveles" },
+        { value: "General", text: "General" },
+        { value: "Jardín de niños", text: "Jardín de niños" },
+        { value: "Primaria", text: "Primaria" },
+        { value: "Secundaria", text: "Secundaria" },
+        { value: "Preparatoria", text: "Preparatoria" }
+      ];
+    }
+
+    function getInventoryGradeOptionsByLevel(level) {
+      if (level === "General") {
+        return [
+          { value: "General", text: "General / Todos" }
+        ];
+      }
+
+      if (level === "Jardín de niños") {
+        return [
+          { value: "General", text: "General / Todo jardín de niños" }
+        ];
+      }
+
+      if (level === "Primaria") {
+        return [
+          { value: "todos", text: "Todos los grados de primaria" },
+          { value: "General", text: "General / Toda primaria" },
+          { value: "1", text: "1° Primaria" },
+          { value: "2", text: "2° Primaria" },
+          { value: "3", text: "3° Primaria" },
+          { value: "4", text: "4° Primaria" },
+          { value: "5", text: "5° Primaria" },
+          { value: "6", text: "6° Primaria" }
+        ];
+      }
+
+      if (level === "Secundaria") {
+        return [
+          { value: "todos", text: "Todos los grados de secundaria" },
+          { value: "General", text: "General / Toda secundaria" },
+          { value: "1", text: "1° Secundaria" },
+          { value: "2", text: "2° Secundaria" },
+          { value: "3", text: "3° Secundaria" }
+        ];
+      }
+
+      if (level === "Preparatoria") {
+        return [
+          { value: "todos", text: "Todos los grados de preparatoria" },
+          { value: "General", text: "General / Toda preparatoria" },
+          { value: "4", text: "4° Preparatoria" },
+          { value: "5", text: "5° Preparatoria" },
+          { value: "6", text: "6° Preparatoria" }
+        ];
+      }
+
+      return [
+        { value: "todos", text: "Todos los grados" },
+        { value: "General", text: "General / Todos" },
+        { value: "1", text: "1°" },
+        { value: "2", text: "2°" },
+        { value: "3", text: "3°" },
+        { value: "4", text: "4°" },
+        { value: "5", text: "5°" },
+        { value: "6", text: "6°" }
+      ];
+    }
+
+    function updateInventoryLevelFilter() {
+      const currentValue = levelFilter.value;
+      const options = getInventoryLevelOptionsBySchool(schoolFilter.value);
+
+      renderSelectOptions(levelFilter, options);
+
+      const values = options.map(option => option.value);
+      levelFilter.value = values.includes(currentValue) ? currentValue : options[0].value;
+    }
+
+    function updateInventoryGradeFilter() {
+      const currentValue = gradeFilter.value;
+      const options = getInventoryGradeOptionsByLevel(levelFilter.value);
+
+      renderSelectOptions(gradeFilter, options);
+
+      const values = options.map(option => option.value);
+      gradeFilter.value = values.includes(currentValue) ? currentValue : options[0].value;
+    }
+
+    function updateInventoryAreaFilter() {
+      const shouldShowArea =
+        levelFilter.value === "Preparatoria" &&
+        gradeFilter.value === "6";
+
+      areaFilter.style.display = shouldShowArea ? "block" : "none";
+
+      if (!shouldShowArea) {
+        areaFilter.value = "todos";
+      }
+    }
+
+    async function loadAdminProducts() {
+      const productsList = document.getElementById("productsList");
+      if (!productsList) return;
+
+      productsList.innerHTML = `
+        <div class="note">
+          Cargando productos...
+        </div>
+      `;
+
+      try {
+        let products = [];
+
+        if (isGitHubPages()) {
+          const response = await fetch("data/productos.json?v=4");
+          products = await response.json();
+        } else {
+          const response = await fetch("/api/admin/productos");
+          const data = await response.json();
+
+          if (!response.ok) {
+            productsList.innerHTML = `
+              <div class="note error">
+                ${escapeHtml(data.message || "No se pudo cargar el inventario.")}
+              </div>
+            `;
+            return;
+          }
+
+          products = Array.isArray(data) ? data : data.productos || [];
+        }
+
+        if (!Array.isArray(products)) {
+          products = [];
+        }
+
+        const filteredProducts = products.filter(productMatchesInventoryFilters);
+
+        if (!filteredProducts.length) {
+          productsList.innerHTML = `
+            <div class="note">
+              No hay productos con esos filtros.
+            </div>
+          `;
+          return;
+        }
+
+        productsList.innerHTML = filteredProducts
+          .map(renderAdminProductCard)
+          .join("");
+      } catch (error) {
+        console.error(error);
+        productsList.innerHTML = `
+          <div class="note error">
+            No se pudo conectar con el servidor.
+          </div>
+        `;
+      }
+    }
+
+    function productMatchesInventoryFilters(product) {
+      const selectedSchool = schoolFilter.value;
+      const selectedLevel = levelFilter.value;
+      const selectedGrade = gradeFilter.value;
+      const selectedArea = areaFilter.value;
+      const selectedCategory = categoryFilter.value;
+
+      const productGrade = String(
+        product.grado ||
+        product.grado_secundaria ||
+        product.grado_prepa ||
+        "General"
+      );
+
+      const matchesSchool =
+        selectedSchool === "todos" ||
+        product.escuela === selectedSchool;
+
+      const matchesLevel =
+        selectedLevel === "todos" ||
+        product.nivel === selectedLevel;
+
+      const matchesGrade =
+        selectedGrade === "todos" ||
+        productGrade === selectedGrade;
+
+      const matchesArea =
+        selectedArea === "todos" ||
+        product.area_prepa === selectedArea;
+
+      const matchesCategory =
+        selectedCategory === "todos" ||
+        product.categoria === selectedCategory;
+
+      return matchesSchool && matchesLevel && matchesGrade && matchesArea && matchesCategory;
+    }
+
+    function renderAdminProductCard(product) {
+      const tallas = Array.isArray(product.tallas) ? product.tallas : [];
+
+      const tallasHtml = tallas.length
+        ? tallas
+            .map(item => `
+              <span class="customer-size-badge">
+                ${escapeHtml(item.talla || "Unidad")} · ${formatMoney(item.precio || product.precio || 0)} · Stock: ${Number(item.stock || 0)}
+              </span>
+            `)
+            .join("")
+        : `<span class="customer-size-badge empty">Sin tallas registradas</span>`;
+
+      const meta = buildAdminProductMeta(product);
+      const availabilityText = product.disponible === false ? "No disponible" : "Disponible";
+      const priceText = product.requiere_precio === true
+        ? "Precio pendiente"
+        : formatMoney(product.precio || getFirstAvailablePrice(product));
+
+      return `
+        <article class="admin-product-card">
+          <div>
+            <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
+            <p>${escapeHtml(product.descripcion || "Sin descripción")}</p>
+            <p><strong>Ubicación:</strong> ${escapeHtml(meta)}</p>
+            <p><strong>Categoría:</strong> ${escapeHtml(product.categoria || "Sin categoría")}</p>
+            ${product.genero_uniforme ? `<p><strong>Uniforme:</strong> ${escapeHtml(product.genero_uniforme)}</p>` : ""}
+            <p><strong>Precio base:</strong> ${priceText}</p>
+            <p><strong>Estado:</strong> ${escapeHtml(availabilityText)}</p>
+            <div class="product-sizes-info">
+              <strong>Tallas / opciones:</strong>
+              ${tallasHtml}
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function buildAdminProductMeta(product) {
+      const parts = [];
+
+      if (product.aplica_general || product.escuela === "General" || product.nivel === "General") {
+        return "General / Todas las escuelas, niveles y grados";
+      }
+
+      if (product.escuela) parts.push(product.escuela);
+      if (product.nivel) parts.push(product.nivel);
+
+      const grade = product.grado || product.grado_secundaria || product.grado_prepa;
+
+      if (grade && grade !== "General") {
+        parts.push(`${grade}°`);
+      } else if (grade === "General") {
+        parts.push("General");
+      }
+
+      if (product.area_prepa) parts.push(product.area_prepa);
+
+      return parts.join(" - ") || "Sin ubicación";
+    }
+
+    function showAdminMessage(message, isError = false) {
+      if (!adminMessage) return;
+
+      adminMessage.textContent = message;
+      adminMessage.className = isError ? "note error" : "note success";
     }
 
     function escapeHtmlAttr(value) {
