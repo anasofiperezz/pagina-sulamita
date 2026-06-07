@@ -2061,3 +2061,73 @@ select:disabled {
 .btn-danger:hover {
   background: #b91c1c;
 }
+
+.package-products-selector {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid #dbe3f0;
+  border-radius: 18px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.package-product-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.package-product-option:hover {
+  background: #f1f5f9;
+}
+
+.package-product-option input {
+  margin-top: 4px;
+}
+
+.package-product-option small {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.package-products-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.package-products-summary ul {
+  margin-top: 8px;
+  padding-left: 18px;
+}
+
+.package-products-summary li {
+  margin-bottom: 6px;
+}
+
+.package-products-summary li span {
+  display: block;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.btn-danger {
+  border: none;
+  background: #dc2626;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}

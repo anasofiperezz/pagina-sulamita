@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=12">
+  <link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
   <header>
@@ -24,9 +24,9 @@
     <section class="page-hero admin-hero">
       <div class="page-hero-content">
         <span class="page-badge">Administrador</span>
-        <h1>Gestión de catálogo e inventario</h1>
+        <h1>Gestión de catálogo, inventario y paquetes</h1>
         <p>
-          Aquí puedes agregar productos, asignar stock, actualizar precios
+          Aquí puedes agregar productos, actualizar stock, crear paquetes con descuento
           y mantener el catálogo organizado por escuela, nivel, grado y área.
         </p>
       </div>
@@ -271,6 +271,105 @@
           <div id="productsList" class="admin-products-list"></div>
         </div>
       </div>
+
+      <div class="admin-layout" style="margin-top: 32px;">
+        <div class="admin-form-card">
+          <h2 id="packageFormTitle">Crear paquete</h2>
+
+          <form id="packageForm">
+            <div class="form-group">
+              <label for="packageName">Nombre del paquete</label>
+              <input
+                type="text"
+                id="packageName"
+                placeholder="Ej. Uniforme completo diario con gala"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="packageDescription">Descripción</label>
+              <textarea
+                id="packageDescription"
+                rows="4"
+                placeholder="Describe qué incluye el paquete"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="packageDiscount">Descuento del paquete (%)</label>
+              <input
+                type="number"
+                id="packageDiscount"
+                min="0"
+                max="100"
+                step="0.01"
+                value="10"
+              />
+              <p class="subtext">
+                Ejemplo: escribe 10 para aplicar 10% de descuento.
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="packageActive" checked />
+                Paquete activo / visible para clientes
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Productos incluidos</label>
+              <p class="subtext">
+                Selecciona productos ya creados en el inventario. El cliente elegirá la talla/opción de cada producto después.
+              </p>
+
+              <div class="package-products-toolbar">
+                <button type="button" class="btn-outline btn-sm" id="selectAllPackageProductsBtn">
+                  Seleccionar todos
+                </button>
+
+                <button type="button" class="btn-outline btn-sm" id="clearPackageProductsBtn">
+                  Limpiar selección
+                </button>
+              </div>
+
+              <div id="packageProductsSelector" class="package-products-selector">
+                <div class="note">Cargando productos...</div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary full-width" id="savePackageBtn">
+              Guardar paquete
+            </button>
+
+            <button
+              type="button"
+              class="btn-outline full-width"
+              id="cancelPackageEditBtn"
+              style="display: none; margin-top: 10px;"
+            >
+              Cancelar edición de paquete
+            </button>
+          </form>
+
+          <div class="note" id="packageMessage"></div>
+        </div>
+
+        <div class="admin-table-card">
+          <div class="admin-table-header">
+            <h2>Paquetes actuales</h2>
+
+            <div class="admin-header-actions">
+              <button class="btn-outline" id="reloadPackagesBtn" type="button">
+                Actualizar paquetes
+              </button>
+            </div>
+          </div>
+
+          <div id="packagesList" class="admin-products-list"></div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -278,7 +377,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=12"></script>
+  <script src="tienda.js?v=17"></script>
 
   <script>
     protectPage();
@@ -325,6 +424,23 @@
     const productImagePreviewImg = document.getElementById("productImagePreviewImg");
     const removeProductImageBtn = document.getElementById("removeProductImageBtn");
 
+    const packageForm = document.getElementById("packageForm");
+    const packageFormTitle = document.getElementById("packageFormTitle");
+    const packageName = document.getElementById("packageName");
+    const packageDescription = document.getElementById("packageDescription");
+    const packageDiscount = document.getElementById("packageDiscount");
+    const packageActive = document.getElementById("packageActive");
+    const packageProductsSelector = document.getElementById("packageProductsSelector");
+    const savePackageBtn = document.getElementById("savePackageBtn");
+    const cancelPackageEditBtn = document.getElementById("cancelPackageEditBtn");
+    const reloadPackagesBtn = document.getElementById("reloadPackagesBtn");
+    const packagesList = document.getElementById("packagesList");
+    const packageMessage = document.getElementById("packageMessage");
+    const selectAllPackageProductsBtn = document.getElementById("selectAllPackageProductsBtn");
+    const clearPackageProductsBtn = document.getElementById("clearPackageProductsBtn");
+
+    let editingPackageId = null;
+
     updateLevelOptions();
     updateGradeOptions();
     toggleGeneralProductFields();
@@ -337,16 +453,46 @@
     updateInventoryGradeFilter();
     updateInventoryAreaFilter();
 
-    loadAdminProducts();
+    initializeAdminData();
+
+    async function initializeAdminData() {
+      await loadAdminProducts();
+      await loadAdminPackages();
+    }
 
     addSizeBtn.addEventListener("click", function () {
       createSizeRow();
     });
 
-    reloadProductsBtn.addEventListener("click", loadAdminProducts);
+    reloadProductsBtn.addEventListener("click", async function () {
+      await loadAdminProducts();
+      await loadAdminPackages();
+    });
 
     cancelEditBtn.addEventListener("click", function () {
       resetProductFormToCreateMode();
+    });
+
+    reloadPackagesBtn.addEventListener("click", loadAdminPackages);
+
+    cancelPackageEditBtn.addEventListener("click", function () {
+      resetPackageFormToCreateMode();
+    });
+
+    selectAllPackageProductsBtn.addEventListener("click", function () {
+      document
+        .querySelectorAll(".package-product-checkbox")
+        .forEach((checkbox) => {
+          checkbox.checked = true;
+        });
+    });
+
+    clearPackageProductsBtn.addEventListener("click", function () {
+      document
+        .querySelectorAll(".package-product-checkbox")
+        .forEach((checkbox) => {
+          checkbox.checked = false;
+        });
     });
 
     schoolFilter.addEventListener("change", function () {
@@ -558,10 +704,76 @@
         updateInventoryLevelFilter();
         updateInventoryGradeFilter();
         updateInventoryAreaFilter();
-        loadAdminProducts();
+        await loadAdminProducts();
+        await loadAdminPackages();
       } catch (error) {
         console.error(error);
         showAdminMessage("No se pudo conectar con el servidor.", true);
+      }
+    });
+
+    packageForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const selectedProducts = collectSelectedPackageProducts();
+
+      if (!packageName.value.trim()) {
+        showPackageMessage("Escribe el nombre del paquete.", true);
+        return;
+      }
+
+      if (!selectedProducts.length) {
+        showPackageMessage("Selecciona al menos un producto para el paquete.", true);
+        return;
+      }
+
+      const payload = {
+        nombre: packageName.value.trim(),
+        descripcion: packageDescription.value.trim(),
+        descuento: Number(packageDiscount.value || 0),
+        activo: packageActive.checked,
+        productos: selectedProducts
+      };
+
+      try {
+        const url = editingPackageId
+          ? `/api/admin/paquetes/${editingPackageId}`
+          : "/api/admin/paquetes";
+
+        const method = editingPackageId ? "PUT" : "POST";
+
+        savePackageBtn.disabled = true;
+        savePackageBtn.textContent = editingPackageId ? "Actualizando..." : "Guardando...";
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showPackageMessage(data.message || "No se pudo guardar el paquete.", true);
+          return;
+        }
+
+        showPackageMessage(
+          editingPackageId
+            ? "Paquete actualizado correctamente."
+            : "Paquete creado correctamente."
+        );
+
+        resetPackageFormToCreateMode();
+        await loadAdminPackages();
+      } catch (error) {
+        console.error(error);
+        showPackageMessage("No se pudo conectar con el servidor.", true);
+      } finally {
+        savePackageBtn.disabled = false;
+        savePackageBtn.textContent = editingPackageId ? "Actualizar paquete" : "Guardar paquete";
       }
     });
 
@@ -1004,11 +1216,14 @@
           products = [];
         }
 
+        window.adminAllProducts = products;
         window.adminProductsMap = {};
 
         products.forEach((product) => {
           window.adminProductsMap[String(product.id)] = product;
         });
+
+        renderPackageProductOptions();
 
         const filteredProducts = products.filter(productMatchesInventoryFilters);
 
@@ -1346,11 +1561,270 @@
       return productImage.value;
     }
 
+    function renderPackageProductOptions(selectedIds = null) {
+      if (!packageProductsSelector) return;
+
+      const products = Array.isArray(window.adminAllProducts)
+        ? window.adminAllProducts
+        : [];
+
+      const selectedSet = selectedIds
+        ? new Set(selectedIds.map((id) => Number(id)))
+        : new Set(
+            Array.from(document.querySelectorAll(".package-product-checkbox:checked"))
+              .map((checkbox) => Number(checkbox.value))
+          );
+
+      if (!products.length) {
+        packageProductsSelector.innerHTML = `
+          <div class="note">
+            Primero agrega productos al inventario para poder crear paquetes.
+          </div>
+        `;
+        return;
+      }
+
+      packageProductsSelector.innerHTML = products
+        .map((product) => {
+          const productId = Number(product.id);
+          const checked = selectedSet.has(productId) ? "checked" : "";
+          const meta = buildAdminProductMeta(product);
+          const price = product.requiere_precio
+            ? "Precio pendiente"
+            : formatMoney(product.precio || getFirstAvailablePrice(product));
+
+          return `
+            <label class="package-product-option">
+              <input
+                type="checkbox"
+                class="package-product-checkbox"
+                value="${productId}"
+                ${checked}
+              />
+
+              <span>
+                <strong>${escapeHtml(product.nombre || "Producto sin nombre")}</strong><br>
+                <small>
+                  ${escapeHtml(product.categoria || "Sin categoría")} ·
+                  ${escapeHtml(meta)} ·
+                  ${escapeHtml(price)}
+                </small>
+              </span>
+            </label>
+          `;
+        })
+        .join("");
+    }
+
+    function collectSelectedPackageProducts() {
+      return Array.from(document.querySelectorAll(".package-product-checkbox:checked"))
+        .map((checkbox) => Number(checkbox.value))
+        .filter((id) => Number.isFinite(id) && id > 0);
+    }
+
+    async function loadAdminPackages() {
+      if (!packagesList) return;
+
+      packagesList.innerHTML = `
+        <div class="note">Cargando paquetes...</div>
+      `;
+
+      if (isGitHubPages()) {
+        packagesList.innerHTML = `
+          <div class="note">
+            Los paquetes necesitan servidor Node.js para guardarse.
+          </div>
+        `;
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/admin/paquetes");
+        const data = await response.json();
+
+        if (!response.ok) {
+          packagesList.innerHTML = `
+            <div class="note error">
+              ${escapeHtml(data.message || "No se pudieron cargar los paquetes.")}
+            </div>
+          `;
+          return;
+        }
+
+        const packages = Array.isArray(data) ? data : [];
+        window.adminPackagesMap = {};
+
+        packages.forEach((pkg) => {
+          window.adminPackagesMap[String(pkg.id)] = pkg;
+        });
+
+        if (!packages.length) {
+          packagesList.innerHTML = `
+            <div class="note">
+              Aún no hay paquetes creados.
+            </div>
+          `;
+          return;
+        }
+
+        packagesList.innerHTML = packages.map(renderAdminPackageCard).join("");
+      } catch (error) {
+        console.error(error);
+        packagesList.innerHTML = `
+          <div class="note error">
+            No se pudo conectar con el servidor.
+          </div>
+        `;
+      }
+    }
+
+    function renderAdminPackageCard(pkg) {
+      const productos = Array.isArray(pkg.productos) ? pkg.productos : [];
+      const statusText = pkg.activo === false ? "Inactivo" : "Activo";
+      const statusClass = pkg.activo === false ? "status-unavailable" : "status-available";
+
+      const productosHtml = productos.length
+        ? productos.map((item) => {
+            const product = item.producto || {};
+            return `
+              <li>
+                <strong>${escapeHtml(product.nombre || "Producto")}</strong>
+                <span>
+                  ${escapeHtml(product.categoria || "")}
+                </span>
+              </li>
+            `;
+          }).join("")
+        : "<li>Sin productos</li>";
+
+      return `
+        <article class="admin-product-card">
+          <div class="admin-product-info">
+            <h3>${escapeHtml(pkg.nombre || "Paquete sin nombre")}</h3>
+            <p>${escapeHtml(pkg.descripcion || "Sin descripción")}</p>
+            <p><strong>Descuento:</strong> ${Number(pkg.descuento || 0)}%</p>
+            <p>
+              <strong>Estado:</strong>
+              <span class="product-price ${statusClass}">
+                ${escapeHtml(statusText)}
+              </span>
+            </p>
+
+            <div class="package-products-summary">
+              <strong>Productos incluidos:</strong>
+              <ul>
+                ${productosHtml}
+              </ul>
+            </div>
+
+            <div style="margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap;">
+              <button
+                type="button"
+                class="btn-outline btn-sm"
+                onclick="startEditPackage(${Number(pkg.id)})"
+              >
+                Editar paquete
+              </button>
+
+              <button
+                type="button"
+                class="btn-danger btn-sm"
+                onclick="deletePackage(${Number(pkg.id)})"
+              >
+                Eliminar paquete
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function startEditPackage(packageId) {
+      const pkg = window.adminPackagesMap?.[String(packageId)];
+
+      if (!pkg) {
+        showPackageMessage("No se encontró el paquete.", true);
+        return;
+      }
+
+      editingPackageId = Number(pkg.id);
+
+      packageFormTitle.textContent = "Editar paquete";
+      savePackageBtn.textContent = "Actualizar paquete";
+      cancelPackageEditBtn.style.display = "block";
+
+      packageName.value = pkg.nombre || "";
+      packageDescription.value = pkg.descripcion || "";
+      packageDiscount.value = Number(pkg.descuento || 0);
+      packageActive.checked = pkg.activo !== false;
+
+      const selectedIds = Array.isArray(pkg.productos)
+        ? pkg.productos.map((item) => Number(item.producto_id))
+        : [];
+
+      renderPackageProductOptions(selectedIds);
+
+      window.scrollTo({
+        top: packageForm.getBoundingClientRect().top + window.scrollY - 130,
+        behavior: "smooth"
+      });
+
+      showPackageMessage("Editando paquete. Haz los cambios y presiona Actualizar paquete.");
+    }
+
+    function resetPackageFormToCreateMode() {
+      editingPackageId = null;
+
+      packageFormTitle.textContent = "Crear paquete";
+      savePackageBtn.textContent = "Guardar paquete";
+      cancelPackageEditBtn.style.display = "none";
+
+      packageForm.reset();
+      packageDiscount.value = "10";
+      packageActive.checked = true;
+
+      renderPackageProductOptions([]);
+    }
+
+    async function deletePackage(packageId) {
+      const confirmDelete = confirm(
+        `¿Seguro que quieres eliminar el paquete #${packageId}?`
+      );
+
+      if (!confirmDelete) return;
+
+      try {
+        const response = await fetch(`/api/admin/paquetes/${packageId}`, {
+          method: "DELETE"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showPackageMessage(data.message || "No se pudo eliminar el paquete.", true);
+          return;
+        }
+
+        showPackageMessage("Paquete eliminado correctamente.");
+        await loadAdminPackages();
+      } catch (error) {
+        console.error(error);
+        showPackageMessage("No se pudo conectar con el servidor.", true);
+      }
+    }
+
     function showAdminMessage(message, isError = false) {
       if (!adminMessage) return;
 
       adminMessage.textContent = message;
       adminMessage.className = isError ? "note error" : "note success";
+    }
+
+    function showPackageMessage(message, isError = false) {
+      if (!packageMessage) return;
+
+      packageMessage.textContent = message;
+      packageMessage.className = isError ? "note error" : "note success";
     }
 
     function escapeHtmlAttr(value) {
