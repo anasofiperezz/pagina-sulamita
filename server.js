@@ -63,7 +63,7 @@ function uploadBufferToCloudinary(buffer) {
 }
 
 /* =========================
-   HELPERS
+   HELPERS PRODUCTOS
 ========================= */
 
 function normalizeProduct(row) {
@@ -173,6 +173,116 @@ function effectiveSizePrice(tallaData, product) {
   return sizePrice > 0 ? sizePrice : productPrice;
 }
 
+function cleanDiscount(value) {
+  const numberValue = Number(value || 0);
+
+  if (Number.isNaN(numberValue)) return 0;
+
+  if (numberValue < 0) return 0;
+  if (numberValue > 100) return 100;
+
+  return numberValue;
+}
+
+function normalizePackageProductInput(productos) {
+  if (!Array.isArray(productos)) return [];
+
+  const ids = productos
+    .map((item) => {
+      if (typeof item === "number" || typeof item === "string") {
+        return Number(item);
+      }
+
+      return Number(item.producto_id || item.id);
+    })
+    .filter((id) => Number.isFinite(id) && id > 0);
+
+  return Array.from(new Set(ids));
+}
+
+/* =========================
+   HELPERS PAQUETES
+========================= */
+
+async function getPackagesWithProducts(onlyActive = false) {
+  const packageQuery = onlyActive
+    ? `
+      SELECT *
+      FROM paquetes
+      WHERE activo IS TRUE
+      ORDER BY id DESC
+      `
+    : `
+      SELECT *
+      FROM paquetes
+      ORDER BY id DESC
+      `;
+
+  const packagesResult = await pool.query(packageQuery);
+  const packages = packagesResult.rows;
+
+  if (!packages.length) {
+    return [];
+  }
+
+  const packageIds = packages.map((item) => Number(item.id));
+
+  const packageProductsResult = await pool.query(
+    `
+    SELECT
+      pp.paquete_id,
+      pp.producto_id,
+      pp.orden
+    FROM paquete_productos pp
+    WHERE pp.paquete_id = ANY($1::int[])
+    ORDER BY pp.paquete_id DESC, pp.orden ASC, pp.id ASC
+    `,
+    [packageIds]
+  );
+
+  const productIds = Array.from(
+    new Set(packageProductsResult.rows.map((row) => Number(row.producto_id)))
+  );
+
+  let productsMap = {};
+
+  if (productIds.length) {
+    const products = await getProductsWithSizes(
+      `WHERE p.id = ANY($1::int[])`,
+      [productIds]
+    );
+
+    products.forEach((product) => {
+      productsMap[String(product.id)] = product;
+    });
+  }
+
+  return packages.map((pkg) => {
+    const productos = packageProductsResult.rows
+      .filter((row) => Number(row.paquete_id) === Number(pkg.id))
+      .map((row) => {
+        const product = productsMap[String(row.producto_id)] || null;
+
+        return {
+          producto_id: Number(row.producto_id),
+          orden: Number(row.orden || 0),
+          producto: product
+        };
+      })
+      .filter((item) => item.producto);
+
+    return {
+      id: Number(pkg.id),
+      nombre: pkg.nombre,
+      descripcion: pkg.descripcion || "",
+      descuento: Number(pkg.descuento || 0),
+      activo: pkg.activo !== false,
+      creado_en: pkg.creado_en,
+      productos
+    };
+  });
+}
+
 /* =========================
    ACTUALIZACIONES DE BASE DE DATOS
 ========================= */
@@ -189,6 +299,26 @@ async function ensureDatabaseUpdates() {
       ADD COLUMN IF NOT EXISTS requiere_factura BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS datos_factura JSONB,
       ADD COLUMN IF NOT EXISTS descuento NUMERIC(10, 2) DEFAULT 0;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS paquetes (
+        id SERIAL PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        descripcion TEXT DEFAULT '',
+        descuento NUMERIC(5, 2) DEFAULT 0,
+        activo BOOLEAN DEFAULT TRUE,
+        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS paquete_productos (
+        id SERIAL PRIMARY KEY,
+        paquete_id INTEGER NOT NULL REFERENCES paquetes(id) ON DELETE CASCADE,
+        producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+        orden INTEGER DEFAULT 0
+      );
     `);
 
     console.log("Base de datos actualizada correctamente.");
@@ -345,6 +475,286 @@ app.get("/api/catalogo", async (req, res) => {
 });
 
 /* =========================
+   PAQUETES CLIENTE
+========================= */
+
+app.get("/api/paquetes", async (req, res) => {
+  try {
+    const paquetes = await getPackagesWithProducts(true);
+    res.json(paquetes);
+  } catch (error) {
+    console.error("Error en GET /api/paquetes:", error);
+    res.status(500).json({ message: "Error al obtener paquetes" });
+  }
+});
+
+/* =========================
+   ADMIN - PAQUETES
+========================= */
+
+app.get("/api/admin/paquetes", async (req, res) => {
+  try {
+    const paquetes = await getPackagesWithProducts(false);
+    res.json(paquetes);
+  } catch (error) {
+    console.error("Error en GET /api/admin/paquetes:", error);
+    res.status(500).json({ message: "Error al obtener paquetes" });
+  }
+});
+
+app.post("/api/admin/paquetes", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const {
+      nombre,
+      descripcion,
+      descuento,
+      activo,
+      productos
+    } = req.body;
+
+    const cleanName = String(nombre || "").trim();
+    const cleanDescription = String(descripcion || "").trim();
+    const cleanProductIds = normalizePackageProductInput(productos);
+    const cleanPackageDiscount = cleanDiscount(descuento);
+
+    if (!cleanName) {
+      return res.status(400).json({ message: "Escribe el nombre del paquete." });
+    }
+
+    if (!cleanProductIds.length) {
+      return res.status(400).json({ message: "Selecciona productos para el paquete." });
+    }
+
+    const existingProducts = await client.query(
+      `
+      SELECT id
+      FROM productos
+      WHERE id = ANY($1::int[])
+      `,
+      [cleanProductIds]
+    );
+
+    if (existingProducts.rows.length !== cleanProductIds.length) {
+      return res.status(400).json({
+        message: "Uno o más productos seleccionados no existen."
+      });
+    }
+
+    await client.query("BEGIN");
+
+    const packageResult = await client.query(
+      `
+      INSERT INTO paquetes (
+        nombre,
+        descripcion,
+        descuento,
+        activo
+      )
+      VALUES ($1, $2, $3, $4)
+      RETURNING id
+      `,
+      [
+        cleanName,
+        cleanDescription,
+        cleanPackageDiscount,
+        activo !== false
+      ]
+    );
+
+    const paqueteId = packageResult.rows[0].id;
+
+    for (let index = 0; index < cleanProductIds.length; index++) {
+      await client.query(
+        `
+        INSERT INTO paquete_productos (
+          paquete_id,
+          producto_id,
+          orden
+        )
+        VALUES ($1, $2, $3)
+        `,
+        [
+          paqueteId,
+          cleanProductIds[index],
+          index + 1
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.status(201).json({
+      message: "Paquete creado correctamente",
+      paqueteId
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error en POST /api/admin/paquetes:", error);
+    res.status(500).json({ message: "Error al crear paquete" });
+  } finally {
+    client.release();
+  }
+});
+
+app.put("/api/admin/paquetes/:id", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const paqueteId = Number(req.params.id);
+
+    const {
+      nombre,
+      descripcion,
+      descuento,
+      activo,
+      productos
+    } = req.body;
+
+    if (!paqueteId) {
+      return res.status(400).json({ message: "Paquete inválido." });
+    }
+
+    const exists = await client.query(
+      "SELECT * FROM paquetes WHERE id = $1 LIMIT 1",
+      [paqueteId]
+    );
+
+    if (!exists.rows.length) {
+      return res.status(404).json({ message: "Paquete no encontrado." });
+    }
+
+    const current = exists.rows[0];
+
+    const cleanName =
+      nombre != null ? String(nombre || "").trim() : current.nombre;
+
+    const cleanDescription =
+      descripcion != null ? String(descripcion || "").trim() : current.descripcion || "";
+
+    const cleanPackageDiscount =
+      descuento != null ? cleanDiscount(descuento) : Number(current.descuento || 0);
+
+    const cleanActive =
+      activo != null ? Boolean(activo) : current.activo !== false;
+
+    if (!cleanName) {
+      return res.status(400).json({ message: "Escribe el nombre del paquete." });
+    }
+
+    let cleanProductIds = null;
+
+    if (Array.isArray(productos)) {
+      cleanProductIds = normalizePackageProductInput(productos);
+
+      if (!cleanProductIds.length) {
+        return res.status(400).json({ message: "Selecciona productos para el paquete." });
+      }
+
+      const existingProducts = await client.query(
+        `
+        SELECT id
+        FROM productos
+        WHERE id = ANY($1::int[])
+        `,
+        [cleanProductIds]
+      );
+
+      if (existingProducts.rows.length !== cleanProductIds.length) {
+        return res.status(400).json({
+          message: "Uno o más productos seleccionados no existen."
+        });
+      }
+    }
+
+    await client.query("BEGIN");
+
+    await client.query(
+      `
+      UPDATE paquetes
+      SET
+        nombre = $1,
+        descripcion = $2,
+        descuento = $3,
+        activo = $4
+      WHERE id = $5
+      `,
+      [
+        cleanName,
+        cleanDescription,
+        cleanPackageDiscount,
+        cleanActive,
+        paqueteId
+      ]
+    );
+
+    if (cleanProductIds) {
+      await client.query(
+        "DELETE FROM paquete_productos WHERE paquete_id = $1",
+        [paqueteId]
+      );
+
+      for (let index = 0; index < cleanProductIds.length; index++) {
+        await client.query(
+          `
+          INSERT INTO paquete_productos (
+            paquete_id,
+            producto_id,
+            orden
+          )
+          VALUES ($1, $2, $3)
+          `,
+          [
+            paqueteId,
+            cleanProductIds[index],
+            index + 1
+          ]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+
+    res.json({
+      message: "Paquete actualizado correctamente"
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error en PUT /api/admin/paquetes/:id:", error);
+    res.status(500).json({ message: "Error al actualizar paquete" });
+  } finally {
+    client.release();
+  }
+});
+
+app.delete("/api/admin/paquetes/:id", async (req, res) => {
+  try {
+    const paqueteId = Number(req.params.id);
+
+    if (!paqueteId) {
+      return res.status(400).json({ message: "Paquete inválido." });
+    }
+
+    const result = await pool.query(
+      "DELETE FROM paquetes WHERE id = $1 RETURNING id",
+      [paqueteId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: "Paquete no encontrado." });
+    }
+
+    res.json({
+      message: "Paquete eliminado correctamente"
+    });
+  } catch (error) {
+    console.error("Error en DELETE /api/admin/paquetes/:id:", error);
+    res.status(500).json({ message: "Error al eliminar paquete" });
+  }
+});
+
+/* =========================
    ADMIN - SUBIR IMAGEN
 ========================= */
 
@@ -483,15 +893,19 @@ app.post("/api/admin/productos", async (req, res) => {
         esGeneral ? "General" : escuela,
         esGeneral ? "General" : nivel,
         esGeneral ? "General" : (grado || "General"),
+
         !esGeneral && nivel === "Secundaria"
           ? String(grado_secundaria || grado || "")
           : "",
+
         !esGeneral && nivel === "Preparatoria"
           ? String(grado_prepa || grado || "")
           : "",
+
         !esGeneral && nivel === "Preparatoria"
           ? String(area_prepa || "")
           : "",
+
         categoria,
         generoFinal,
         nombre,
@@ -598,9 +1012,18 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       if (escuela != null) newEscuela = escuela;
       if (nivel != null) newNivel = nivel;
       if (grado != null) newGrado = grado || "General";
-      if (grado_secundaria != null) newGradoSecundaria = String(grado_secundaria || "");
-      if (grado_prepa != null) newGradoPrepa = String(grado_prepa || "");
-      if (area_prepa != null) newAreaPrepa = String(area_prepa || "");
+
+      if (grado_secundaria != null) {
+        newGradoSecundaria = String(grado_secundaria || "");
+      }
+
+      if (grado_prepa != null) {
+        newGradoPrepa = String(grado_prepa || "");
+      }
+
+      if (area_prepa != null) {
+        newAreaPrepa = String(area_prepa || "");
+      }
     }
 
     const newPrice =
