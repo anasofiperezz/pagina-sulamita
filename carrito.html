@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=16">
+  <link rel="stylesheet" href="styles.css?v=19">
 </head>
 
 <body>
@@ -30,7 +30,7 @@
         <span class="page-badge">Tu compra</span>
         <h1>Carrito de compras</h1>
         <p>
-          Revisa tus productos, tallas, cantidades y selecciona tu método
+          Revisa tus productos, paquetes, tallas, cantidades y selecciona tu método
           de entrega y pago antes de confirmar el pedido.
         </p>
       </div>
@@ -60,7 +60,7 @@
             <div class="info-card">
               <h3>Descuento del 10%</h3>
               <p>
-                El descuento del 10% aplica únicamente en compras completas:
+                El descuento aplica únicamente en paquetes o compras completas configuradas por la papelería:
               </p>
               <ul>
                 <li>Uniforme completo diario con gala.</li>
@@ -68,7 +68,7 @@
                 <li>Lista completa de útiles: libros de texto + cuadernos con agenda escolar e higiene.</li>
               </ul>
               <p>
-                Si tu pedido cumple con alguna de estas condiciones, la papelería podrá confirmar el descuento antes de finalizar el pago.
+                Si agregas un paquete con descuento, el descuento aparecerá automáticamente en el resumen del pedido.
               </p>
             </div>
           </div>
@@ -81,6 +81,11 @@
             <div class="summary-row">
               <span>Subtotal</span>
               <span id="subtotal">$0.00</span>
+            </div>
+
+            <div class="summary-row">
+              <span>Descuento</span>
+              <span id="discountAmount">-$0.00</span>
             </div>
 
             <div class="summary-row">
@@ -254,7 +259,7 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=16"></script>
+  <script src="tienda.js?v=19"></script>
 
   <script>
     protectPage();

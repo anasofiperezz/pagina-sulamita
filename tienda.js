@@ -59,11 +59,15 @@ function setupHeader() {
 }
 
 /* =========================
-   PRECIOS POR TALLA
+   PRECIOS Y PRODUCTOS
 ========================= */
 
 function formatMoney(value) {
   return `$${Number(value || 0).toFixed(2)}`;
+}
+
+function roundMoney(value) {
+  return Number(Number(value || 0).toFixed(2));
 }
 
 function getTallasDisponibles(product) {
@@ -98,6 +102,14 @@ function getOptionPrice(product, optionName) {
   }
 
   return Number(product.precio || 0);
+}
+
+function getTallaData(product, optionName) {
+  if (!product || !Array.isArray(product.tallas)) return null;
+
+  return product.tallas.find(
+    (item) => String(item.talla) === String(optionName)
+  ) || null;
 }
 
 function getProductStatus(product) {
@@ -193,6 +205,15 @@ function getCartItemCount() {
   const cart = getCart();
 
   return cart.reduce((total, item) => {
+    if (item.type === "paquete") {
+      const packageQuantity = Number(item.quantity || 1);
+      const packageProductsCount = Array.isArray(item.items)
+        ? item.items.reduce((acc, child) => acc + Number(child.quantity || 1), 0)
+        : 1;
+
+      return total + packageProductsCount * packageQuantity;
+    }
+
     return total + Number(item.quantity || 0);
   }, 0);
 }
@@ -204,6 +225,68 @@ function updateCartCount() {
   cartElements.forEach((element) => {
     element.textContent = count > 0 ? `Carrito (${count})` : "Carrito";
   });
+}
+
+function getCartQuantityForProductOption(productId, talla) {
+  const cart = getCart();
+
+  return cart.reduce((total, item) => {
+    if (item.type === "paquete") {
+      const packageQuantity = Number(item.quantity || 1);
+      const childTotal = Array.isArray(item.items)
+        ? item.items.reduce((acc, child) => {
+            const matches =
+              Number(child.producto_id) === Number(productId) &&
+              String(child.talla) === String(talla);
+
+            return matches ? acc + Number(child.quantity || 1) * packageQuantity : acc;
+          }, 0)
+        : 0;
+
+      return total + childTotal;
+    }
+
+    const matches =
+      Number(item.producto_id) === Number(productId) &&
+      String(item.talla) === String(talla);
+
+    return matches ? total + Number(item.quantity || 0) : total;
+  }, 0);
+}
+
+function calculateCartAmounts(deliveryValue = null) {
+  const cart = getCart();
+
+  const subtotal = cart.reduce((acc, item) => {
+    if (item.type === "paquete") {
+      return acc + Number(item.originalTotal || 0) * Number(item.quantity || 1);
+    }
+
+    return acc + Number(item.price || 0) * Number(item.quantity || 0);
+  }, 0);
+
+  const descuento = cart.reduce((acc, item) => {
+    if (item.type === "paquete") {
+      return acc + Number(item.discountAmount || 0) * Number(item.quantity || 1);
+    }
+
+    return acc;
+  }, 0);
+
+  const deliveryMethod =
+    deliveryValue ||
+    document.getElementById("deliveryMethod")?.value ||
+    "pickup";
+
+  const envio = deliveryMethod === "delivery" && cart.length > 0 ? 80 : 0;
+  const total = subtotal + envio - descuento;
+
+  return {
+    subtotal: roundMoney(subtotal),
+    descuento: roundMoney(descuento),
+    envio: roundMoney(envio),
+    total: roundMoney(total)
+  };
 }
 
 function setupCartPage() {
@@ -289,14 +372,13 @@ function setupCartPage() {
         }
       }
 
-      const subtotal = cart.reduce(
-        (acc, item) => acc + Number(item.price) * Number(item.quantity),
-        0
-      );
+      const totals = calculateCartAmounts(deliveryValue);
+      const productos = buildOrderProductsFromCart(cart);
 
-      const envio = deliveryValue === "delivery" ? 80 : 0;
-      const descuento = 0;
-      const total = subtotal + envio - descuento;
+      if (!productos.length) {
+        alert("No se encontraron productos válidos en el carrito.");
+        return;
+      }
 
       const payload = {
         usuario_id: localStorage.getItem("userId") || null,
@@ -309,16 +391,11 @@ function setupCartPage() {
         metodo_pago: paymentMethod,
         requiere_factura: requiresInvoice,
         datos_factura: invoiceData,
-        descuento,
-        subtotal,
-        envio,
-        total,
-        productos: cart.map((item) => ({
-          producto_id: Number(item.producto_id),
-          talla: item.talla,
-          cantidad: Number(item.quantity),
-          precio: Number(item.price)
-        }))
+        descuento: totals.descuento,
+        subtotal: totals.subtotal,
+        envio: totals.envio,
+        total: totals.total,
+        productos
       };
 
       if (isGitHubPages()) {
@@ -389,6 +466,55 @@ function setupCartPage() {
   }
 }
 
+function buildOrderProductsFromCart(cart) {
+  const map = new Map();
+
+  function addItem(productoId, talla, cantidad, precio) {
+    const key = `${productoId}|||${talla}`;
+
+    if (map.has(key)) {
+      const current = map.get(key);
+      current.cantidad += Number(cantidad || 0);
+      return;
+    }
+
+    map.set(key, {
+      producto_id: Number(productoId),
+      talla: String(talla || ""),
+      cantidad: Number(cantidad || 0),
+      precio: Number(precio || 0)
+    });
+  }
+
+  cart.forEach((item) => {
+    if (item.type === "paquete") {
+      const packageQuantity = Number(item.quantity || 1);
+
+      if (Array.isArray(item.items)) {
+        item.items.forEach((child) => {
+          addItem(
+            child.producto_id,
+            child.talla,
+            Number(child.quantity || 1) * packageQuantity,
+            child.price
+          );
+        });
+      }
+
+      return;
+    }
+
+    addItem(
+      item.producto_id,
+      item.talla,
+      item.quantity,
+      item.price
+    );
+  });
+
+  return Array.from(map.values()).filter((item) => item.cantidad > 0);
+}
+
 function renderCart() {
   const cartItemsContainer = document.getElementById("cartItems");
   const emptyCartMessage = document.getElementById("emptyCartMessage");
@@ -409,35 +535,77 @@ function renderCart() {
 
   cart.forEach((item, index) => {
     const itemElement = document.createElement("div");
-    itemElement.className = "cart-item";
+    itemElement.className = item.type === "paquete" ? "cart-item package-cart-item" : "cart-item";
 
-    const optionHtml =
-      item.talla && item.talla !== "Unidad"
-        ? `<p>Opción: <strong>${escapeHtml(item.talla)}</strong></p>`
+    if (item.type === "paquete") {
+      const packageItemsHtml = Array.isArray(item.items)
+        ? item.items.map((child) => `
+            <li>
+              <strong>${escapeHtml(child.name || "Producto")}</strong>
+              <br>
+              Opción: ${escapeHtml(child.talla || "Sin opción")} ·
+              ${formatMoney(child.price || 0)}
+            </li>
+          `).join("")
         : "";
 
-    itemElement.innerHTML = `
-      <div class="cart-item-info">
-        <h4>${escapeHtml(item.name)}</h4>
-        <p>Escuela/Nivel: ${escapeHtml(item.grade)}</p>
-        ${optionHtml}
-        <p>Precio unitario: ${formatMoney(item.price)}</p>
-      </div>
+      itemElement.innerHTML = `
+        <div class="cart-item-info">
+          <span class="page-badge">Paquete</span>
+          <h4>${escapeHtml(item.package_name || item.name || "Paquete")}</h4>
 
-      <div class="cart-item-actions">
-        <div class="quantity-box">
-          <button class="qty-btn" type="button" onclick="changeQuantity(${index}, -1)">-</button>
-          <span>${item.quantity}</span>
-          <button class="qty-btn" type="button" onclick="changeQuantity(${index}, 1)">+</button>
+          <p>
+            Descuento aplicado:
+            <strong>${Number(item.discountPercent || 0)}%</strong>
+          </p>
+
+          <ul class="package-cart-products">
+            ${packageItemsHtml}
+          </ul>
+
+          <p>Subtotal paquete: ${formatMoney(item.originalTotal || 0)}</p>
+          <p>Descuento: -${formatMoney(item.discountAmount || 0)}</p>
         </div>
 
-        <div class="cart-item-total">
-          ${formatMoney(Number(item.price) * Number(item.quantity))}
+        <div class="cart-item-actions">
+          <div class="cart-item-total">
+            ${formatMoney(Number(item.price || 0) * Number(item.quantity || 1))}
+          </div>
+
+          <button class="remove-btn" type="button" onclick="removeFromCart(${index})">
+            Eliminar
+          </button>
+        </div>
+      `;
+    } else {
+      const optionHtml =
+        item.talla && item.talla !== "Unidad"
+          ? `<p>Opción: <strong>${escapeHtml(item.talla)}</strong></p>`
+          : "";
+
+      itemElement.innerHTML = `
+        <div class="cart-item-info">
+          <h4>${escapeHtml(item.name)}</h4>
+          <p>Escuela/Nivel: ${escapeHtml(item.grade)}</p>
+          ${optionHtml}
+          <p>Precio unitario: ${formatMoney(item.price)}</p>
         </div>
 
-        <button class="remove-btn" type="button" onclick="removeFromCart(${index})">Eliminar</button>
-      </div>
-    `;
+        <div class="cart-item-actions">
+          <div class="quantity-box">
+            <button class="qty-btn" type="button" onclick="changeQuantity(${index}, -1)">-</button>
+            <span>${item.quantity}</span>
+            <button class="qty-btn" type="button" onclick="changeQuantity(${index}, 1)">+</button>
+          </div>
+
+          <div class="cart-item-total">
+            ${formatMoney(Number(item.price) * Number(item.quantity))}
+          </div>
+
+          <button class="remove-btn" type="button" onclick="removeFromCart(${index})">Eliminar</button>
+        </div>
+      `;
+    }
 
     cartItemsContainer.appendChild(itemElement);
   });
@@ -449,6 +617,11 @@ function changeQuantity(index, change) {
   const cart = getCart();
 
   if (!cart[index]) return;
+
+  if (cart[index].type === "paquete") {
+    alert("Para modificar un paquete, elimínalo y vuelve a agregarlo con las opciones correctas.");
+    return;
+  }
 
   cart[index].quantity = Number(cart[index].quantity) + Number(change);
 
@@ -471,28 +644,17 @@ function removeFromCart(index) {
 }
 
 function updateCartTotals() {
-  const cart = getCart();
-  const deliveryMethod = document.getElementById("deliveryMethod");
-
-  const subtotal = cart.reduce(
-    (acc, item) => acc + Number(item.price) * Number(item.quantity),
-    0
-  );
-
-  let shipping = 0;
-  if (deliveryMethod && deliveryMethod.value === "delivery" && cart.length > 0) {
-    shipping = 80;
-  }
-
-  const total = subtotal + shipping;
+  const totals = calculateCartAmounts();
 
   const subtotalElement = document.getElementById("subtotal");
   const shippingElement = document.getElementById("shippingCost");
+  const discountElement = document.getElementById("discountAmount");
   const totalElement = document.getElementById("total");
 
-  if (subtotalElement) subtotalElement.textContent = formatMoney(subtotal);
-  if (shippingElement) shippingElement.textContent = formatMoney(shipping);
-  if (totalElement) totalElement.textContent = formatMoney(total);
+  if (subtotalElement) subtotalElement.textContent = formatMoney(totals.subtotal);
+  if (shippingElement) shippingElement.textContent = formatMoney(totals.envio);
+  if (discountElement) discountElement.textContent = `-${formatMoney(totals.descuento)}`;
+  if (totalElement) totalElement.textContent = formatMoney(totals.total);
 }
 
 function addProductToCart(product) {
@@ -513,9 +675,7 @@ function addProductToCart(product) {
       return;
     }
 
-    tallaData = Array.isArray(product.tallas)
-      ? product.tallas.find((t) => String(t.talla) === String(talla))
-      : null;
+    tallaData = getTallaData(product, talla);
   }
 
   if (!tallaData || Number(tallaData.stock) <= 0) {
@@ -530,27 +690,31 @@ function addProductToCart(product) {
     return;
   }
 
+  const currentQuantityInCart = getCartQuantityForProductOption(product.id, talla);
+
+  if (currentQuantityInCart + 1 > Number(tallaData.stock)) {
+    alert("No hay suficiente stock para ese producto.");
+    return;
+  }
+
   const cart = getCart();
 
   const existingProduct = cart.find(
     (item) =>
+      item.type !== "paquete" &&
       Number(item.producto_id) === Number(product.id) &&
       String(item.talla) === String(talla)
   );
 
   if (existingProduct) {
-    if (existingProduct.quantity + 1 > Number(tallaData.stock)) {
-      alert("No hay suficiente stock para ese producto.");
-      return;
-    }
-
     existingProduct.quantity += 1;
     existingProduct.price = selectedPrice;
   } else {
     cart.push({
+      type: "producto",
       producto_id: Number(product.id),
       name: product.nombre,
-      price: selectedPrice,
+      price: roundMoney(selectedPrice),
       grade: buildGradeLabel(product),
       talla: String(talla),
       quantity: 1
@@ -611,15 +775,7 @@ async function loadProductsPage(config) {
       products = await response.json();
 
       products = products.filter((product) => {
-        const esGeneral =
-          product.aplica_general === true ||
-          product.escuela === "General" ||
-          product.nivel === "General";
-
-        const coincideEscuela = escuela ? product.escuela === escuela : true;
-        const coincideNivel = nivel ? product.nivel === nivel : true;
-
-        return (esGeneral || (coincideEscuela && coincideNivel)) && product.disponible !== false;
+        return productMatchesCatalogContext(product, escuela, nivel);
       });
     } else {
       const params = new URLSearchParams();
@@ -642,7 +798,13 @@ async function loadProductsPage(config) {
       }
     }
 
-    if (!Array.isArray(products) || !products.length) {
+    if (!Array.isArray(products)) {
+      products = [];
+    }
+
+    const packages = await loadPackagesForCatalog(escuela, nivel);
+
+    if (!products.length && !packages.length) {
       grid.innerHTML = `
         <article class="product-card">
           <div class="product-content">
@@ -656,17 +818,28 @@ async function loadProductsPage(config) {
 
     window.currentCatalogProducts = products;
     window.currentCatalogProductsMap = {};
+    window.currentCatalogPackages = packages;
+    window.currentCatalogPackagesMap = {};
 
     products.forEach((product) => {
       window.currentCatalogProductsMap[product.id] = product;
+    });
+
+    packages.forEach((pkg) => {
+      window.currentCatalogPackagesMap[pkg.id] = pkg;
     });
 
     const grouped = groupProductsByCategory(products);
     const categories = Object.keys(grouped);
 
     if (filtersSelect) {
+      const packageOption = packages.length
+        ? [`<option value="__paquetes__">Paquetes con descuento</option>`]
+        : [];
+
       filtersSelect.innerHTML = [
         `<option value="todos">Todos</option>`,
+        ...packageOption,
         ...categories.map((groupKey) => {
           const label = buildGroupLabel(groupKey);
           return `<option value="${escapeHtmlAttr(groupKey)}">${escapeHtml(label)}</option>`;
@@ -674,11 +847,11 @@ async function loadProductsPage(config) {
       ].join("");
 
       filtersSelect.addEventListener("change", function () {
-        renderCustomerCatalog(grouped, this.value);
+        renderCustomerCatalog(grouped, this.value, packages);
       });
     }
 
-    renderCustomerCatalog(grouped, "todos");
+    renderCustomerCatalog(grouped, "todos", packages);
   } catch (error) {
     console.error("Error cargando productos:", error);
     grid.innerHTML = `
@@ -689,6 +862,53 @@ async function loadProductsPage(config) {
         </div>
       </article>
     `;
+  }
+}
+
+function productMatchesCatalogContext(product, escuela, nivel) {
+  if (!product || product.disponible === false) return false;
+
+  const esGeneral =
+    product.aplica_general === true ||
+    product.escuela === "General" ||
+    product.nivel === "General";
+
+  const coincideEscuela = escuela ? product.escuela === escuela : true;
+  const coincideNivel = nivel ? product.nivel === nivel : true;
+
+  return esGeneral || (coincideEscuela && coincideNivel);
+}
+
+async function loadPackagesForCatalog(escuela, nivel) {
+  if (isGitHubPages()) return [];
+
+  try {
+    const response = await fetch(`${API_URL}/api/paquetes`);
+    const data = await response.json();
+
+    if (!response.ok || !Array.isArray(data)) {
+      return [];
+    }
+
+    return data.filter((pkg) => {
+      const packageProducts = Array.isArray(pkg.productos)
+        ? pkg.productos.map((item) => item.producto).filter(Boolean)
+        : [];
+
+      if (!packageProducts.length) return false;
+
+      return packageProducts.every((product) => {
+        return (
+          productMatchesCatalogContext(product, escuela, nivel) &&
+          product.requiere_precio !== true &&
+          getTallasDisponibles(product).length > 0 &&
+          getFirstAvailablePrice(product) > 0
+        );
+      });
+    });
+  } catch (error) {
+    console.error("Error cargando paquetes:", error);
+    return [];
   }
 }
 
@@ -719,16 +939,53 @@ function renderProductImage(product) {
   `;
 }
 
-function renderCustomerCatalog(grouped, selectedCategory = "todos") {
+function renderCustomerCatalog(grouped, selectedCategory = "todos", packages = []) {
   const grid = document.getElementById("productGrid");
   if (!grid) return;
 
-  const entries =
+  const showPackages =
+    selectedCategory === "todos" ||
+    selectedCategory === "__paquetes__";
+
+  const productEntries =
     selectedCategory === "todos"
       ? Object.entries(grouped)
       : Object.entries(grouped).filter(([groupKey]) => groupKey === selectedCategory);
 
-  if (!entries.length) {
+  const htmlParts = [];
+
+  if (showPackages && packages.length) {
+    htmlParts.push(renderPackagesSection(packages));
+  }
+
+  if (selectedCategory !== "__paquetes__") {
+    if (productEntries.length) {
+      htmlParts.push(
+        productEntries
+          .map(([groupKey, categoryProducts]) => {
+            const label = buildGroupLabel(groupKey);
+
+            const categoryCards = categoryProducts
+              .map(renderCustomerProductCard)
+              .join("");
+
+            return `
+              <section class="customer-category-section">
+                <div class="customer-category-header">
+                  <h3>${escapeHtml(label)}</h3>
+                </div>
+                <div class="product-grid category-grid">
+                  ${categoryCards}
+                </div>
+              </section>
+            `;
+          })
+          .join("")
+      );
+    }
+  }
+
+  if (!htmlParts.length) {
     grid.innerHTML = `
       <article class="product-card">
         <div class="product-content">
@@ -740,120 +997,7 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
     return;
   }
 
-  grid.innerHTML = entries
-    .map(([groupKey, categoryProducts]) => {
-      const label = buildGroupLabel(groupKey);
-
-      const categoryCards = categoryProducts
-        .map((product) => {
-          const status = getProductStatus(product);
-          const isUnitalla = isUnitallaProduct(product);
-
-          const tallasDisponibles = getTallasDisponibles(product);
-
-          const stockUnitalla =
-            isUnitalla && product.tallas[0]
-              ? Number(product.tallas[0].stock || 0)
-              : 0;
-
-          const optionsHtml = tallasDisponibles.length
-            ? tallasDisponibles
-                .map((t) => {
-                  const optionPrice = Number(t.precio || product.precio || 0);
-                  return `
-                    <option
-                      value="${escapeHtmlAttr(t.talla)}"
-                      data-price="${optionPrice}"
-                    >
-                      ${escapeHtml(t.talla)} - ${formatMoney(optionPrice)} (${Number(t.stock)})
-                    </option>
-                  `;
-                })
-                .join("")
-            : `<option value="">Sin disponibles</option>`;
-
-          const productOptionsHtml = isUnitalla
-            ? `
-              <div class="product-sizes-info">
-                <strong>Disponibles:</strong>
-                <span class="customer-size-badge">${stockUnitalla} piezas</span>
-              </div>
-            `
-            : `
-              <div class="product-sizes-info">
-                <strong>Opciones disponibles:</strong>
-                ${
-                  tallasDisponibles.length
-                    ? tallasDisponibles
-                        .map((t) => {
-                          const optionPrice = Number(t.precio || product.precio || 0);
-                          return `
-                            <span class="customer-size-badge">
-                              ${escapeHtml(t.talla)} · ${formatMoney(optionPrice)}
-                            </span>
-                          `;
-                        })
-                        .join("")
-                    : `<span class="customer-size-badge empty">Sin disponibles</span>`
-                }
-              </div>
-
-              <div class="form-group">
-                <label for="size-${product.id}">Selecciona opción</label>
-                <select
-                  id="size-${product.id}"
-                  ${status.disabled || !tallasDisponibles.length ? "disabled" : ""}
-                  onchange="updateDisplayedPrice(${product.id})"
-                >
-                  ${optionsHtml}
-                </select>
-              </div>
-            `;
-
-          return `
-            <article class="product-card">
-              ${renderProductImage(product)}
-
-              <div class="product-content">
-                <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
-                <p>${escapeHtml(product.descripcion || "Sin descripción")}</p>
-
-                <div
-                  class="product-price ${status.className}"
-                  id="price-display-${product.id}"
-                >
-                  ${status.text}
-                </div>
-
-                ${productOptionsHtml}
-
-                <button
-                  class="btn-primary"
-                  id="add-btn-${product.id}"
-                  type="button"
-                  ${status.disabled || !tallasDisponibles.length ? "disabled" : ""}
-                  onclick="addProductToCart(window.currentCatalogProductsMap[${product.id}])"
-                >
-                  ${status.buttonText}
-                </button>
-              </div>
-            </article>
-          `;
-        })
-        .join("");
-
-      return `
-        <section class="customer-category-section">
-          <div class="customer-category-header">
-            <h3>${escapeHtml(label)}</h3>
-          </div>
-          <div class="product-grid category-grid">
-            ${categoryCards}
-          </div>
-        </section>
-      `;
-    })
-    .join("");
+  grid.innerHTML = htmlParts.join("");
 
   Object.values(window.currentCatalogProductsMap || {}).forEach((product) => {
     const selectNode = document.getElementById(`size-${product.id}`);
@@ -861,7 +1005,368 @@ function renderCustomerCatalog(grouped, selectedCategory = "todos") {
       updateDisplayedPrice(product.id);
     }
   });
+
+  packages.forEach((pkg) => {
+    updatePackageDisplayedPrice(pkg.id);
+  });
 }
+
+function renderCustomerProductCard(product) {
+  const status = getProductStatus(product);
+  const isUnitalla = isUnitallaProduct(product);
+
+  const tallasDisponibles = getTallasDisponibles(product);
+
+  const stockUnitalla =
+    isUnitalla && product.tallas[0]
+      ? Number(product.tallas[0].stock || 0)
+      : 0;
+
+  const optionsHtml = tallasDisponibles.length
+    ? tallasDisponibles
+        .map((t) => {
+          const optionPrice = Number(t.precio || product.precio || 0);
+          return `
+            <option
+              value="${escapeHtmlAttr(t.talla)}"
+              data-price="${optionPrice}"
+            >
+              ${escapeHtml(t.talla)} - ${formatMoney(optionPrice)} (${Number(t.stock)})
+            </option>
+          `;
+        })
+        .join("")
+    : `<option value="">Sin disponibles</option>`;
+
+  const productOptionsHtml = isUnitalla
+    ? `
+      <div class="product-sizes-info">
+        <strong>Disponibles:</strong>
+        <span class="customer-size-badge">${stockUnitalla} piezas</span>
+      </div>
+    `
+    : `
+      <div class="product-sizes-info">
+        <strong>Opciones disponibles:</strong>
+        ${
+          tallasDisponibles.length
+            ? tallasDisponibles
+                .map((t) => {
+                  const optionPrice = Number(t.precio || product.precio || 0);
+                  return `
+                    <span class="customer-size-badge">
+                      ${escapeHtml(t.talla)} · ${formatMoney(optionPrice)}
+                    </span>
+                  `;
+                })
+                .join("")
+            : `<span class="customer-size-badge empty">Sin disponibles</span>`
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="size-${product.id}">Selecciona opción</label>
+        <select
+          id="size-${product.id}"
+          ${status.disabled || !tallasDisponibles.length ? "disabled" : ""}
+          onchange="updateDisplayedPrice(${product.id})"
+        >
+          ${optionsHtml}
+        </select>
+      </div>
+    `;
+
+  return `
+    <article class="product-card">
+      ${renderProductImage(product)}
+
+      <div class="product-content">
+        <h3>${escapeHtml(product.nombre || "Producto sin nombre")}</h3>
+        <p>${escapeHtml(product.descripcion || "Sin descripción")}</p>
+
+        <div
+          class="product-price ${status.className}"
+          id="price-display-${product.id}"
+        >
+          ${status.text}
+        </div>
+
+        ${productOptionsHtml}
+
+        <button
+          class="btn-primary"
+          id="add-btn-${product.id}"
+          type="button"
+          ${status.disabled || !tallasDisponibles.length ? "disabled" : ""}
+          onclick="addProductToCart(window.currentCatalogProductsMap[${product.id}])"
+        >
+          ${status.buttonText}
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+/* =========================
+   PAQUETES CLIENTE
+========================= */
+
+function renderPackagesSection(packages) {
+  const cardsHtml = packages.map(renderPackageCard).join("");
+
+  return `
+    <section class="customer-category-section packages-section">
+      <div class="customer-category-header">
+        <h3>Paquetes con descuento</h3>
+      </div>
+
+      <div class="product-grid category-grid">
+        ${cardsHtml}
+      </div>
+    </section>
+  `;
+}
+
+function renderPackageCard(pkg) {
+  const packageProducts = Array.isArray(pkg.productos)
+    ? pkg.productos.filter((item) => item.producto)
+    : [];
+
+  const productsHtml = packageProducts
+    .map((item, index) => {
+      const product = item.producto;
+      const tallasDisponibles = getTallasDisponibles(product);
+      const selectId = getPackageSelectId(pkg.id, product.id, index);
+
+      const optionsHtml = tallasDisponibles
+        .map((t) => {
+          const optionPrice = Number(t.precio || product.precio || 0);
+
+          return `
+            <option value="${escapeHtmlAttr(t.talla)}">
+              ${escapeHtml(t.talla)} - ${formatMoney(optionPrice)} (${Number(t.stock)})
+            </option>
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="package-product-picker">
+          <label for="${selectId}">
+            ${escapeHtml(product.nombre || "Producto")}
+          </label>
+
+          <select
+            id="${selectId}"
+            onchange="updatePackageDisplayedPrice(${Number(pkg.id)})"
+          >
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+    })
+    .join("");
+
+  return `
+    <article class="product-card package-card">
+      <div class="product-image product-image-placeholder package-image">
+        Paquete
+      </div>
+
+      <div class="product-content">
+        <span class="page-badge">Paquete</span>
+        <h3>${escapeHtml(pkg.nombre || "Paquete")}</h3>
+        <p>${escapeHtml(pkg.descripcion || "Sin descripción")}</p>
+
+        <div class="package-discount-badge">
+          ${Number(pkg.descuento || 0)}% de descuento
+        </div>
+
+        <div class="package-products-picker">
+          ${productsHtml}
+        </div>
+
+        <div class="package-price-box">
+          <p>
+            Subtotal:
+            <strong id="package-original-${Number(pkg.id)}">$0.00</strong>
+          </p>
+          <p>
+            Descuento:
+            <strong id="package-discount-${Number(pkg.id)}">-$0.00</strong>
+          </p>
+          <p class="package-total-line">
+            Total paquete:
+            <strong id="package-total-${Number(pkg.id)}">$0.00</strong>
+          </p>
+        </div>
+
+        <button
+          class="btn-primary"
+          id="package-add-btn-${Number(pkg.id)}"
+          type="button"
+          onclick="addPackageToCart(${Number(pkg.id)})"
+        >
+          Agregar paquete al carrito
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function getPackageSelectId(packageId, productId, index) {
+  return `package-option-${Number(packageId)}-${Number(productId)}-${Number(index)}`;
+}
+
+function getPackageSelections(packageId) {
+  const pkg = window.currentCatalogPackagesMap?.[packageId];
+
+  if (!pkg || !Array.isArray(pkg.productos)) {
+    return {
+      valid: false,
+      selections: [],
+      subtotal: 0,
+      discount: 0,
+      total: 0
+    };
+  }
+
+  const selections = [];
+  let subtotal = 0;
+  let valid = true;
+
+  pkg.productos.forEach((item, index) => {
+    const product = item.producto;
+    if (!product) {
+      valid = false;
+      return;
+    }
+
+    const select = document.getElementById(getPackageSelectId(pkg.id, product.id, index));
+    const selectedTalla = select ? select.value : "";
+    const tallaData = getTallaData(product, selectedTalla);
+    const selectedPrice = getOptionPrice(product, selectedTalla);
+
+    if (!selectedTalla || !tallaData || Number(tallaData.stock || 0) <= 0 || selectedPrice <= 0) {
+      valid = false;
+      return;
+    }
+
+    subtotal += selectedPrice;
+
+    selections.push({
+      product,
+      talla: selectedTalla,
+      tallaData,
+      price: roundMoney(selectedPrice)
+    });
+  });
+
+  const discountPercent = Number(pkg.descuento || 0);
+  const discount = roundMoney(subtotal * (discountPercent / 100));
+  const total = roundMoney(subtotal - discount);
+
+  return {
+    valid,
+    selections,
+    subtotal: roundMoney(subtotal),
+    discount,
+    total
+  };
+}
+
+function updatePackageDisplayedPrice(packageId) {
+  const data = getPackageSelections(packageId);
+
+  const originalNode = document.getElementById(`package-original-${Number(packageId)}`);
+  const discountNode = document.getElementById(`package-discount-${Number(packageId)}`);
+  const totalNode = document.getElementById(`package-total-${Number(packageId)}`);
+  const buttonNode = document.getElementById(`package-add-btn-${Number(packageId)}`);
+
+  if (originalNode) originalNode.textContent = formatMoney(data.subtotal);
+  if (discountNode) discountNode.textContent = `-${formatMoney(data.discount)}`;
+  if (totalNode) totalNode.textContent = formatMoney(data.total);
+
+  if (buttonNode) {
+    buttonNode.disabled = !data.valid || data.total <= 0;
+  }
+}
+
+function addPackageToCart(packageId) {
+  const pkg = window.currentCatalogPackagesMap?.[packageId];
+
+  if (!pkg) {
+    alert("No se encontró el paquete.");
+    return;
+  }
+
+  const data = getPackageSelections(packageId);
+
+  if (!data.valid || !data.selections.length) {
+    alert("Selecciona una opción disponible para cada producto del paquete.");
+    return;
+  }
+
+  const requestedMap = new Map();
+
+  data.selections.forEach((selection) => {
+    const key = `${selection.product.id}|||${selection.talla}`;
+
+    if (!requestedMap.has(key)) {
+      requestedMap.set(key, {
+        product: selection.product,
+        talla: selection.talla,
+        tallaData: selection.tallaData,
+        quantity: 0
+      });
+    }
+
+    requestedMap.get(key).quantity += 1;
+  });
+
+  for (const request of requestedMap.values()) {
+    const currentQuantity = getCartQuantityForProductOption(
+      request.product.id,
+      request.talla
+    );
+
+    if (currentQuantity + request.quantity > Number(request.tallaData.stock || 0)) {
+      alert(`No hay suficiente stock para ${request.product.nombre}.`);
+      return;
+    }
+  }
+
+  const cart = getCart();
+
+  const packageItem = {
+    type: "paquete",
+    package_id: Number(pkg.id),
+    package_name: pkg.nombre || "Paquete",
+    name: `Paquete: ${pkg.nombre || "Paquete"}`,
+    discountPercent: Number(pkg.descuento || 0),
+    originalTotal: data.subtotal,
+    discountAmount: data.discount,
+    price: data.total,
+    quantity: 1,
+    items: data.selections.map((selection) => ({
+      producto_id: Number(selection.product.id),
+      name: selection.product.nombre || "Producto",
+      grade: buildGradeLabel(selection.product),
+      talla: String(selection.talla),
+      price: roundMoney(selection.price),
+      quantity: 1
+    }))
+  };
+
+  cart.push(packageItem);
+  saveCart(cart);
+
+  alert(`${pkg.nombre} agregado al carrito.`);
+}
+
+/* =========================
+   AGRUPACIÓN CATÁLOGO
+========================= */
 
 function groupProductsByCategory(products) {
   return products.reduce((acc, product) => {
@@ -954,6 +1459,16 @@ function buildGradeLabel(product) {
     }
 
     return parts.join(" - ");
+  }
+
+  const grade =
+    product.grado ||
+    product.grado_secundaria ||
+    product.grado_prepa ||
+    "";
+
+  if (grade && grade !== "General") {
+    return `${product.escuela} - ${product.nivel} - ${grade}°`;
   }
 
   return `${product.escuela} - ${product.nivel}`;

@@ -2158,3 +2158,72 @@ select:disabled {
 .admin-tab:hover {
   transform: translateY(-1px);
 }
+
+.package-card {
+  border: 2px solid #0057b8;
+}
+
+.package-image {
+  background: linear-gradient(135deg, #0057b8, #38bdf8);
+  color: #ffffff;
+}
+
+.package-discount-badge {
+  display: inline-block;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 800;
+  padding: 8px 12px;
+  border-radius: 999px;
+  margin: 10px 0;
+}
+
+.package-products-picker {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.package-product-picker {
+  background: #f8fafc;
+  border: 1px solid #dbe3f0;
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.package-product-picker label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.package-price-box {
+  background: #f8fafc;
+  border: 1px solid #dbe3f0;
+  border-radius: 14px;
+  padding: 12px;
+  margin: 14px 0;
+}
+
+.package-price-box p {
+  margin: 6px 0;
+}
+
+.package-total-line {
+  font-size: 1.05rem;
+  color: #0057b8;
+}
+
+.package-cart-item {
+  border: 2px solid #0057b8;
+  background: #f8fbff;
+}
+
+.package-cart-products {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.package-cart-products li {
+  margin-bottom: 8px;
+}
