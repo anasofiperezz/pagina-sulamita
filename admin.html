@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=17">
+  <link rel="stylesheet" href="styles.css?v=18">
 </head>
+
 <body>
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita - Admin</div>
+
       <div class="nav-right">
         <div class="user-badge" id="userInfo">Cargando sesión...</div>
         <a href="index.html" class="nav-btn">Inicio</a>
@@ -33,7 +35,18 @@
     </section>
 
     <section class="admin-page">
-      <div class="admin-layout">
+      <div class="admin-tabs">
+        <button type="button" class="admin-tab active" id="inventoryTabBtn">
+          Inventario
+        </button>
+
+        <button type="button" class="admin-tab" id="packagesTabBtn">
+          Paquetes
+        </button>
+      </div>
+
+      <!-- INVENTARIO -->
+      <div class="admin-layout admin-section-tab" id="inventorySection">
         <div class="admin-form-card">
           <h2 id="formTitle">Agregar producto</h2>
 
@@ -272,7 +285,8 @@
         </div>
       </div>
 
-      <div class="admin-layout" style="margin-top: 32px;">
+      <!-- PAQUETES -->
+      <div class="admin-layout admin-section-tab" id="packagesSection" style="display: none;">
         <div class="admin-form-card">
           <h2 id="packageFormTitle">Crear paquete</h2>
 
@@ -377,12 +391,35 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=17"></script>
+  <script src="tienda.js?v=18"></script>
 
   <script>
     protectPage();
     protectAdminPage();
     setupHeader();
+
+    const inventoryTabBtn = document.getElementById("inventoryTabBtn");
+    const packagesTabBtn = document.getElementById("packagesTabBtn");
+    const inventorySection = document.getElementById("inventorySection");
+    const packagesSection = document.getElementById("packagesSection");
+
+    inventoryTabBtn.addEventListener("click", function () {
+      showAdminTab("inventory");
+    });
+
+    packagesTabBtn.addEventListener("click", function () {
+      showAdminTab("packages");
+    });
+
+    function showAdminTab(tabName) {
+      const isInventory = tabName === "inventory";
+
+      inventorySection.style.display = isInventory ? "grid" : "none";
+      packagesSection.style.display = isInventory ? "none" : "grid";
+
+      inventoryTabBtn.classList.toggle("active", isInventory);
+      packagesTabBtn.classList.toggle("active", !isInventory);
+    }
 
     const productForm = document.getElementById("productForm");
     const adminMessage = document.getElementById("adminMessage");
@@ -480,19 +517,15 @@
     });
 
     selectAllPackageProductsBtn.addEventListener("click", function () {
-      document
-        .querySelectorAll(".package-product-checkbox")
-        .forEach((checkbox) => {
-          checkbox.checked = true;
-        });
+      document.querySelectorAll(".package-product-checkbox").forEach((checkbox) => {
+        checkbox.checked = true;
+      });
     });
 
     clearPackageProductsBtn.addEventListener("click", function () {
-      document
-        .querySelectorAll(".package-product-checkbox")
-        .forEach((checkbox) => {
-          checkbox.checked = false;
-        });
+      document.querySelectorAll(".package-product-checkbox").forEach((checkbox) => {
+        checkbox.checked = false;
+      });
     });
 
     schoolFilter.addEventListener("change", function () {
@@ -811,12 +844,7 @@
         .join("");
 
       const validValues = options.map(option => option.value);
-
-      if (validValues.includes(currentLevel)) {
-        levelSelect.value = currentLevel;
-      } else {
-        levelSelect.value = "";
-      }
+      levelSelect.value = validValues.includes(currentLevel) ? currentLevel : "";
 
       updateGradeOptions();
       toggleSixthPrepaAreaField();
@@ -1056,9 +1084,7 @@
 
     function getInventoryLevelOptionsBySchool(school) {
       if (school === "General") {
-        return [
-          { value: "General", text: "General" }
-        ];
+        return [{ value: "General", text: "General" }];
       }
 
       if (school === "IAE") {
@@ -1092,15 +1118,11 @@
 
     function getInventoryGradeOptionsByLevel(level) {
       if (level === "General") {
-        return [
-          { value: "General", text: "General / Todos" }
-        ];
+        return [{ value: "General", text: "General / Todos" }];
       }
 
       if (level === "Jardín de niños") {
-        return [
-          { value: "General", text: "General / Todo jardín de niños" }
-        ];
+        return [{ value: "General", text: "General / Todo jardín de niños" }];
       }
 
       if (level === "Primaria") {
@@ -1838,10 +1860,6 @@
 
     function escapeHtml(value) {
       return escapeHtmlAttr(value);
-    }
-
-    function escapeId(value) {
-      return String(value || "").replace(/[^a-zA-Z0-9_-]/g, "_");
     }
   </script>
 </body>
