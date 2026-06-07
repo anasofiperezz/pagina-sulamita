@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pedidos | Administrador</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body>
   <header>
@@ -26,7 +26,8 @@
         <span class="page-badge">Administrador</span>
         <h1>Pedidos recibidos</h1>
         <p>
-          Aquí puedes revisar las compras realizadas por clientes e invitados.
+          Aquí puedes revisar las compras realizadas por clientes e invitados,
+          su método de pago y si requieren factura.
         </p>
       </div>
     </section>
@@ -51,7 +52,7 @@
     <p>© 2026 Papelería Sulamita - Pedidos administrador</p>
   </footer>
 
-  <script src="tienda.js?v=13"></script>
+  <script src="tienda.js?v=14"></script>
 
   <script>
     protectPage();
@@ -145,6 +146,8 @@
         ? new Date(order.creado_en).toLocaleString("es-MX")
         : "Sin fecha";
 
+      const facturaHtml = renderInvoiceInfo(order);
+
       return `
         <article class="order-card">
           <div class="order-card-top">
@@ -158,11 +161,19 @@
             <p><strong>Teléfono:</strong> ${safeHtml(order.telefono_cliente || "No registrado")}</p>
             <p><strong>Entrega:</strong> ${safeHtml(formatDelivery(order.tipo_entrega))}</p>
             <p><strong>Dirección:</strong> ${safeHtml(order.direccion_envio || "No aplica")}</p>
-            <p><strong>Pago:</strong> ${safeHtml(formatPayment(order.metodo_pago))}</p>
+            <p><strong>Método de pago:</strong> ${safeHtml(formatPayment(order.metodo_pago))}</p>
+
+            ${renderPaymentNote(order.metodo_pago)}
+
+            <hr>
+
             <p><strong>Subtotal:</strong> ${formatMoney(order.subtotal || 0)}</p>
             <p><strong>Envío:</strong> ${formatMoney(order.envio || 0)}</p>
+            <p><strong>Descuento:</strong> ${formatMoney(order.descuento || 0)}</p>
             <p><strong>Total:</strong> ${formatMoney(order.total || 0)}</p>
             <p><strong>Fecha:</strong> ${safeHtml(fecha)}</p>
+
+            ${facturaHtml}
 
             <div class="order-products">
               <h4>Productos</h4>
@@ -175,6 +186,69 @@
       `;
     }
 
+    function renderPaymentNote(paymentMethod) {
+      if (paymentMethod === "transferencia") {
+        return `
+          <div class="payment-info-card">
+            <h4>Pago por transferencia</h4>
+            <p>
+              Revisar si el pedido corresponde a uniformes/papelería/higiene o libros de texto
+              para confirmar la cuenta correcta.
+            </p>
+          </div>
+        `;
+      }
+
+      if (paymentMethod === "tarjeta") {
+        return `
+          <div class="payment-info-card">
+            <h4>Pago con tarjeta</h4>
+            <p>
+              Confirmar con el cliente el proceso para pago con tarjeta.
+            </p>
+          </div>
+        `;
+      }
+
+      if (paymentMethod === "efectivo") {
+        return `
+          <div class="payment-info-card">
+            <h4>Pago en efectivo</h4>
+            <p>
+              El cliente pagará al recibir o al recoger el pedido.
+            </p>
+          </div>
+        `;
+      }
+
+      return "";
+    }
+
+    function renderInvoiceInfo(order) {
+      if (!order.requiere_factura) {
+        return `
+          <div class="payment-info-card">
+            <h4>Facturación</h4>
+            <p>No requiere factura.</p>
+          </div>
+        `;
+      }
+
+      const datos = order.datos_factura || {};
+
+      return `
+        <div class="payment-info-card">
+          <h4>Datos de facturación</h4>
+          <p><strong>Razón social:</strong> ${safeHtml(datos.razon_social || "")}</p>
+          <p><strong>RFC:</strong> ${safeHtml(datos.rfc || "")}</p>
+          <p><strong>Régimen fiscal:</strong> ${safeHtml(datos.regimen_fiscal || "")}</p>
+          <p><strong>Uso de CFDI:</strong> ${safeHtml(datos.uso_cfdi || "")}</p>
+          <p><strong>Código postal fiscal:</strong> ${safeHtml(datos.codigo_postal || "")}</p>
+          <p><strong>Correo para factura:</strong> ${safeHtml(datos.correo_factura || "")}</p>
+        </div>
+      `;
+    }
+
     function formatDelivery(value) {
       if (value === "delivery") return "Envío a domicilio";
       if (value === "pickup") return "Recoger en papelería";
@@ -182,7 +256,8 @@
     }
 
     function formatPayment(value) {
-      if (value === "efectivo") return "Efectivo";
+      if (value === "efectivo") return "Efectivo contraentrega";
+      if (value === "contra_entrega") return "Pago al recibir / recoger";
       if (value === "transferencia") return "Transferencia";
       if (value === "tarjeta") return "Tarjeta";
       return value || "";
