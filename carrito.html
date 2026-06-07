@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=14">
 </head>
+
 <body>
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
+
       <div class="nav-right">
         <div class="user-badge" id="userInfo">Cargando sesión...</div>
         <a href="index.html" class="nav-btn">Inicio</a>
@@ -39,13 +41,34 @@
           <div class="cart-card">
             <div class="cart-card-header">
               <h2>Productos agregados</h2>
-              <button class="btn-outline" id="clearCartBtn" type="button">Vaciar carrito</button>
+              <button class="btn-outline" id="clearCartBtn" type="button">
+                Vaciar carrito
+              </button>
             </div>
 
             <div id="cartItems" class="cart-items"></div>
 
             <div id="emptyCartMessage" class="empty-cart" style="display: none;">
               Tu carrito está vacío.
+            </div>
+          </div>
+
+          <div class="cart-card" style="margin-top: 20px;">
+            <h2>Información importante</h2>
+
+            <div class="info-card">
+              <h3>Descuento del 10%</h3>
+              <p>
+                El descuento del 10% aplica únicamente en compras completas:
+              </p>
+              <ul>
+                <li>Uniforme completo diario con gala.</li>
+                <li>Uniforme completo de deportes.</li>
+                <li>Lista completa de útiles: libros de texto + cuadernos con agenda escolar e higiene.</li>
+              </ul>
+              <p>
+                Si tu pedido cumple con alguna de estas condiciones, la papelería podrá confirmar el descuento antes de finalizar el pago.
+              </p>
             </div>
           </div>
         </div>
@@ -91,8 +114,93 @@
               <select id="paymentMethod">
                 <option value="tarjeta">Tarjeta</option>
                 <option value="transferencia">Transferencia</option>
-                <option value="contra_entrega">Pago al recibir / recoger</option>
+                <option value="efectivo">Efectivo contraentrega</option>
               </select>
+            </div>
+
+            <div class="payment-info-card" id="cardPaymentInfo">
+              <h4>Pago con tarjeta</h4>
+              <p>
+                Se aceptan todas las tarjetas. La papelería confirmará el método para realizar el pago con tarjeta.
+              </p>
+              <p class="subtext">
+                Por seguridad, no escribas datos de tu tarjeta dentro de la página.
+              </p>
+            </div>
+
+            <div class="payment-info-card" id="cashPaymentInfo" style="display: none;">
+              <h4>Pago en efectivo</h4>
+              <p>
+                El pago se realiza en efectivo al recibir el pedido o al recogerlo en papelería.
+              </p>
+            </div>
+
+            <div class="payment-info-card" id="transferPaymentInfo" style="display: none;">
+              <h4>Datos para transferencia</h4>
+
+              <div class="transfer-box">
+                <h5>Uniformes, papelería e higiene</h5>
+                <p>
+                  <strong>Nombre:</strong> María Concepción Solís S.A. de C.V.<br>
+                  <strong>Banco:</strong> Santander<br>
+                  <strong>Cuenta:</strong> 65-50805727-2<br>
+                  <strong>CLABE:</strong> 014180655080572725<br>
+                  <strong>Sucursal:</strong> 0474 Álvaro Obregón
+                </p>
+              </div>
+
+              <div class="transfer-box">
+                <h5>Libros de texto</h5>
+                <p>
+                  <strong>Nombre:</strong> María del Carmen Hernández Gómez<br>
+                  <strong>Banco:</strong> BBVA<br>
+                  <strong>CLABE:</strong> 012180004891764113
+                </p>
+              </div>
+
+              <p class="subtext">
+                Si tu pedido incluye libros y otros productos, revisa con la papelería si necesitas hacer transferencias separadas.
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label for="requiresInvoice">¿Requieres factura?</label>
+              <select id="requiresInvoice">
+                <option value="no">No</option>
+                <option value="si">Sí</option>
+              </select>
+            </div>
+
+            <div id="invoiceGroup" style="display: none;">
+              <div class="form-group">
+                <label for="invoiceBusinessName">Razón social</label>
+                <input type="text" id="invoiceBusinessName" placeholder="Nombre o razón social" />
+              </div>
+
+              <div class="form-group">
+                <label for="invoiceRfc">RFC</label>
+                <input type="text" id="invoiceRfc" placeholder="RFC" />
+              </div>
+
+              <div class="form-group">
+                <label for="invoiceRegime">Régimen fiscal</label>
+                <input type="text" id="invoiceRegime" placeholder="Ej. Régimen de Sueldos, General de Ley, etc." />
+              </div>
+
+              <div class="form-group">
+                <label for="invoiceCfdi">Uso de CFDI</label>
+                <input type="text" id="invoiceCfdi" placeholder="Ej. G03, D01, etc." />
+              </div>
+
+              <div class="form-group">
+                <label for="invoiceZip">Código postal fiscal</label>
+                <input type="text" id="invoiceZip" placeholder="Código postal" />
+              </div>
+
+              <div class="form-group">
+                <label for="invoiceEmail">Correo para factura</label>
+                <input type="email" id="invoiceEmail" placeholder="correo@ejemplo.com" />
+              </div>
             </div>
 
             <button class="btn-primary full-width" id="checkoutBtn" type="button">
@@ -108,7 +216,8 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=3"></script>
+  <script src="tienda.js?v=14"></script>
+
   <script>
     protectPage();
     setupHeader();
@@ -123,6 +232,32 @@
         window.location.href = "admin.html";
       });
     }
+
+    const paymentMethod = document.getElementById("paymentMethod");
+    const cardPaymentInfo = document.getElementById("cardPaymentInfo");
+    const cashPaymentInfo = document.getElementById("cashPaymentInfo");
+    const transferPaymentInfo = document.getElementById("transferPaymentInfo");
+
+    const requiresInvoice = document.getElementById("requiresInvoice");
+    const invoiceGroup = document.getElementById("invoiceGroup");
+
+    function updatePaymentInfo() {
+      const value = paymentMethod.value;
+
+      cardPaymentInfo.style.display = value === "tarjeta" ? "block" : "none";
+      cashPaymentInfo.style.display = value === "efectivo" ? "block" : "none";
+      transferPaymentInfo.style.display = value === "transferencia" ? "block" : "none";
+    }
+
+    function updateInvoiceForm() {
+      invoiceGroup.style.display = requiresInvoice.value === "si" ? "block" : "none";
+    }
+
+    paymentMethod.addEventListener("change", updatePaymentInfo);
+    requiresInvoice.addEventListener("change", updateInvoiceForm);
+
+    updatePaymentInfo();
+    updateInvoiceForm();
   </script>
 </body>
 </html>

@@ -1907,3 +1907,29 @@ select:disabled {
     height: 180px;
   }
 }
+
+.payment-info-card {
+  background: #f8fafc;
+  border: 1px solid #dbe3f0;
+  border-radius: 18px;
+  padding: 14px;
+  margin: 12px 0;
+}
+
+.payment-info-card h4,
+.payment-info-card h5 {
+  margin-bottom: 8px;
+}
+
+.transfer-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.transfer-box p {
+  margin: 0;
+  line-height: 1.6;
+}

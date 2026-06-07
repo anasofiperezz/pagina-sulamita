@@ -184,7 +184,14 @@ async function ensureDatabaseUpdates() {
       ADD COLUMN IF NOT EXISTS imagen_url TEXT DEFAULT '';
     `);
 
-    console.log("Base de datos actualizada: columna imagen_url lista.");
+    await pool.query(`
+      ALTER TABLE pedidos
+      ADD COLUMN IF NOT EXISTS requiere_factura BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS datos_factura JSONB,
+      ADD COLUMN IF NOT EXISTS descuento NUMERIC(10, 2) DEFAULT 0;
+    `);
+
+    console.log("Base de datos actualizada correctamente.");
   } catch (error) {
     console.error("Error actualizando base de datos:", error);
   }
@@ -350,7 +357,11 @@ app.post("/api/admin/subir-imagen", function (req, res) {
         });
       }
 
-      if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      if (
+        !process.env.CLOUDINARY_CLOUD_NAME ||
+        !process.env.CLOUDINARY_API_KEY ||
+        !process.env.CLOUDINARY_API_SECRET
+      ) {
         return res.status(500).json({
           message: "Faltan las variables de Cloudinary en Render."
         });
@@ -722,6 +733,9 @@ app.post("/api/pedidos", async (req, res) => {
       direccion_envio,
       tipo_entrega,
       metodo_pago,
+      requiere_factura,
+      datos_factura,
+      descuento,
       subtotal,
       envio,
       total,
@@ -740,6 +754,34 @@ app.post("/api/pedidos", async (req, res) => {
       productos.length === 0
     ) {
       return res.status(400).json({ message: "Faltan datos del pedido." });
+    }
+
+    const requiereFacturaFinal = Boolean(requiere_factura);
+    const datosFacturaFinal = requiereFacturaFinal ? datos_factura || {} : null;
+    const descuentoFinal = Number(descuento || 0);
+
+    if (requiereFacturaFinal) {
+      const {
+        razon_social,
+        rfc,
+        regimen_fiscal,
+        uso_cfdi,
+        codigo_postal,
+        correo_factura
+      } = datosFacturaFinal;
+
+      if (
+        !razon_social ||
+        !rfc ||
+        !regimen_fiscal ||
+        !uso_cfdi ||
+        !codigo_postal ||
+        !correo_factura
+      ) {
+        return res.status(400).json({
+          message: "Faltan datos de facturación."
+        });
+      }
     }
 
     await client.query("BEGIN");
@@ -831,12 +873,18 @@ app.post("/api/pedidos", async (req, res) => {
         direccion_envio,
         tipo_entrega,
         metodo_pago,
+        requiere_factura,
+        datos_factura,
+        descuento,
         subtotal,
         envio,
         total,
         estado
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pendiente')
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11, $12, $13, 'pendiente'
+      )
       RETURNING id
       `,
       [
@@ -847,6 +895,9 @@ app.post("/api/pedidos", async (req, res) => {
         direccion_envio || "",
         tipo_entrega,
         metodo_pago,
+        requiereFacturaFinal,
+        datosFacturaFinal,
+        descuentoFinal,
         Number(subtotal),
         Number(envio),
         Number(total)
@@ -967,6 +1018,9 @@ app.get("/api/pedidos", async (req, res) => {
       direccion_envio: order.direccion_envio || "",
       tipo_entrega: order.tipo_entrega,
       metodo_pago: order.metodo_pago,
+      requiere_factura: order.requiere_factura === true,
+      datos_factura: order.datos_factura || null,
+      descuento: Number(order.descuento || 0),
       subtotal: Number(order.subtotal || 0),
       envio: Number(order.envio || 0),
       total: Number(order.total || 0),

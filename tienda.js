@@ -211,10 +211,31 @@ function setupCartPage() {
   if (checkoutBtn) {
     checkoutBtn.addEventListener("click", async function () {
       const cart = getCart();
-      const paymentMethod = document.getElementById("paymentMethod")?.value;
-      const deliveryValue = document.getElementById("deliveryMethod")?.value;
+
+      const paymentMethod = document.getElementById("paymentMethod")?.value || "";
+      const deliveryValue = document.getElementById("deliveryMethod")?.value || "";
       const shippingAddress =
         document.getElementById("shippingAddress")?.value.trim() || "";
+
+      const requiresInvoice =
+        document.getElementById("requiresInvoice")?.value === "si";
+
+      const invoiceData = requiresInvoice
+        ? {
+            razon_social:
+              document.getElementById("invoiceBusinessName")?.value.trim() || "",
+            rfc:
+              document.getElementById("invoiceRfc")?.value.trim() || "",
+            regimen_fiscal:
+              document.getElementById("invoiceRegime")?.value.trim() || "",
+            uso_cfdi:
+              document.getElementById("invoiceCfdi")?.value.trim() || "",
+            codigo_postal:
+              document.getElementById("invoiceZip")?.value.trim() || "",
+            correo_factura:
+              document.getElementById("invoiceEmail")?.value.trim() || ""
+          }
+        : null;
 
       if (cart.length === 0) {
         alert("Tu carrito está vacío.");
@@ -226,12 +247,33 @@ function setupCartPage() {
         return;
       }
 
+      if (!paymentMethod) {
+        alert("Selecciona un método de pago.");
+        return;
+      }
+
+      if (requiresInvoice) {
+        if (
+          !invoiceData.razon_social ||
+          !invoiceData.rfc ||
+          !invoiceData.regimen_fiscal ||
+          !invoiceData.uso_cfdi ||
+          !invoiceData.codigo_postal ||
+          !invoiceData.correo_factura
+        ) {
+          alert("Completa todos los datos de facturación.");
+          return;
+        }
+      }
+
       const subtotal = cart.reduce(
         (acc, item) => acc + Number(item.price) * Number(item.quantity),
         0
       );
+
       const envio = deliveryValue === "delivery" ? 80 : 0;
-      const total = subtotal + envio;
+      const descuento = 0;
+      const total = subtotal + envio - descuento;
 
       const payload = {
         usuario_id: localStorage.getItem("userId") || null,
@@ -242,6 +284,9 @@ function setupCartPage() {
           deliveryValue === "delivery" ? shippingAddress : "Recoger en papelería",
         tipo_entrega: deliveryValue,
         metodo_pago: paymentMethod,
+        requiere_factura: requiresInvoice,
+        datos_factura: invoiceData,
+        descuento,
         subtotal,
         envio,
         total,
@@ -263,7 +308,7 @@ function setupCartPage() {
         );
 
         alert(
-          "Pedido guardado como prueba en este navegador. Para guardar pedidos reales necesitas publicar el servidor en Render."
+          "Pedido guardado como prueba en este navegador. Para guardar pedidos reales necesitas publicarlo en Render."
         );
 
         localStorage.removeItem("cart");
@@ -272,6 +317,9 @@ function setupCartPage() {
       }
 
       try {
+        checkoutBtn.disabled = true;
+        checkoutBtn.textContent = "Confirmando...";
+
         const response = await fetch(`${API_URL}/api/pedidos`, {
           method: "POST",
           headers: {
@@ -301,12 +349,16 @@ function setupCartPage() {
       } catch (error) {
         console.error("Error al confirmar pedido:", error);
         alert("No se pudo conectar con el servidor.");
+      } finally {
+        checkoutBtn.disabled = false;
+        checkoutBtn.textContent = "Confirmar pedido";
       }
     });
   }
 
   function toggleAddressField() {
     if (!deliveryMethod || !addressGroup) return;
+
     addressGroup.style.display =
       deliveryMethod.value === "delivery" ? "block" : "none";
   }
