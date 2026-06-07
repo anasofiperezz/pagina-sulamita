@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="stylesheet" href="styles.css?v=16">
 </head>
 
 <body>
@@ -17,6 +17,7 @@
         <div class="user-badge" id="userInfo">Cargando sesión...</div>
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="contacto.html" class="nav-btn">Contacto</a>
+        <a href="carrito.html" class="nav-btn">Carrito</a>
         <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
         <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
       </div>
@@ -100,13 +101,50 @@
               </select>
             </div>
 
-            <div class="form-group" id="addressGroup" style="display: none;">
-              <label for="shippingAddress">Dirección de envío</label>
-              <input
-                type="text"
-                id="shippingAddress"
-                placeholder="Escribe tu dirección completa"
-              />
+            <div id="addressGroup" style="display: none;">
+              <div class="form-group">
+                <label for="shippingStreet">Calle</label>
+                <input type="text" id="shippingStreet" placeholder="Ej. Durango" />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingExtNumber">Número exterior</label>
+                <input type="text" id="shippingExtNumber" placeholder="Ej. 101" />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingIntNumber">Número interior / departamento</label>
+                <input type="text" id="shippingIntNumber" placeholder="Opcional" />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingNeighborhood">Colonia</label>
+                <input type="text" id="shippingNeighborhood" placeholder="Ej. Roma Norte" />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingZip">Código postal</label>
+                <input type="text" id="shippingZip" placeholder="Ej. 06700" />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingCity">Alcaldía / Municipio</label>
+                <input type="text" id="shippingCity" placeholder="Ej. Cuauhtémoc" />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingState">Estado</label>
+                <input type="text" id="shippingState" placeholder="Ej. CDMX" />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingReferences">Referencias</label>
+                <textarea
+                  id="shippingReferences"
+                  rows="3"
+                  placeholder="Ej. Entre calles, color de fachada, indicaciones para entregar"
+                ></textarea>
+              </div>
             </div>
 
             <div class="form-group">
@@ -121,7 +159,7 @@
             <div class="payment-info-card" id="cardPaymentInfo">
               <h4>Pago con tarjeta</h4>
               <p>
-                Se aceptan todas las tarjetas. La papelería confirmará el método para realizar el pago con tarjeta.
+                Se aceptan todas las tarjetas. La papelería confirmará el proceso para realizar el pago con tarjeta.
               </p>
               <p class="subtext">
                 Por seguridad, no escribas datos de tu tarjeta dentro de la página.
@@ -216,7 +254,7 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=14"></script>
+  <script src="tienda.js?v=16"></script>
 
   <script>
     protectPage();

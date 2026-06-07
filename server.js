@@ -483,19 +483,15 @@ app.post("/api/admin/productos", async (req, res) => {
         esGeneral ? "General" : escuela,
         esGeneral ? "General" : nivel,
         esGeneral ? "General" : (grado || "General"),
-
         !esGeneral && nivel === "Secundaria"
           ? String(grado_secundaria || grado || "")
           : "",
-
         !esGeneral && nivel === "Preparatoria"
           ? String(grado_prepa || grado || "")
           : "",
-
         !esGeneral && nivel === "Preparatoria"
           ? String(area_prepa || "")
           : "",
-
         categoria,
         generoFinal,
         nombre,
@@ -602,18 +598,9 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       if (escuela != null) newEscuela = escuela;
       if (nivel != null) newNivel = nivel;
       if (grado != null) newGrado = grado || "General";
-
-      if (grado_secundaria != null) {
-        newGradoSecundaria = String(grado_secundaria || "");
-      }
-
-      if (grado_prepa != null) {
-        newGradoPrepa = String(grado_prepa || "");
-      }
-
-      if (area_prepa != null) {
-        newAreaPrepa = String(area_prepa || "");
-      }
+      if (grado_secundaria != null) newGradoSecundaria = String(grado_secundaria || "");
+      if (grado_prepa != null) newGradoPrepa = String(grado_prepa || "");
+      if (area_prepa != null) newAreaPrepa = String(area_prepa || "");
     }
 
     const newPrice =
@@ -1078,6 +1065,87 @@ app.patch("/api/pedidos/:id/estado", async (req, res) => {
     res.status(500).json({
       message: "Error al actualizar estado del pedido."
     });
+  }
+});
+
+/* =========================
+   ELIMINAR PEDIDO
+========================= */
+
+app.delete("/api/pedidos/:id", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const pedidoId = Number(req.params.id);
+    const restaurarStock = req.query.restaurar_stock === "si";
+
+    if (!pedidoId) {
+      return res.status(400).json({
+        message: "Pedido inválido."
+      });
+    }
+
+    await client.query("BEGIN");
+
+    const orderResult = await client.query(
+      "SELECT id FROM pedidos WHERE id = $1 LIMIT 1",
+      [pedidoId]
+    );
+
+    if (!orderResult.rows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        message: "Pedido no encontrado."
+      });
+    }
+
+    if (restaurarStock) {
+      const itemsResult = await client.query(
+        `
+        SELECT producto_id, talla, cantidad
+        FROM pedido_productos
+        WHERE pedido_id = $1
+        `,
+        [pedidoId]
+      );
+
+      for (const item of itemsResult.rows) {
+        await client.query(
+          `
+          UPDATE producto_tallas
+          SET stock = stock + $1
+          WHERE producto_id = $2 AND talla = $3
+          `,
+          [
+            Number(item.cantidad || 0),
+            Number(item.producto_id),
+            String(item.talla || "")
+          ]
+        );
+      }
+    }
+
+    await client.query(
+      "DELETE FROM pedidos WHERE id = $1",
+      [pedidoId]
+    );
+
+    await client.query("COMMIT");
+
+    res.json({
+      message: restaurarStock
+        ? "Pedido eliminado y stock restaurado correctamente."
+        : "Pedido eliminado correctamente."
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error en DELETE /api/pedidos/:id:", error);
+
+    res.status(500).json({
+      message: "Error al eliminar pedido."
+    });
+  } finally {
+    client.release();
   }
 });
 

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pedidos | Administrador</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=15">
+  <link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
   <header>
@@ -26,8 +26,8 @@
         <span class="page-badge">Administrador</span>
         <h1>Pedidos recibidos</h1>
         <p>
-          Aquí puedes revisar las compras realizadas por clientes e invitados,
-          su método de pago y si requieren factura.
+          Aquí puedes revisar las compras realizadas, cambiar estados,
+          eliminar pedidos y consultar pago/facturación.
         </p>
       </div>
     </section>
@@ -52,7 +52,7 @@
     <p>© 2026 Papelería Sulamita - Pedidos administrador</p>
   </footer>
 
-  <script src="tienda.js?v=15"></script>
+  <script src="tienda.js?v=16"></script>
 
   <script>
     protectPage();
@@ -177,6 +177,14 @@
             >
               Guardar estado
             </button>
+
+            <button
+              type="button"
+              class="btn-danger btn-sm"
+              onclick="deleteOrder(${Number(order.id)})"
+            >
+              Eliminar pedido
+            </button>
           </div>
 
           <div class="order-card-body">
@@ -184,7 +192,10 @@
             <p><strong>Correo:</strong> ${safeHtml(order.email_cliente || "")}</p>
             <p><strong>Teléfono:</strong> ${safeHtml(order.telefono_cliente || "No registrado")}</p>
             <p><strong>Entrega:</strong> ${safeHtml(formatDelivery(order.tipo_entrega))}</p>
-            <p><strong>Dirección:</strong> ${safeHtml(order.direccion_envio || "No aplica")}</p>
+            <p>
+              <strong>Dirección:</strong><br>
+              ${formatMultiline(order.direccion_envio || "No aplica")}
+            </p>
             <p><strong>Método de pago:</strong> ${safeHtml(formatPayment(order.metodo_pago))}</p>
 
             ${renderPaymentNote(order.metodo_pago)}
@@ -248,6 +259,40 @@
       }
     }
 
+    async function deleteOrder(orderId) {
+      const confirmDelete = confirm(
+        `¿Seguro que quieres eliminar el pedido #${orderId}? Esta acción no se puede deshacer.`
+      );
+
+      if (!confirmDelete) return;
+
+      const restoreStock = confirm(
+        "¿Quieres restaurar el stock de los productos de este pedido?"
+      );
+
+      try {
+        const response = await fetch(
+          `/api/pedidos/${orderId}?restaurar_stock=${restoreStock ? "si" : "no"}`,
+          {
+            method: "DELETE"
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          alert(data.message || "No se pudo eliminar el pedido.");
+          return;
+        }
+
+        alert(data.message || "Pedido eliminado correctamente.");
+        loadAdminOrders();
+      } catch (error) {
+        console.error("Error eliminando pedido:", error);
+        alert("No se pudo conectar con el servidor.");
+      }
+    }
+
     function renderPaymentNote(paymentMethod) {
       if (paymentMethod === "transferencia") {
         return `
@@ -267,6 +312,7 @@
             <h4>Pago con tarjeta</h4>
             <p>
               Confirmar con el cliente el proceso para pago con tarjeta.
+              No solicitar datos bancarios por esta página.
             </p>
           </div>
         `;
@@ -332,6 +378,10 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+    }
+
+    function formatMultiline(value) {
+      return safeHtml(value).replaceAll("\n", "<br>");
     }
   </script>
 </body>

@@ -236,8 +236,9 @@ function setupCartPage() {
 
       const paymentMethod = document.getElementById("paymentMethod")?.value || "";
       const deliveryValue = document.getElementById("deliveryMethod")?.value || "";
-      const shippingAddress =
-        document.getElementById("shippingAddress")?.value.trim() || "";
+
+      const shippingAddressData = getShippingAddressData();
+      const shippingAddress = formatShippingAddress(shippingAddressData);
 
       const requiresInvoice =
         document.getElementById("requiresInvoice")?.value === "si";
@@ -264,8 +265,8 @@ function setupCartPage() {
         return;
       }
 
-      if (deliveryValue === "delivery" && !shippingAddress) {
-        alert("Debes escribir una dirección para el envío a domicilio.");
+      if (deliveryValue === "delivery" && !isValidShippingAddress(shippingAddressData)) {
+        alert("Completa calle, número exterior, colonia, código postal, municipio/alcaldía y estado.");
         return;
       }
 
@@ -957,6 +958,55 @@ function buildGradeLabel(product) {
 
   return `${product.escuela} - ${product.nivel}`;
 }
+
+/* =========================
+   DIRECCIÓN DE ENVÍO
+========================= */
+
+function getShippingAddressData() {
+  return {
+    calle: document.getElementById("shippingStreet")?.value.trim() || "",
+    numero_exterior: document.getElementById("shippingExtNumber")?.value.trim() || "",
+    numero_interior: document.getElementById("shippingIntNumber")?.value.trim() || "",
+    colonia: document.getElementById("shippingNeighborhood")?.value.trim() || "",
+    codigo_postal: document.getElementById("shippingZip")?.value.trim() || "",
+    municipio: document.getElementById("shippingCity")?.value.trim() || "",
+    estado: document.getElementById("shippingState")?.value.trim() || "",
+    referencias: document.getElementById("shippingReferences")?.value.trim() || ""
+  };
+}
+
+function isValidShippingAddress(address) {
+  return Boolean(
+    address.calle &&
+    address.numero_exterior &&
+    address.colonia &&
+    address.codigo_postal &&
+    address.municipio &&
+    address.estado
+  );
+}
+
+function formatShippingAddress(address) {
+  if (!address) return "";
+
+  const lines = [
+    `${address.calle} ${address.numero_exterior}${address.numero_interior ? " Int. " + address.numero_interior : ""}`,
+    `Col. ${address.colonia}`,
+    `C.P. ${address.codigo_postal}`,
+    `${address.municipio}, ${address.estado}`
+  ];
+
+  if (address.referencias) {
+    lines.push(`Referencias: ${address.referencias}`);
+  }
+
+  return lines.join("\n");
+}
+
+/* =========================
+   ESCAPE
+========================= */
 
 function escapeHtml(value) {
   return String(value ?? "")
