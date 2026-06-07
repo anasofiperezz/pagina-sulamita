@@ -1933,3 +1933,40 @@ select:disabled {
   margin: 0;
   line-height: 1.6;
 }
+
+.order-status-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0 20px;
+}
+
+.order-status-controls label {
+  font-weight: 700;
+  color: #334155;
+}
+
+.order-status-controls select {
+  max-width: 180px;
+}
+
+.order-status.status-pendiente {
+  background: #facc15;
+  color: #1f2937;
+}
+
+.order-status.status-listo {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.order-status.status-entregado {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.order-status.status-cancelado {
+  background: #fecaca;
+  color: #991b1b;
+}

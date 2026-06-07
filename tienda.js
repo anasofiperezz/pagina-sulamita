@@ -40,6 +40,8 @@ function setupHeader() {
     });
   }
 
+  updateCartCount();
+
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", function () {
@@ -50,6 +52,7 @@ function setupHeader() {
       localStorage.removeItem("userName");
       localStorage.removeItem("cart");
       localStorage.removeItem("lastOrder");
+      updateCartCount();
       goTo("login.html");
     });
   }
@@ -183,6 +186,24 @@ function getCart() {
 
 function saveCart(cart) {
   localStorage.setItem("cart", JSON.stringify(cart));
+  updateCartCount();
+}
+
+function getCartItemCount() {
+  const cart = getCart();
+
+  return cart.reduce((total, item) => {
+    return total + Number(item.quantity || 0);
+  }, 0);
+}
+
+function updateCartCount() {
+  const count = getCartItemCount();
+  const cartElements = document.querySelectorAll('a[href="carrito.html"], #cartBtn');
+
+  cartElements.forEach((element) => {
+    element.textContent = count > 0 ? `Carrito (${count})` : "Carrito";
+  });
 }
 
 function setupCartPage() {
@@ -204,6 +225,7 @@ function setupCartPage() {
   if (clearCartBtn) {
     clearCartBtn.addEventListener("click", function () {
       localStorage.removeItem("cart");
+      updateCartCount();
       renderCart();
     });
   }
@@ -312,6 +334,7 @@ function setupCartPage() {
         );
 
         localStorage.removeItem("cart");
+        updateCartCount();
         goTo("index.html");
         return;
       }
@@ -344,6 +367,7 @@ function setupCartPage() {
         );
 
         localStorage.removeItem("cart");
+        updateCartCount();
         alert("Pedido confirmado correctamente.");
         goTo("index.html");
       } catch (error) {
@@ -372,6 +396,7 @@ function renderCart() {
 
   const cart = getCart();
   cartItemsContainer.innerHTML = "";
+  updateCartCount();
 
   if (!cart.length) {
     if (emptyCartMessage) emptyCartMessage.style.display = "block";

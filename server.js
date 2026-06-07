@@ -1037,6 +1037,51 @@ app.get("/api/pedidos", async (req, res) => {
 });
 
 /* =========================
+   ACTUALIZAR ESTADO DE PEDIDO
+========================= */
+
+app.patch("/api/pedidos/:id/estado", async (req, res) => {
+  try {
+    const pedidoId = Number(req.params.id);
+    const { estado } = req.body;
+
+    const estadosPermitidos = ["pendiente", "listo", "entregado", "cancelado"];
+
+    if (!pedidoId || !estado || !estadosPermitidos.includes(estado)) {
+      return res.status(400).json({
+        message: "Estado inválido."
+      });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE pedidos
+      SET estado = $1
+      WHERE id = $2
+      RETURNING id, estado
+      `,
+      [estado, pedidoId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        message: "Pedido no encontrado."
+      });
+    }
+
+    res.json({
+      message: "Estado actualizado correctamente",
+      pedido: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Error en PATCH /api/pedidos/:id/estado:", error);
+    res.status(500).json({
+      message: "Error al actualizar estado del pedido."
+    });
+  }
+});
+
+/* =========================
    CONTACTO
 ========================= */
 
