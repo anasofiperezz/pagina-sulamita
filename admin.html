@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=18">
+  <link rel="stylesheet" href="styles.css?v=20">
 </head>
 
 <body>
@@ -335,18 +335,68 @@
             <div class="form-group">
               <label>Productos incluidos</label>
               <p class="subtext">
-                Selecciona productos ya creados en el inventario. El cliente elegirá la talla/opción de cada producto después.
+                Busca y filtra productos por escuela, nivel, grado, área y categoría.
               </p>
+
+              <div class="package-filter-box">
+                <input
+                  type="text"
+                  id="packageProductSearch"
+                  placeholder="Buscar producto por nombre, categoría o descripción..."
+                />
+
+                <div class="package-filter-grid">
+                  <select id="packageSchoolFilter">
+                    <option value="todos">Todas las escuelas</option>
+                    <option value="General">General</option>
+                    <option value="IAE">IAE</option>
+                    <option value="IPAE">IPAE</option>
+                  </select>
+
+                  <select id="packageLevelFilter">
+                    <option value="todos">Todos los niveles</option>
+                  </select>
+
+                  <select id="packageGradeFilter">
+                    <option value="todos">Todos los grados</option>
+                  </select>
+
+                  <select id="packageAreaFilter" style="display: none;">
+                    <option value="todos">Todas las áreas</option>
+                    <option value="Área I">Área I</option>
+                    <option value="Área II">Área II</option>
+                    <option value="Área III">Área III</option>
+                    <option value="Área IV">Área IV</option>
+                  </select>
+
+                  <select id="packageCategoryFilter">
+                    <option value="todos">Todas las categorías</option>
+                    <option value="Uniformes">Uniformes</option>
+                    <option value="Accesorios">Accesorios</option>
+                    <option value="Especial">Especial</option>
+                    <option value="Libros">Libros</option>
+                    <option value="Cuadernos">Cuadernos</option>
+                    <option value="Cuadernos institucionales">Cuadernos institucionales</option>
+                    <option value="Material general">Material general</option>
+                    <option value="Material para entregar">Material para entregar</option>
+                    <option value="Laboratorio">Laboratorio</option>
+                  </select>
+                </div>
+              </div>
 
               <div class="package-products-toolbar">
                 <button type="button" class="btn-outline btn-sm" id="selectAllPackageProductsBtn">
-                  Seleccionar todos
+                  Seleccionar visibles
                 </button>
 
                 <button type="button" class="btn-outline btn-sm" id="clearPackageProductsBtn">
                   Limpiar selección
                 </button>
               </div>
+
+              <p class="subtext" id="packageSelectedCount">
+                0 productos seleccionados.
+              </p>
 
               <div id="packageProductsSelector" class="package-products-selector">
                 <div class="note">Cargando productos...</div>
@@ -391,7 +441,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=18"></script>
+  <script src="tienda.js?v=20"></script>
 
   <script>
     protectPage();
@@ -476,7 +526,16 @@
     const selectAllPackageProductsBtn = document.getElementById("selectAllPackageProductsBtn");
     const clearPackageProductsBtn = document.getElementById("clearPackageProductsBtn");
 
+    const packageProductSearch = document.getElementById("packageProductSearch");
+    const packageSchoolFilter = document.getElementById("packageSchoolFilter");
+    const packageLevelFilter = document.getElementById("packageLevelFilter");
+    const packageGradeFilter = document.getElementById("packageGradeFilter");
+    const packageAreaFilter = document.getElementById("packageAreaFilter");
+    const packageCategoryFilter = document.getElementById("packageCategoryFilter");
+    const packageSelectedCount = document.getElementById("packageSelectedCount");
+
     let editingPackageId = null;
+    let packageSelectedProductIds = new Set();
 
     updateLevelOptions();
     updateGradeOptions();
@@ -489,6 +548,10 @@
     updateInventoryLevelFilter();
     updateInventoryGradeFilter();
     updateInventoryAreaFilter();
+
+    updatePackageLevelFilter();
+    updatePackageGradeFilter();
+    updatePackageAreaFilter();
 
     initializeAdminData();
 
@@ -519,14 +582,53 @@
     selectAllPackageProductsBtn.addEventListener("click", function () {
       document.querySelectorAll(".package-product-checkbox").forEach((checkbox) => {
         checkbox.checked = true;
+        packageSelectedProductIds.add(Number(checkbox.value));
       });
+
+      updatePackageSelectedCount();
     });
 
     clearPackageProductsBtn.addEventListener("click", function () {
-      document.querySelectorAll(".package-product-checkbox").forEach((checkbox) => {
-        checkbox.checked = false;
-      });
+      packageSelectedProductIds.clear();
+      renderPackageProductOptions();
     });
+
+    packageProductsSelector.addEventListener("change", function (event) {
+      if (!event.target.classList.contains("package-product-checkbox")) return;
+
+      const productId = Number(event.target.value);
+
+      if (event.target.checked) {
+        packageSelectedProductIds.add(productId);
+      } else {
+        packageSelectedProductIds.delete(productId);
+      }
+
+      updatePackageSelectedCount();
+    });
+
+    packageProductSearch.addEventListener("input", renderPackageProductOptions);
+
+    packageSchoolFilter.addEventListener("change", function () {
+      updatePackageLevelFilter();
+      updatePackageGradeFilter();
+      updatePackageAreaFilter();
+      renderPackageProductOptions();
+    });
+
+    packageLevelFilter.addEventListener("change", function () {
+      updatePackageGradeFilter();
+      updatePackageAreaFilter();
+      renderPackageProductOptions();
+    });
+
+    packageGradeFilter.addEventListener("change", function () {
+      updatePackageAreaFilter();
+      renderPackageProductOptions();
+    });
+
+    packageAreaFilter.addEventListener("change", renderPackageProductOptions);
+    packageCategoryFilter.addEventListener("change", renderPackageProductOptions);
 
     schoolFilter.addEventListener("change", function () {
       updateInventoryLevelFilter();
@@ -1586,16 +1688,13 @@
     function renderPackageProductOptions(selectedIds = null) {
       if (!packageProductsSelector) return;
 
+      if (selectedIds) {
+        packageSelectedProductIds = new Set(selectedIds.map((id) => Number(id)));
+      }
+
       const products = Array.isArray(window.adminAllProducts)
         ? window.adminAllProducts
         : [];
-
-      const selectedSet = selectedIds
-        ? new Set(selectedIds.map((id) => Number(id)))
-        : new Set(
-            Array.from(document.querySelectorAll(".package-product-checkbox:checked"))
-              .map((checkbox) => Number(checkbox.value))
-          );
 
       if (!products.length) {
         packageProductsSelector.innerHTML = `
@@ -1603,17 +1702,31 @@
             Primero agrega productos al inventario para poder crear paquetes.
           </div>
         `;
+        updatePackageSelectedCount();
         return;
       }
 
-      packageProductsSelector.innerHTML = products
+      const filteredProducts = products.filter(productMatchesPackageFilters);
+
+      if (!filteredProducts.length) {
+        packageProductsSelector.innerHTML = `
+          <div class="note">
+            No hay productos con esos filtros.
+          </div>
+        `;
+        updatePackageSelectedCount();
+        return;
+      }
+
+      packageProductsSelector.innerHTML = filteredProducts
         .map((product) => {
           const productId = Number(product.id);
-          const checked = selectedSet.has(productId) ? "checked" : "";
-          const meta = buildAdminProductMeta(product);
+          const checked = packageSelectedProductIds.has(productId) ? "checked" : "";
           const price = product.requiere_precio
             ? "Precio pendiente"
             : formatMoney(product.precio || getFirstAvailablePrice(product));
+
+          const productGrade = product.grado || product.grado_secundaria || product.grado_prepa || "General";
 
           return `
             <label class="package-product-option">
@@ -1627,8 +1740,11 @@
               <span>
                 <strong>${escapeHtml(product.nombre || "Producto sin nombre")}</strong><br>
                 <small>
+                  ${escapeHtml(product.escuela || "General")} ·
+                  ${escapeHtml(product.nivel || "General")} ·
+                  Grado: ${escapeHtml(productGrade)} ·
+                  ${product.area_prepa ? `Área: ${escapeHtml(product.area_prepa)} ·` : ""}
                   ${escapeHtml(product.categoria || "Sin categoría")} ·
-                  ${escapeHtml(meta)} ·
                   ${escapeHtml(price)}
                 </small>
               </span>
@@ -1636,11 +1752,13 @@
           `;
         })
         .join("");
+
+      updatePackageSelectedCount();
     }
 
     function collectSelectedPackageProducts() {
-      return Array.from(document.querySelectorAll(".package-product-checkbox:checked"))
-        .map((checkbox) => Number(checkbox.value))
+      return Array.from(packageSelectedProductIds)
+        .map((id) => Number(id))
         .filter((id) => Number.isFinite(id) && id > 0);
     }
 
@@ -1805,6 +1923,7 @@
       packageDiscount.value = "10";
       packageActive.checked = true;
 
+      packageSelectedProductIds.clear();
       renderPackageProductOptions([]);
     }
 
@@ -1833,6 +1952,110 @@
         console.error(error);
         showPackageMessage("No se pudo conectar con el servidor.", true);
       }
+    }
+
+    function updatePackageLevelFilter() {
+      const currentValue = packageLevelFilter.value;
+      const options = getInventoryLevelOptionsBySchool(packageSchoolFilter.value);
+
+      renderSelectOptions(packageLevelFilter, options);
+
+      const values = options.map(option => option.value);
+      packageLevelFilter.value = values.includes(currentValue) ? currentValue : options[0].value;
+    }
+
+    function updatePackageGradeFilter() {
+      const currentValue = packageGradeFilter.value;
+      const options = getInventoryGradeOptionsByLevel(packageLevelFilter.value);
+
+      renderSelectOptions(packageGradeFilter, options);
+
+      const values = options.map(option => option.value);
+      packageGradeFilter.value = values.includes(currentValue) ? currentValue : options[0].value;
+    }
+
+    function updatePackageAreaFilter() {
+      const shouldShowArea =
+        packageLevelFilter.value === "Preparatoria" &&
+        packageGradeFilter.value === "6";
+
+      packageAreaFilter.style.display = shouldShowArea ? "block" : "none";
+
+      if (!shouldShowArea) {
+        packageAreaFilter.value = "todos";
+      }
+    }
+
+    function productMatchesPackageFilters(product) {
+      const search = String(packageProductSearch.value || "").trim().toLowerCase();
+
+      const selectedSchool = packageSchoolFilter.value;
+      const selectedLevel = packageLevelFilter.value;
+      const selectedGrade = packageGradeFilter.value;
+      const selectedArea = packageAreaFilter.value;
+      const selectedCategory = packageCategoryFilter.value;
+
+      const productGrade = String(
+        product.grado ||
+        product.grado_secundaria ||
+        product.grado_prepa ||
+        "General"
+      );
+
+      const metaText = [
+        product.nombre,
+        product.descripcion,
+        product.categoria,
+        product.escuela,
+        product.nivel,
+        productGrade,
+        product.area_prepa,
+        product.genero_uniforme
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = !search || metaText.includes(search);
+
+      const matchesSchool =
+        selectedSchool === "todos" ||
+        product.escuela === selectedSchool;
+
+      const matchesLevel =
+        selectedLevel === "todos" ||
+        product.nivel === selectedLevel;
+
+      const matchesGrade =
+        selectedGrade === "todos" ||
+        productGrade === selectedGrade;
+
+      const matchesArea =
+        selectedArea === "todos" ||
+        product.area_prepa === selectedArea;
+
+      const matchesCategory =
+        selectedCategory === "todos" ||
+        product.categoria === selectedCategory;
+
+      return (
+        matchesSearch &&
+        matchesSchool &&
+        matchesLevel &&
+        matchesGrade &&
+        matchesArea &&
+        matchesCategory
+      );
+    }
+
+    function updatePackageSelectedCount() {
+      if (!packageSelectedCount) return;
+
+      const count = packageSelectedProductIds.size;
+
+      packageSelectedCount.textContent =
+        count === 1
+          ? "1 producto seleccionado."
+          : `${count} productos seleccionados.`;
     }
 
     function showAdminMessage(message, isError = false) {
