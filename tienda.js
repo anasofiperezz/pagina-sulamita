@@ -326,22 +326,16 @@ function setupCartPage() {
       const requiresInvoice =
         document.getElementById("requiresInvoice")?.value === "si";
 
-      const invoiceData = requiresInvoice
-        ? {
-            razon_social:
-              document.getElementById("invoiceBusinessName")?.value.trim() || "",
-            rfc:
-              document.getElementById("invoiceRfc")?.value.trim() || "",
-            regimen_fiscal:
-              document.getElementById("invoiceRegime")?.value.trim() || "",
-            uso_cfdi:
-              document.getElementById("invoiceCfdi")?.value.trim() || "",
-            codigo_postal:
-              document.getElementById("invoiceZip")?.value.trim() || "",
-            correo_factura:
-              document.getElementById("invoiceEmail")?.value.trim() || ""
-          }
-        : null;
+      let invoiceData = null;
+
+      if (requiresInvoice) {
+        try {
+          invoiceData = await getInvoiceDataForOrder(paymentMethod);
+        } catch (error) {
+          alert(error.message || "Completa los datos de facturación.");
+          return;
+        }
+      }
 
       if (cart.length === 0) {
         alert("Tu carrito está vacío.");
@@ -356,20 +350,6 @@ function setupCartPage() {
       if (!paymentMethod) {
         alert("Selecciona un método de pago.");
         return;
-      }
-
-      if (requiresInvoice) {
-        if (
-          !invoiceData.razon_social ||
-          !invoiceData.rfc ||
-          !invoiceData.regimen_fiscal ||
-          !invoiceData.uso_cfdi ||
-          !invoiceData.codigo_postal ||
-          !invoiceData.correo_factura
-        ) {
-          alert("Completa todos los datos de facturación.");
-          return;
-        }
       }
 
       const totals = calculateCartAmounts(deliveryValue);
@@ -1472,6 +1452,84 @@ function buildGradeLabel(product) {
   }
 
   return `${product.escuela} - ${product.nivel}`;
+}
+
+/* =========================
+   FACTURACIÓN
+========================= */
+
+async function uploadInvoiceFile(inputId, label, required = true) {
+  const input = document.getElementById(inputId);
+  const file = input?.files && input.files[0];
+
+  if (!file) {
+    if (required) {
+      throw new Error(`Falta subir: ${label}.`);
+    }
+
+    return "";
+  }
+
+  const formData = new FormData();
+  formData.append("archivo", file);
+
+  const response = await fetch("/api/subir-archivo", {
+    method: "POST",
+    body: formData
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || `No se pudo subir: ${label}.`);
+  }
+
+  return data.url || "";
+}
+
+async function getInvoiceDataForOrder(paymentMethod) {
+  const usoCfdi = document.getElementById("invoiceCfdi")?.value.trim() || "";
+  const modoPago = document.getElementById("invoicePaymentMode")?.value.trim() || "";
+  const correoFactura = document.getElementById("invoiceEmail")?.value.trim() || "";
+
+  if (!usoCfdi) {
+    throw new Error("Escribe el uso de CFDI.");
+  }
+
+  if (!modoPago) {
+    throw new Error("Selecciona el modo de pago para factura.");
+  }
+
+  if (!correoFactura) {
+    throw new Error("Escribe el correo donde se enviará la factura.");
+  }
+
+  const constanciaFiscalUrl = await uploadInvoiceFile(
+    "invoiceFiscalFile",
+    "Constancia fiscal actualizada",
+    true
+  );
+
+  const notaCompraUrl = await uploadInvoiceFile(
+    "invoiceReceiptFile",
+    "Foto de nota de compra",
+    true
+  );
+
+  const voucherUrl = await uploadInvoiceFile(
+    "invoiceVoucherFile",
+    "Foto de voucher de pago con tarjeta",
+    paymentMethod === "tarjeta"
+  );
+
+  return {
+    constancia_fiscal_url: constanciaFiscalUrl,
+    uso_cfdi: usoCfdi,
+    modo_pago_factura: modoPago,
+    nota_compra_url: notaCompraUrl,
+    voucher_url: voucherUrl,
+    correo_factura: correoFactura
+  };
 }
 
 /* =========================

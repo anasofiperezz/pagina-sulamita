@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(express.static(publicDir));
 
 /* =========================
-   CLOUDINARY / SUBIDA IMÁGENES
+   CLOUDINARY
 ========================= */
 
 cloudinary.config({
@@ -25,7 +25,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const upload = multer({
+const uploadImage = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024
@@ -41,12 +41,34 @@ const upload = multer({
   }
 });
 
-function uploadBufferToCloudinary(buffer) {
+const uploadFile = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/jpg",
+      "application/pdf"
+    ];
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Solo se permiten archivos JPG, PNG, WEBP o PDF."));
+    }
+
+    cb(null, true);
+  }
+});
+
+function uploadBufferToCloudinary(buffer, options = {}) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
-        folder: "papeleria-sulamita/productos",
-        resource_type: "image"
+        folder: options.folder || "papeleria-sulamita/productos",
+        resource_type: options.resource_type || "image"
       },
       function (error, result) {
         if (error) {
@@ -177,7 +199,6 @@ function cleanDiscount(value) {
   const numberValue = Number(value || 0);
 
   if (Number.isNaN(numberValue)) return 0;
-
   if (numberValue < 0) return 0;
   if (numberValue > 100) return 100;
 
@@ -284,7 +305,7 @@ async function getPackagesWithProducts(onlyActive = false) {
 }
 
 /* =========================
-   ACTUALIZACIONES DE BASE DE DATOS
+   ACTUALIZACIONES BD
 ========================= */
 
 async function ensureDatabaseUpdates() {
@@ -506,13 +527,7 @@ app.post("/api/admin/paquetes", async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const {
-      nombre,
-      descripcion,
-      descuento,
-      activo,
-      productos
-    } = req.body;
+    const { nombre, descripcion, descuento, activo, productos } = req.body;
 
     const cleanName = String(nombre || "").trim();
     const cleanDescription = String(descripcion || "").trim();
@@ -575,11 +590,7 @@ app.post("/api/admin/paquetes", async (req, res) => {
         )
         VALUES ($1, $2, $3)
         `,
-        [
-          paqueteId,
-          cleanProductIds[index],
-          index + 1
-        ]
+        [paqueteId, cleanProductIds[index], index + 1]
       );
     }
 
@@ -603,14 +614,7 @@ app.put("/api/admin/paquetes/:id", async (req, res) => {
 
   try {
     const paqueteId = Number(req.params.id);
-
-    const {
-      nombre,
-      descripcion,
-      descuento,
-      activo,
-      productos
-    } = req.body;
+    const { nombre, descripcion, descuento, activo, productos } = req.body;
 
     if (!paqueteId) {
       return res.status(400).json({ message: "Paquete inválido." });
@@ -705,20 +709,14 @@ app.put("/api/admin/paquetes/:id", async (req, res) => {
           )
           VALUES ($1, $2, $3)
           `,
-          [
-            paqueteId,
-            cleanProductIds[index],
-            index + 1
-          ]
+          [paqueteId, cleanProductIds[index], index + 1]
         );
       }
     }
 
     await client.query("COMMIT");
 
-    res.json({
-      message: "Paquete actualizado correctamente"
-    });
+    res.json({ message: "Paquete actualizado correctamente" });
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error en PUT /api/admin/paquetes/:id:", error);
@@ -745,9 +743,7 @@ app.delete("/api/admin/paquetes/:id", async (req, res) => {
       return res.status(404).json({ message: "Paquete no encontrado." });
     }
 
-    res.json({
-      message: "Paquete eliminado correctamente"
-    });
+    res.json({ message: "Paquete eliminado correctamente" });
   } catch (error) {
     console.error("Error en DELETE /api/admin/paquetes/:id:", error);
     res.status(500).json({ message: "Error al eliminar paquete" });
@@ -755,11 +751,11 @@ app.delete("/api/admin/paquetes/:id", async (req, res) => {
 });
 
 /* =========================
-   ADMIN - SUBIR IMAGEN
+   ADMIN - SUBIR IMAGEN PRODUCTO
 ========================= */
 
 app.post("/api/admin/subir-imagen", function (req, res) {
-  upload.single("imagen")(req, res, async function (error) {
+  uploadImage.single("imagen")(req, res, async function (error) {
     try {
       if (error) {
         return res.status(400).json({
@@ -781,7 +777,10 @@ app.post("/api/admin/subir-imagen", function (req, res) {
         return res.status(400).json({ message: "No se recibió ninguna imagen." });
       }
 
-      const result = await uploadBufferToCloudinary(req.file.buffer);
+      const result = await uploadBufferToCloudinary(req.file.buffer, {
+        folder: "papeleria-sulamita/productos",
+        resource_type: "image"
+      });
 
       res.status(201).json({
         message: "Imagen subida correctamente",
@@ -792,6 +791,54 @@ app.post("/api/admin/subir-imagen", function (req, res) {
 
       res.status(500).json({
         message: uploadError.message || "Error al subir imagen."
+      });
+    }
+  });
+});
+
+/* =========================
+   SUBIR ARCHIVOS FACTURA
+========================= */
+
+app.post("/api/subir-archivo", function (req, res) {
+  uploadFile.single("archivo")(req, res, async function (error) {
+    try {
+      if (error) {
+        return res.status(400).json({
+          message: error.message || "No se pudo procesar el archivo."
+        });
+      }
+
+      if (
+        !process.env.CLOUDINARY_CLOUD_NAME ||
+        !process.env.CLOUDINARY_API_KEY ||
+        !process.env.CLOUDINARY_API_SECRET
+      ) {
+        return res.status(500).json({
+          message: "Faltan las variables de Cloudinary en Render."
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          message: "No se recibió ningún archivo."
+        });
+      }
+
+      const result = await uploadBufferToCloudinary(req.file.buffer, {
+        folder: "papeleria-sulamita/facturacion",
+        resource_type: "auto"
+      });
+
+      res.status(201).json({
+        message: "Archivo subido correctamente",
+        url: result.secure_url
+      });
+    } catch (uploadError) {
+      console.error("Error en POST /api/subir-archivo:", uploadError);
+
+      res.status(500).json({
+        message: uploadError.message || "Error al subir archivo."
       });
     }
   });
@@ -893,19 +940,15 @@ app.post("/api/admin/productos", async (req, res) => {
         esGeneral ? "General" : escuela,
         esGeneral ? "General" : nivel,
         esGeneral ? "General" : (grado || "General"),
-
         !esGeneral && nivel === "Secundaria"
           ? String(grado_secundaria || grado || "")
           : "",
-
         !esGeneral && nivel === "Preparatoria"
           ? String(grado_prepa || grado || "")
           : "",
-
         !esGeneral && nivel === "Preparatoria"
           ? String(area_prepa || "")
           : "",
-
         categoria,
         generoFinal,
         nombre,
@@ -1012,18 +1055,9 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       if (escuela != null) newEscuela = escuela;
       if (nivel != null) newNivel = nivel;
       if (grado != null) newGrado = grado || "General";
-
-      if (grado_secundaria != null) {
-        newGradoSecundaria = String(grado_secundaria || "");
-      }
-
-      if (grado_prepa != null) {
-        newGradoPrepa = String(grado_prepa || "");
-      }
-
-      if (area_prepa != null) {
-        newAreaPrepa = String(area_prepa || "");
-      }
+      if (grado_secundaria != null) newGradoSecundaria = String(grado_secundaria || "");
+      if (grado_prepa != null) newGradoPrepa = String(grado_prepa || "");
+      if (area_prepa != null) newAreaPrepa = String(area_prepa || "");
     }
 
     const newPrice =
@@ -1128,7 +1162,7 @@ app.delete("/api/admin/productos/:id", async (req, res) => {
 });
 
 /* =========================
-   PEDIDOS
+   CREAR PEDIDO
 ========================= */
 
 app.post("/api/pedidos", async (req, res) => {
@@ -1172,24 +1206,29 @@ app.post("/api/pedidos", async (req, res) => {
 
     if (requiereFacturaFinal) {
       const {
-        razon_social,
-        rfc,
-        regimen_fiscal,
+        constancia_fiscal_url,
         uso_cfdi,
-        codigo_postal,
+        modo_pago_factura,
+        nota_compra_url,
+        voucher_url,
         correo_factura
       } = datosFacturaFinal;
 
       if (
-        !razon_social ||
-        !rfc ||
-        !regimen_fiscal ||
+        !constancia_fiscal_url ||
         !uso_cfdi ||
-        !codigo_postal ||
+        !modo_pago_factura ||
+        !nota_compra_url ||
         !correo_factura
       ) {
         return res.status(400).json({
           message: "Faltan datos de facturación."
+        });
+      }
+
+      if (metodo_pago === "tarjeta" && !voucher_url) {
+        return res.status(400).json({
+          message: "Falta subir el voucher de pago con tarjeta."
         });
       }
     }
@@ -1404,6 +1443,8 @@ app.get("/api/pedidos", async (req, res) => {
           json_agg(
             json_build_object(
               'producto_id', pp.producto_id,
+              'nombre', pr.nombre,
+              'categoria', pr.categoria,
               'talla', pp.talla,
               'cantidad', pp.cantidad,
               'precio', pp.precio
@@ -1414,6 +1455,7 @@ app.get("/api/pedidos", async (req, res) => {
         ) AS productos
       FROM pedidos p
       LEFT JOIN pedido_productos pp ON pp.pedido_id = p.id
+      LEFT JOIN productos pr ON pr.id = pp.producto_id
       GROUP BY p.id
       ORDER BY p.id DESC
       `
@@ -1447,7 +1489,7 @@ app.get("/api/pedidos", async (req, res) => {
 });
 
 /* =========================
-   ACTUALIZAR ESTADO DE PEDIDO
+   ACTUALIZAR ESTADO PEDIDO
 ========================= */
 
 app.patch("/api/pedidos/:id/estado", async (req, res) => {

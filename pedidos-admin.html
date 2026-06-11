@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pedidos | Administrador</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=16">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
   <header>
@@ -52,7 +52,7 @@
     <p>© 2026 Papelería Sulamita - Pedidos administrador</p>
   </footer>
 
-  <script src="tienda.js?v=16"></script>
+  <script src="tienda.js?v=21"></script>
 
   <script>
     protectPage();
@@ -134,7 +134,8 @@
       const productosHtml = Array.isArray(order.productos) && order.productos.length
         ? order.productos.map(item => `
             <li>
-              Producto ID: <strong>${safeHtml(item.producto_id)}</strong> |
+              <strong>${safeHtml(item.nombre || "Producto ID: " + item.producto_id)}</strong><br>
+              Categoría: <strong>${safeHtml(item.categoria || "Sin categoría")}</strong> |
               Talla/Opción: <strong>${safeHtml(item.talla || "Sin talla")}</strong> |
               Cantidad: <strong>${safeHtml(item.cantidad)}</strong> |
               Precio: <strong>${formatMoney(item.precio || 0)}</strong>
@@ -346,13 +347,38 @@
 
       return `
         <div class="payment-info-card">
-          <h4>Datos de facturación</h4>
-          <p><strong>Razón social:</strong> ${safeHtml(datos.razon_social || "")}</p>
-          <p><strong>RFC:</strong> ${safeHtml(datos.rfc || "")}</p>
-          <p><strong>Régimen fiscal:</strong> ${safeHtml(datos.regimen_fiscal || "")}</p>
+          <h4>Datos para factura</h4>
+
           <p><strong>Uso de CFDI:</strong> ${safeHtml(datos.uso_cfdi || "")}</p>
-          <p><strong>Código postal fiscal:</strong> ${safeHtml(datos.codigo_postal || "")}</p>
+          <p><strong>Modo de pago:</strong> ${safeHtml(datos.modo_pago_factura || "")}</p>
           <p><strong>Correo para factura:</strong> ${safeHtml(datos.correo_factura || "")}</p>
+
+          <p>
+            <strong>Constancia fiscal:</strong>
+            ${
+              datos.constancia_fiscal_url
+                ? `<a href="${safeHtml(datos.constancia_fiscal_url)}" target="_blank">Ver archivo</a>`
+                : "No subida"
+            }
+          </p>
+
+          <p>
+            <strong>Nota de compra:</strong>
+            ${
+              datos.nota_compra_url
+                ? `<a href="${safeHtml(datos.nota_compra_url)}" target="_blank">Ver archivo</a>`
+                : "No subida"
+            }
+          </p>
+
+          <p>
+            <strong>Voucher tarjeta:</strong>
+            ${
+              datos.voucher_url
+                ? `<a href="${safeHtml(datos.voucher_url)}" target="_blank">Ver archivo</a>`
+                : "No aplica / No subido"
+            }
+          </p>
         </div>
       `;
     }

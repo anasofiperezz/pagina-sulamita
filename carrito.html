@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=19">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 
 <body>
@@ -58,18 +58,16 @@
             <h2>Información importante</h2>
 
             <div class="info-card">
-              <h3>Descuento del 10%</h3>
+              <h3>Descuentos</h3>
               <p>
-                El descuento aplica únicamente en paquetes o compras completas configuradas por la papelería:
+                Si agregas un paquete con descuento, el descuento aparecerá automáticamente
+                en el resumen del pedido.
               </p>
               <ul>
                 <li>Uniforme completo diario con gala.</li>
                 <li>Uniforme completo de deportes.</li>
                 <li>Lista completa de útiles: libros de texto + cuadernos con agenda escolar e higiene.</li>
               </ul>
-              <p>
-                Si agregas un paquete con descuento, el descuento aparecerá automáticamente en el resumen del pedido.
-              </p>
             </div>
           </div>
         </div>
@@ -215,34 +213,75 @@
             </div>
 
             <div id="invoiceGroup" style="display: none;">
-              <div class="form-group">
-                <label for="invoiceBusinessName">Razón social</label>
-                <input type="text" id="invoiceBusinessName" placeholder="Nombre o razón social" />
+              <div class="payment-info-card">
+                <h4>Datos para factura</h4>
+                <p class="subtext">
+                  Sube los datos necesarios para emitir tu factura. La constancia fiscal debe estar actualizada.
+                </p>
               </div>
 
               <div class="form-group">
-                <label for="invoiceRfc">RFC</label>
-                <input type="text" id="invoiceRfc" placeholder="RFC" />
-              </div>
-
-              <div class="form-group">
-                <label for="invoiceRegime">Régimen fiscal</label>
-                <input type="text" id="invoiceRegime" placeholder="Ej. Régimen de Sueldos, General de Ley, etc." />
+                <label for="invoiceFiscalFile">Constancia fiscal actualizada</label>
+                <input
+                  type="file"
+                  id="invoiceFiscalFile"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
+                />
+                <p class="subtext">
+                  Puedes subir imagen o PDF.
+                </p>
               </div>
 
               <div class="form-group">
                 <label for="invoiceCfdi">Uso de CFDI</label>
-                <input type="text" id="invoiceCfdi" placeholder="Ej. G03, D01, etc." />
+                <input
+                  type="text"
+                  id="invoiceCfdi"
+                  placeholder="Ej. G03 - Gastos en general"
+                />
               </div>
 
               <div class="form-group">
-                <label for="invoiceZip">Código postal fiscal</label>
-                <input type="text" id="invoiceZip" placeholder="Código postal" />
+                <label for="invoicePaymentMode">Modo de pago para factura</label>
+                <select id="invoicePaymentMode">
+                  <option value="">Selecciona modo de pago</option>
+                  <option value="Tarjeta">Tarjeta</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Efectivo">Efectivo</option>
+                </select>
               </div>
 
               <div class="form-group">
-                <label for="invoiceEmail">Correo para factura</label>
-                <input type="email" id="invoiceEmail" placeholder="correo@ejemplo.com" />
+                <label for="invoiceReceiptFile">Foto de nota de compra</label>
+                <input
+                  type="file"
+                  id="invoiceReceiptFile"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
+                />
+                <p class="subtext">
+                  Sube foto o PDF de la nota de compra.
+                </p>
+              </div>
+
+              <div class="form-group" id="invoiceVoucherGroup" style="display: none;">
+                <label for="invoiceVoucherFile">Foto de voucher de pago con tarjeta</label>
+                <input
+                  type="file"
+                  id="invoiceVoucherFile"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
+                />
+                <p class="subtext">
+                  Este archivo solo se solicita si el pago fue con tarjeta.
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label for="invoiceEmail">Correo donde se enviará la factura</label>
+                <input
+                  type="email"
+                  id="invoiceEmail"
+                  placeholder="correo@ejemplo.com"
+                />
               </div>
             </div>
 
@@ -259,7 +298,7 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=19"></script>
+  <script src="tienda.js?v=21"></script>
 
   <script>
     protectPage();
@@ -283,6 +322,8 @@
 
     const requiresInvoice = document.getElementById("requiresInvoice");
     const invoiceGroup = document.getElementById("invoiceGroup");
+    const invoicePaymentMode = document.getElementById("invoicePaymentMode");
+    const invoiceVoucherGroup = document.getElementById("invoiceVoucherGroup");
 
     function updatePaymentInfo() {
       const value = paymentMethod.value;
@@ -290,6 +331,16 @@
       cardPaymentInfo.style.display = value === "tarjeta" ? "block" : "none";
       cashPaymentInfo.style.display = value === "efectivo" ? "block" : "none";
       transferPaymentInfo.style.display = value === "transferencia" ? "block" : "none";
+
+      if (invoicePaymentMode) {
+        if (value === "tarjeta") invoicePaymentMode.value = "Tarjeta";
+        if (value === "transferencia") invoicePaymentMode.value = "Transferencia";
+        if (value === "efectivo") invoicePaymentMode.value = "Efectivo";
+      }
+
+      if (invoiceVoucherGroup) {
+        invoiceVoucherGroup.style.display = value === "tarjeta" ? "block" : "none";
+      }
     }
 
     function updateInvoiceForm() {
