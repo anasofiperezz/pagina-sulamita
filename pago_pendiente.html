@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pago pendiente | Papelería Sulamita</title>
+  <link rel="icon" href="img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=22">
+</head>
+
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="carrito.html" class="nav-btn">Carrito</a>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero cart-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Mercado Pago</span>
+        <h1>Pago pendiente</h1>
+        <p>
+          Mercado Pago todavía no confirmó el pago.
+        </p>
+      </div>
+    </section>
+
+    <section class="cart-page">
+      <div class="cart-card" style="max-width: 760px; margin: 0 auto;">
+        <div class="info-card">
+          <h2>Tu pago está pendiente</h2>
+          <p>
+            Esto puede pasar si elegiste un método que tarda más en confirmarse.
+          </p>
+          <p>
+            Por ahora el pedido no se registró como pagado. Conserva tu comprobante
+            y revisa el estado en Mercado Pago.
+          </p>
+
+          <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="carrito.html" class="btn-primary">Volver al carrito</a>
+            <a href="index.html" class="btn-outline">Volver al inicio</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Pago pendiente</p>
+  </footer>
+
+  <script src="tienda.js?v=22"></script>
+
+  <script>
+    protectPage();
+    setupHeader();
+  </script>
+</body>
+</html>

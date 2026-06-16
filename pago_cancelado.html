@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pago cancelado | Papelería Sulamita</title>
+  <link rel="icon" href="img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=22">
+</head>
+
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="carrito.html" class="nav-btn">Carrito</a>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero cart-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Mercado Pago</span>
+        <h1>Pago cancelado</h1>
+        <p>
+          No se registró ningún pedido porque el pago no se completó.
+        </p>
+      </div>
+    </section>
+
+    <section class="cart-page">
+      <div class="cart-card" style="max-width: 760px; margin: 0 auto;">
+        <div class="info-card">
+          <h2>Tu compra sigue en el carrito</h2>
+          <p>
+            Puedes volver al carrito e intentar pagar nuevamente o elegir otro método de pago.
+          </p>
+
+          <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="carrito.html" class="btn-primary">Volver al carrito</a>
+            <a href="index.html" class="btn-outline">Volver al inicio</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Pago cancelado</p>
+  </footer>
+
+  <script src="tienda.js?v=22"></script>
+
+  <script>
+    protectPage();
+    setupHeader();
+  </script>
+</body>
+</html>

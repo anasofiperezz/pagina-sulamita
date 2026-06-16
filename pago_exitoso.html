@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pago exitoso | Papelería Sulamita</title>
+  <link rel="icon" href="img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=22">
+</head>
+
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="carrito.html" class="nav-btn">Carrito</a>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero cart-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Mercado Pago</span>
+        <h1>Procesando pago...</h1>
+        <p id="paymentMessage">
+          Estamos confirmando tu pedido. No cierres esta ventana.
+        </p>
+      </div>
+    </section>
+
+    <section class="cart-page">
+      <div class="cart-card" style="max-width: 760px; margin: 0 auto;">
+        <div id="paymentResult">
+          <div class="info-card">
+            <h2>Validando pago</h2>
+            <p>Espera un momento mientras registramos tu pedido.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Pago exitoso</p>
+  </footer>
+
+  <script src="tienda.js?v=22"></script>
+
+  <script>
+    protectPage();
+    setupHeader();
+
+    processSuccessfulPayment();
+
+    async function processSuccessfulPayment() {
+      const resultContainer = document.getElementById("paymentResult");
+      const paymentMessage = document.getElementById("paymentMessage");
+
+      const params = new URLSearchParams(window.location.search);
+
+      const collectionStatus =
+        params.get("collection_status") ||
+        params.get("status") ||
+        "";
+
+      const paymentId =
+        params.get("payment_id") ||
+        params.get("collection_id") ||
+        "";
+
+      const preferenceId =
+        params.get("preference_id") ||
+        "";
+
+      const paymentType =
+        params.get("payment_type") ||
+        "";
+
+      const isApproved =
+        collectionStatus === "approved" ||
+        collectionStatus === "success";
+
+      if (!isApproved) {
+        paymentMessage.textContent = "El pago todavía no aparece como aprobado.";
+
+        resultContainer.innerHTML = `
+          <div class="info-card">
+            <h2>Pago no confirmado</h2>
+            <p>
+              Mercado Pago no regresó el pago como aprobado. El pedido no se registró todavía.
+            </p>
+            <p>
+              Estado recibido: <strong>${safeHtml(collectionStatus || "Sin estado")}</strong>
+            </p>
+
+            <div style="margin-top: 20px;">
+              <a href="carrito.html" class="btn-primary">Volver al carrito</a>
+            </div>
+          </div>
+        `;
+
+        return;
+      }
+
+      const pendingOrderRaw = localStorage.getItem("pendingMercadoPagoOrder");
+
+      if (!pendingOrderRaw) {
+        paymentMessage.textContent = "No encontramos un pedido pendiente en este navegador.";
+
+        resultContainer.innerHTML = `
+          <div class="info-card">
+            <h2>Pago aprobado</h2>
+            <p>
+              El pago aparece como aprobado, pero no encontramos el pedido pendiente
+              guardado en este navegador.
+            </p>
+            <p>
+              Conserva tu comprobante de Mercado Pago y contacta a la papelería.
+            </p>
+
+            <div style="margin-top: 20px;">
+              <a href="index.html" class="btn-primary">Volver al inicio</a>
+            </div>
+          </div>
+        `;
+
+        return;
+      }
+
+      let pendingOrder = null;
+
+      try {
+        pendingOrder = JSON.parse(pendingOrderRaw);
+      } catch (error) {
+        console.error("Error leyendo pedido pendiente:", error);
+
+        resultContainer.innerHTML = `
+          <div class="info-card">
+            <h2>Error al leer el pedido</h2>
+            <p>
+              El pago fue aprobado, pero hubo un problema leyendo el pedido pendiente.
+              Conserva tu comprobante de Mercado Pago.
+            </p>
+          </div>
+        `;
+
+        return;
+      }
+
+      const orderPayload = {
+        ...pendingOrder,
+        metodo_pago: "tarjeta",
+        estado_pago: "pagado",
+        mp_preference_id: preferenceId,
+        mp_payment_id: paymentId,
+        mp_status: collectionStatus,
+        datos_mercado_pago: {
+          collection_status: collectionStatus,
+          payment_id: paymentId,
+          preference_id: preferenceId,
+          payment_type: paymentType
+        }
+      };
+
+      try {
+        resultContainer.innerHTML = `
+          <div class="info-card">
+            <h2>Pago aprobado</h2>
+            <p>Registrando tu pedido en la papelería...</p>
+          </div>
+        `;
+
+        const response = await fetch("/api/pedidos", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(orderPayload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          resultContainer.innerHTML = `
+            <div class="info-card">
+              <h2>Pago aprobado, pero el pedido no se pudo registrar</h2>
+              <p>${safeHtml(data.message || "Ocurrió un error al registrar el pedido.")}</p>
+              <p>
+                Conserva tu comprobante de Mercado Pago y contacta a la papelería.
+              </p>
+
+              <div style="margin-top: 20px;">
+                <a href="carrito.html" class="btn-primary">Volver al carrito</a>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        localStorage.setItem(
+          "lastOrder",
+          JSON.stringify({
+            ...orderPayload,
+            pedidoId: data.pedidoId
+          })
+        );
+
+        localStorage.removeItem("pendingMercadoPagoOrder");
+        localStorage.removeItem("cart");
+        updateCartCount();
+
+        paymentMessage.textContent = "Tu pago fue aprobado y tu pedido quedó registrado.";
+
+        resultContainer.innerHTML = `
+          <div class="info-card success-card">
+            <h2>¡Pago exitoso!</h2>
+            <p>
+              Tu pedido fue registrado correctamente.
+            </p>
+            <p>
+              <strong>Número de pedido:</strong> #${safeHtml(data.pedidoId)}
+            </p>
+            <p>
+              <strong>Estado de pago:</strong> Pagado con Mercado Pago
+            </p>
+
+            <div style="margin-top: 20px;">
+              <a href="index.html" class="btn-primary">Volver al inicio</a>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        console.error("Error registrando pedido después de pago:", error);
+
+        resultContainer.innerHTML = `
+          <div class="info-card">
+            <h2>Pago aprobado, pero ocurrió un error</h2>
+            <p>
+              No se pudo conectar con el servidor para registrar el pedido.
+              Conserva tu comprobante de Mercado Pago y contacta a la papelería.
+            </p>
+          </div>
+        `;
+      }
+    }
+
+    function safeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
