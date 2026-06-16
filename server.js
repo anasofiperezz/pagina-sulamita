@@ -319,7 +319,11 @@ async function ensureDatabaseUpdates() {
       ALTER TABLE pedidos
       ADD COLUMN IF NOT EXISTS requiere_factura BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS datos_factura JSONB,
-      ADD COLUMN IF NOT EXISTS descuento NUMERIC(10, 2) DEFAULT 0;
+      ADD COLUMN IF NOT EXISTS descuento NUMERIC(10, 2) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS estado_pago TEXT DEFAULT 'pendiente',
+      ADD COLUMN IF NOT EXISTS mp_preference_id TEXT DEFAULT '',
+      ADD COLUMN IF NOT EXISTS mp_payment_id TEXT DEFAULT '',
+      ADD COLUMN IF NOT EXISTS mp_status TEXT DEFAULT '';
     `);
 
     await pool.query(`
@@ -845,6 +849,102 @@ app.post("/api/subir-archivo", function (req, res) {
 });
 
 /* =========================
+   MERCADO PAGO - CREAR PREFERENCIA
+========================= */
+
+app.post("/api/mercadopago/crear-preferencia", async (req, res) => {
+  try {
+    const { pedido } = req.body;
+
+    if (!process.env.MP_ACCESS_TOKEN) {
+      return res.status(500).json({
+        message: "Falta configurar MP_ACCESS_TOKEN en Render."
+      });
+    }
+
+    if (!pedido || !pedido.total || !Array.isArray(pedido.productos) || !pedido.productos.length) {
+      return res.status(400).json({
+        message: "Faltan datos del pedido para crear el pago."
+      });
+    }
+
+    const total = Number(pedido.total || 0);
+
+    if (total <= 0) {
+      return res.status(400).json({
+        message: "El total del pedido no es válido."
+      });
+    }
+
+    const baseUrl =
+      process.env.PUBLIC_BASE_URL ||
+      `${req.protocol}://${req.get("host")}`;
+
+    const preferencePayload = {
+      items: [
+        {
+          title: "Pedido Papelería Sulamita",
+          description: "Compra en línea Papelería Sulamita",
+          quantity: 1,
+          currency_id: "MXN",
+          unit_price: Number(total.toFixed(2))
+        }
+      ],
+      payer: {
+        name: pedido.nombre_cliente || "Cliente",
+        email: pedido.email_cliente || ""
+      },
+      back_urls: {
+        success: `${baseUrl}/pago-exitoso.html`,
+        failure: `${baseUrl}/pago-cancelado.html`,
+        pending: `${baseUrl}/pago-pendiente.html`
+      },
+      auto_return: "approved",
+      statement_descriptor: "PAPELERIA",
+      external_reference: `pedido-${Date.now()}`,
+      metadata: {
+        cliente: pedido.nombre_cliente || "",
+        email: pedido.email_cliente || "",
+        total: total
+      }
+    };
+
+    const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify(preferencePayload)
+    });
+
+    const mpData = await mpResponse.json();
+
+    if (!mpResponse.ok) {
+      console.error("Error Mercado Pago:", mpData);
+
+      return res.status(400).json({
+        message: mpData.message || "No se pudo crear el pago con Mercado Pago.",
+        error: mpData
+      });
+    }
+
+    res.status(201).json({
+      message: "Preferencia creada correctamente.",
+      preference_id: mpData.id,
+      init_point: mpData.init_point,
+      sandbox_init_point: mpData.sandbox_init_point
+    });
+  } catch (error) {
+    console.error("Error en /api/mercadopago/crear-preferencia:", error);
+
+    res.status(500).json({
+      message: "Error al crear preferencia de Mercado Pago."
+    });
+  }
+});
+
+/* =========================
    ADMIN - VER PRODUCTOS
 ========================= */
 
@@ -1183,7 +1283,11 @@ app.post("/api/pedidos", async (req, res) => {
       subtotal,
       envio,
       total,
-      productos
+      productos,
+      estado_pago,
+      mp_preference_id,
+      mp_payment_id,
+      mp_status
     } = req.body;
 
     if (
@@ -1312,6 +1416,10 @@ app.post("/api/pedidos", async (req, res) => {
       }
     }
 
+    const estadoPagoFinal =
+      estado_pago ||
+      (metodo_pago === "tarjeta" ? "pagado" : "pendiente");
+
     const orderResult = await client.query(
       `
       INSERT INTO pedidos (
@@ -1328,11 +1436,16 @@ app.post("/api/pedidos", async (req, res) => {
         subtotal,
         envio,
         total,
-        estado
+        estado,
+        estado_pago,
+        mp_preference_id,
+        mp_payment_id,
+        mp_status
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10, $11, $12, $13, 'pendiente'
+        $8, $9, $10, $11, $12, $13, 'pendiente',
+        $14, $15, $16, $17
       )
       RETURNING id
       `,
@@ -1349,7 +1462,11 @@ app.post("/api/pedidos", async (req, res) => {
         descuentoFinal,
         Number(subtotal),
         Number(envio),
-        Number(total)
+        Number(total),
+        estadoPagoFinal,
+        mp_preference_id || "",
+        mp_payment_id || "",
+        mp_status || ""
       ]
     );
 
@@ -1477,6 +1594,10 @@ app.get("/api/pedidos", async (req, res) => {
       envio: Number(order.envio || 0),
       total: Number(order.total || 0),
       estado: order.estado || "pendiente",
+      estado_pago: order.estado_pago || "pendiente",
+      mp_preference_id: order.mp_preference_id || "",
+      mp_payment_id: order.mp_payment_id || "",
+      mp_status: order.mp_status || "",
       creado_en: order.creado_en,
       productos: Array.isArray(order.productos) ? order.productos : []
     }));
@@ -1667,6 +1788,18 @@ app.get("/contacto", (req, res) => {
 
 app.get("/pedidos-admin", (req, res) => {
   res.sendFile(path.join(publicDir, "pedidos-admin.html"));
+});
+
+app.get("/pago-exitoso", (req, res) => {
+  res.sendFile(path.join(publicDir, "pago-exitoso.html"));
+});
+
+app.get("/pago-cancelado", (req, res) => {
+  res.sendFile(path.join(publicDir, "pago-cancelado.html"));
+});
+
+app.get("/pago-pendiente", (req, res) => {
+  res.sendFile(path.join(publicDir, "pago-pendiente.html"));
 });
 
 /* =========================
