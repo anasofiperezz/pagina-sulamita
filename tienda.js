@@ -52,6 +52,7 @@ function setupHeader() {
       localStorage.removeItem("userName");
       localStorage.removeItem("cart");
       localStorage.removeItem("lastOrder");
+      localStorage.removeItem("pendingMercadoPagoOrder");
       updateCartCount();
       goTo("login.html");
     });
@@ -394,6 +395,53 @@ function setupCartPage() {
         localStorage.removeItem("cart");
         updateCartCount();
         goTo("index.html");
+        return;
+      }
+
+      if (paymentMethod === "tarjeta") {
+        try {
+          checkoutBtn.disabled = true;
+          checkoutBtn.textContent = "Creando pago...";
+
+          localStorage.setItem(
+            "pendingMercadoPagoOrder",
+            JSON.stringify(payload)
+          );
+
+          const response = await fetch(`${API_URL}/api/mercadopago/crear-preferencia`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              pedido: payload
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            alert(data.message || "No se pudo crear el pago con Mercado Pago.");
+            return;
+          }
+
+          const redirectUrl = data.sandbox_init_point || data.init_point;
+
+          if (!redirectUrl) {
+            alert("Mercado Pago no regresó un link de pago.");
+            return;
+          }
+
+          window.location.href = redirectUrl;
+          return;
+        } catch (error) {
+          console.error("Error creando pago Mercado Pago:", error);
+          alert("No se pudo conectar con Mercado Pago.");
+        } finally {
+          checkoutBtn.disabled = false;
+          checkoutBtn.textContent = "Confirmar pedido";
+        }
+
         return;
       }
 
@@ -1519,7 +1567,7 @@ async function getInvoiceDataForOrder(paymentMethod) {
   const voucherUrl = await uploadInvoiceFile(
     "invoiceVoucherFile",
     "Foto de voucher de pago con tarjeta",
-    paymentMethod === "tarjeta"
+    false
   );
 
   return {
