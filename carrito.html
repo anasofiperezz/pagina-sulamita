@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=22">
 </head>
 
 <body>
@@ -68,6 +68,14 @@
                 <li>Uniforme completo de deportes.</li>
                 <li>Lista completa de útiles: libros de texto + cuadernos con agenda escolar e higiene.</li>
               </ul>
+            </div>
+
+            <div class="info-card">
+              <h3>Pago con Mercado Pago</h3>
+              <p>
+                Si eliges tarjeta, la página te enviará a Mercado Pago para realizar el pago
+                de forma segura. No escribas datos de tarjeta dentro de esta página.
+              </p>
             </div>
           </div>
         </div>
@@ -153,19 +161,22 @@
             <div class="form-group">
               <label for="paymentMethod">Método de pago</label>
               <select id="paymentMethod">
-                <option value="tarjeta">Tarjeta</option>
+                <option value="tarjeta">Tarjeta / Mercado Pago</option>
                 <option value="transferencia">Transferencia</option>
                 <option value="efectivo">Efectivo contraentrega</option>
               </select>
             </div>
 
             <div class="payment-info-card" id="cardPaymentInfo">
-              <h4>Pago con tarjeta</h4>
+              <h4>Pago con Mercado Pago</h4>
               <p>
-                Se aceptan todas las tarjetas. La papelería confirmará el proceso para realizar el pago con tarjeta.
+                Al confirmar el pedido, serás redirigido a Mercado Pago para completar el pago.
+              </p>
+              <p>
+                Puedes pagar con tarjeta u otros métodos disponibles dentro de Mercado Pago.
               </p>
               <p class="subtext">
-                Por seguridad, no escribas datos de tu tarjeta dentro de la página.
+                Por seguridad, no escribas datos de tu tarjeta dentro de esta página.
               </p>
             </div>
 
@@ -245,7 +256,7 @@
                 <label for="invoicePaymentMode">Modo de pago para factura</label>
                 <select id="invoicePaymentMode">
                   <option value="">Selecciona modo de pago</option>
-                  <option value="Tarjeta">Tarjeta</option>
+                  <option value="Tarjeta">Tarjeta / Mercado Pago</option>
                   <option value="Transferencia">Transferencia</option>
                   <option value="Efectivo">Efectivo</option>
                 </select>
@@ -264,14 +275,14 @@
               </div>
 
               <div class="form-group" id="invoiceVoucherGroup" style="display: none;">
-                <label for="invoiceVoucherFile">Foto de voucher de pago con tarjeta</label>
+                <label for="invoiceVoucherFile">Comprobante de pago Mercado Pago / voucher</label>
                 <input
                   type="file"
                   id="invoiceVoucherFile"
                   accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
                 />
                 <p class="subtext">
-                  Este archivo solo se solicita si el pago fue con tarjeta.
+                  Opcional. Si ya tienes comprobante de Mercado Pago, puedes subirlo.
                 </p>
               </div>
 
