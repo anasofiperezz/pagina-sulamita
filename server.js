@@ -311,6 +311,11 @@ async function getPackagesWithProducts(onlyActive = false) {
 async function ensureDatabaseUpdates() {
   try {
     await pool.query(`
+      ALTER TABLE usuarios
+      ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;
+    `);
+
+    await pool.query(`
       ALTER TABLE productos
       ADD COLUMN IF NOT EXISTS imagen_url TEXT DEFAULT '';
     `);
@@ -372,20 +377,30 @@ app.post("/api/login", async (req, res) => {
       return res.status(400).json({ message: "Faltan datos para iniciar sesión." });
     }
 
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanPassword = String(password || "");
+    const cleanRole = role === "admin" ? "admin" : "cliente";
+
     const result = await pool.query(
       `
-      SELECT id, nombre, email, rol
+      SELECT id, nombre, email, rol, activo
       FROM usuarios
       WHERE email = $1 AND password = $2 AND rol = $3
       LIMIT 1
       `,
-      [email, password, role]
+      [cleanEmail, cleanPassword, cleanRole]
     );
 
     const user = result.rows[0];
 
     if (!user) {
       return res.status(401).json({ message: "Credenciales incorrectas" });
+    }
+
+    if (user.activo === false) {
+      return res.status(403).json({
+        message: "Este usuario está desactivado. Contacta al administrador."
+      });
     }
 
     res.json({
@@ -411,13 +426,17 @@ app.post("/api/register", async (req, res) => {
   try {
     const { nombre, email, password } = req.body;
 
-    if (!nombre || !email || !password) {
+    const cleanName = String(nombre || "").trim();
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanPassword = String(password || "");
+
+    if (!cleanName || !cleanEmail || !cleanPassword) {
       return res.status(400).json({ message: "Faltan datos obligatorios." });
     }
 
     const exists = await pool.query(
       "SELECT id FROM usuarios WHERE email = $1 LIMIT 1",
-      [email]
+      [cleanEmail]
     );
 
     if (exists.rows.length) {
@@ -426,11 +445,11 @@ app.post("/api/register", async (req, res) => {
 
     const result = await pool.query(
       `
-      INSERT INTO usuarios (nombre, email, password, rol)
-      VALUES ($1, $2, $3, 'cliente')
+      INSERT INTO usuarios (nombre, email, password, rol, activo)
+      VALUES ($1, $2, $3, 'cliente', TRUE)
       RETURNING id
       `,
-      [nombre, email, password]
+      [cleanName, cleanEmail, cleanPassword]
     );
 
     res.status(201).json({
@@ -440,6 +459,169 @@ app.post("/api/register", async (req, res) => {
   } catch (error) {
     console.error("Error en /api/register:", error);
     res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+/* =========================
+   ADMIN - USUARIOS
+========================= */
+
+function getAdminCodeFromRequest(req) {
+  return String(req.headers["x-admin-code"] || req.body?.admin_code || "").trim();
+}
+
+function validateAdminCreationCode(req, res) {
+  const serverCode = String(process.env.ADMIN_CREATION_CODE || "").trim();
+  const requestCode = getAdminCodeFromRequest(req);
+
+  if (!serverCode) {
+    res.status(500).json({
+      message: "Falta configurar ADMIN_CREATION_CODE en Render."
+    });
+    return false;
+  }
+
+  if (!requestCode || requestCode !== serverCode) {
+    res.status(403).json({ message: "Clave de administrador incorrecta." });
+    return false;
+  }
+
+  return true;
+}
+
+function cleanUserRole(role) {
+  return role === "admin" ? "admin" : "cliente";
+}
+
+app.get("/api/admin/usuarios", async (req, res) => {
+  try {
+    if (!validateAdminCreationCode(req, res)) return;
+
+    const result = await pool.query(
+      `
+      SELECT id, nombre, email, rol, activo
+      FROM usuarios
+      ORDER BY id DESC
+      `
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error en GET /api/admin/usuarios:", error);
+    res.status(500).json({ message: "Error al obtener usuarios." });
+  }
+});
+
+app.post("/api/admin/usuarios", async (req, res) => {
+  try {
+    if (!validateAdminCreationCode(req, res)) return;
+
+    const { nombre, email, password, rol } = req.body;
+
+    const cleanName = String(nombre || "").trim();
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanPassword = String(password || "");
+    const cleanRole = cleanUserRole(rol);
+
+    if (!cleanName || !cleanEmail || !cleanPassword) {
+      return res.status(400).json({ message: "Completa todos los campos." });
+    }
+
+    const exists = await pool.query(
+      "SELECT id FROM usuarios WHERE email = $1 LIMIT 1",
+      [cleanEmail]
+    );
+
+    if (exists.rows.length) {
+      return res.status(400).json({ message: "El correo ya está registrado." });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO usuarios (nombre, email, password, rol, activo)
+      VALUES ($1, $2, $3, $4, TRUE)
+      RETURNING id, nombre, email, rol, activo
+      `,
+      [cleanName, cleanEmail, cleanPassword, cleanRole]
+    );
+
+    res.status(201).json({
+      message: "Usuario creado correctamente.",
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Error en POST /api/admin/usuarios:", error);
+    res.status(500).json({ message: "Error al crear usuario." });
+  }
+});
+
+app.put("/api/admin/usuarios/:id", async (req, res) => {
+  try {
+    if (!validateAdminCreationCode(req, res)) return;
+
+    const userId = Number(req.params.id);
+    const { nombre, email, password, rol, activo } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "Usuario inválido." });
+    }
+
+    const exists = await pool.query(
+      "SELECT * FROM usuarios WHERE id = $1 LIMIT 1",
+      [userId]
+    );
+
+    if (!exists.rows.length) {
+      return res.status(404).json({ message: "Usuario no encontrado." });
+    }
+
+    const current = exists.rows[0];
+
+    const newName = nombre != null ? String(nombre || "").trim() : current.nombre;
+    const newEmail = email != null ? String(email || "").trim().toLowerCase() : current.email;
+    const newPassword = password ? String(password) : current.password;
+    const newRole = rol != null ? cleanUserRole(rol) : current.rol;
+    const newActive = activo != null ? Boolean(activo) : current.activo !== false;
+
+    if (!newName || !newEmail || !newPassword) {
+      return res.status(400).json({
+        message: "Nombre, correo y contraseña son obligatorios."
+      });
+    }
+
+    const duplicate = await pool.query(
+      `
+      SELECT id
+      FROM usuarios
+      WHERE email = $1 AND id <> $2
+      LIMIT 1
+      `,
+      [newEmail, userId]
+    );
+
+    if (duplicate.rows.length) {
+      return res.status(400).json({
+        message: "Ese correo ya está registrado en otro usuario."
+      });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE usuarios
+      SET nombre = $1, email = $2, password = $3, rol = $4, activo = $5
+      WHERE id = $6
+      RETURNING id, nombre, email, rol, activo
+      `,
+      [newName, newEmail, newPassword, newRole, newActive, userId]
+    );
+
+    res.json({
+      message: "Usuario actualizado correctamente.",
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Error en PUT /api/admin/usuarios/:id:", error);
+    res.status(500).json({ message: "Error al actualizar usuario." });
   }
 });
 
@@ -1772,6 +1954,10 @@ app.get("/", (req, res) => {
 
 app.get("/login", (req, res) => {
   res.sendFile(path.join(publicDir, "login.html"));
+});
+
+aapp.get("/usuarios-admin", (req, res) => {
+  res.sendFile(path.join(publicDir, "usuarios-admin.html"));
 });
 
 app.get("/admin", (req, res) => {

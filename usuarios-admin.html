@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usuarios | Papelería Sulamita</title>
+  <link rel="icon" href="img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=24">
+</head>
+
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita - Usuarios</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="admin.html" class="nav-btn">Inventario</a>
+        <a href="pedidos-admin.html" class="nav-btn">Pedidos</a>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero admin-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Administrador</span>
+        <h1>Gestión de usuarios</h1>
+        <p>
+          Crea usuarios para clientes o administradores de la papelería.
+          Para crear o modificar usuarios necesitas la clave privada de administrador.
+        </p>
+      </div>
+    </section>
+
+    <section class="admin-page">
+      <div class="admin-layout">
+        <div class="admin-form-card">
+          <h2>Crear usuario</h2>
+
+          <div class="form-group">
+            <label for="adminCode">Clave privada de administrador</label>
+            <input
+              type="password"
+              id="adminCode"
+              placeholder="Clave privada de la papelería"
+            />
+            <p class="subtext">
+              Esta clave no se comparte con clientes. Solo la debe tener la papelería.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="btn-outline full-width"
+            id="saveAdminCodeBtn"
+          >
+            Guardar clave en esta sesión
+          </button>
+
+          <hr style="margin: 22px 0;">
+
+          <form id="userForm">
+            <div class="form-group">
+              <label for="userName">Nombre</label>
+              <input type="text" id="userName" required />
+            </div>
+
+            <div class="form-group">
+              <label for="userEmail">Correo</label>
+              <input type="email" id="userEmail" required />
+            </div>
+
+            <div class="form-group">
+              <label for="userPassword">Contraseña</label>
+              <input type="text" id="userPassword" required />
+              <p class="subtext">
+                La papelería podrá compartir esta contraseña con el usuario creado.
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label for="userRole">Tipo de usuario</label>
+              <select id="userRole">
+                <option value="cliente">Cliente</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-primary full-width">
+              Crear usuario
+            </button>
+          </form>
+
+          <div class="note" id="userMessage"></div>
+        </div>
+
+        <div class="admin-table-card">
+          <div class="admin-table-header">
+            <h2>Usuarios registrados</h2>
+
+            <div class="admin-header-actions">
+              <button type="button" class="btn-outline" id="reloadUsersBtn">
+                Actualizar usuarios
+              </button>
+            </div>
+          </div>
+
+          <div id="usersList" class="admin-products-list">
+            <div class="note">
+              Escribe la clave privada y presiona Actualizar usuarios.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Usuarios</p>
+  </footer>
+
+  <script src="tienda.js?v=24"></script>
+
+  <script>
+    protectPage();
+    protectAdminPage();
+    setupHeader();
+
+    const adminCodeInput = document.getElementById("adminCode");
+    const saveAdminCodeBtn = document.getElementById("saveAdminCodeBtn");
+    const userForm = document.getElementById("userForm");
+    const userMessage = document.getElementById("userMessage");
+    const usersList = document.getElementById("usersList");
+    const reloadUsersBtn = document.getElementById("reloadUsersBtn");
+
+    const savedCode = sessionStorage.getItem("adminCreationCode");
+    if (savedCode) {
+      adminCodeInput.value = savedCode;
+    }
+
+    saveAdminCodeBtn.addEventListener("click", function () {
+      const code = adminCodeInput.value.trim();
+
+      if (!code) {
+        showUserMessage("Escribe la clave privada de administrador.", true);
+        return;
+      }
+
+      sessionStorage.setItem("adminCreationCode", code);
+      showUserMessage("Clave guardada en esta sesión.");
+      loadUsers();
+    });
+
+    reloadUsersBtn.addEventListener("click", loadUsers);
+
+    userForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const adminCode = getAdminCode();
+
+      if (!adminCode) {
+        showUserMessage("Primero escribe y guarda la clave privada.", true);
+        return;
+      }
+
+      const payload = {
+        nombre: document.getElementById("userName").value.trim(),
+        email: document.getElementById("userEmail").value.trim(),
+        password: document.getElementById("userPassword").value.trim(),
+        rol: document.getElementById("userRole").value
+      };
+
+      if (!payload.nombre || !payload.email || !payload.password) {
+        showUserMessage("Completa todos los campos.", true);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/admin/usuarios", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-code": adminCode
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showUserMessage(data.message || "No se pudo crear el usuario.", true);
+          return;
+        }
+
+        showUserMessage("Usuario creado correctamente.");
+        userForm.reset();
+        document.getElementById("userRole").value = "cliente";
+        loadUsers();
+      } catch (error) {
+        console.error(error);
+        showUserMessage("No se pudo conectar con el servidor.", true);
+      }
+    });
+
+    async function loadUsers() {
+      const adminCode = getAdminCode();
+
+      if (!adminCode) {
+        showUserMessage("Escribe la clave privada de administrador.", true);
+        return;
+      }
+
+      usersList.innerHTML = `
+        <div class="note">
+          Cargando usuarios...
+        </div>
+      `;
+
+      try {
+        const response = await fetch("/api/admin/usuarios", {
+          headers: {
+            "x-admin-code": adminCode
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          usersList.innerHTML = `
+            <div class="note error">
+              ${escapeHtml(data.message || "No se pudieron cargar los usuarios.")}
+            </div>
+          `;
+          return;
+        }
+
+        if (!Array.isArray(data) || !data.length) {
+          usersList.innerHTML = `
+            <div class="note">
+              No hay usuarios registrados.
+            </div>
+          `;
+          return;
+        }
+
+        usersList.innerHTML = data.map(renderUserCard).join("");
+      } catch (error) {
+        console.error(error);
+        usersList.innerHTML = `
+          <div class="note error">
+            No se pudo conectar con el servidor.
+          </div>
+        `;
+      }
+    }
+
+    function renderUserCard(user) {
+      const isActive = user.activo !== false;
+      const statusText = isActive ? "Activo" : "Desactivado";
+      const nextStatus = isActive ? false : true;
+      const buttonText = isActive ? "Desactivar" : "Activar";
+      const nextRole = user.rol === "admin" ? "cliente" : "admin";
+      const nextRoleText = user.rol === "admin" ? "cliente" : "admin";
+
+      return `
+        <article class="admin-product-card">
+          <div class="admin-product-info">
+            <h3>${escapeHtml(user.nombre || "Usuario")}</h3>
+            <p><strong>Correo:</strong> ${escapeHtml(user.email || "")}</p>
+            <p><strong>Rol:</strong> ${escapeHtml(user.rol || "")}</p>
+            <p><strong>Estado:</strong> ${escapeHtml(statusText)}</p>
+
+            <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+              <button
+                type="button"
+                class="btn-outline btn-sm"
+                onclick="changeUserStatus(${Number(user.id)}, ${nextStatus})"
+              >
+                ${escapeHtml(buttonText)}
+              </button>
+
+              <button
+                type="button"
+                class="btn-outline btn-sm"
+                onclick="changeUserRole(${Number(user.id)}, '${nextRole}')"
+              >
+                Cambiar a ${escapeHtml(nextRoleText)}
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    async function changeUserStatus(userId, activo) {
+      const adminCode = getAdminCode();
+
+      if (!adminCode) {
+        showUserMessage("Escribe la clave privada de administrador.", true);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/admin/usuarios/${userId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-code": adminCode
+          },
+          body: JSON.stringify({ activo })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showUserMessage(data.message || "No se pudo actualizar el usuario.", true);
+          return;
+        }
+
+        showUserMessage("Usuario actualizado correctamente.");
+        loadUsers();
+      } catch (error) {
+        console.error(error);
+        showUserMessage("No se pudo conectar con el servidor.", true);
+      }
+    }
+
+    async function changeUserRole(userId, rol) {
+      const adminCode = getAdminCode();
+
+      if (!adminCode) {
+        showUserMessage("Escribe la clave privada de administrador.", true);
+        return;
+      }
+
+      const confirmChange = confirm(
+        `¿Seguro que quieres cambiar este usuario a ${rol}?`
+      );
+
+      if (!confirmChange) return;
+
+      try {
+        const response = await fetch(`/api/admin/usuarios/${userId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-code": adminCode
+          },
+          body: JSON.stringify({ rol })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showUserMessage(data.message || "No se pudo cambiar el rol.", true);
+          return;
+        }
+
+        showUserMessage("Rol actualizado correctamente.");
+        loadUsers();
+      } catch (error) {
+        console.error(error);
+        showUserMessage("No se pudo conectar con el servidor.", true);
+      }
+    }
+
+    function getAdminCode() {
+      const code = adminCodeInput.value.trim();
+
+      if (code) {
+        sessionStorage.setItem("adminCreationCode", code);
+      }
+
+      return code || sessionStorage.getItem("adminCreationCode") || "";
+    }
+
+    function showUserMessage(message, isError = false) {
+      userMessage.textContent = message;
+      userMessage.className = isError ? "note error" : "note success";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
