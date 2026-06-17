@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listas de útiles | Papelería Sulamita</title>
+  <link rel="icon" href="img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=26">
+
+  <style>
+    .lists-page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 48px 22px 70px;
+    }
+
+    .lists-hero {
+      background: linear-gradient(135deg, rgba(0, 59, 125, 0.95), rgba(156, 0, 43, 0.92));
+      color: #ffffff;
+      border-radius: 28px;
+      padding: 44px;
+      margin-bottom: 34px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+    }
+
+    .lists-hero h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1.05;
+    }
+
+    .lists-hero p {
+      max-width: 720px;
+      margin: 0;
+      font-size: 1.05rem;
+      opacity: 0.94;
+    }
+
+    .lists-note {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 28px;
+      line-height: 1.55;
+    }
+
+    .lists-section-title {
+      margin: 34px 0 18px;
+      font-size: 1.7rem;
+      color: #1f2937;
+    }
+
+    .lists-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 22px;
+    }
+
+    .list-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .list-card-tag {
+      width: fit-content;
+      background: #eff6ff;
+      color: #004aad;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-weight: 800;
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+    }
+
+    .list-card h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #111827;
+    }
+
+    .list-card p {
+      margin: 0;
+      color: #4b5563;
+      line-height: 1.5;
+    }
+
+    .list-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .list-actions a {
+      text-decoration: none;
+    }
+
+    @media (max-width: 720px) {
+      .lists-hero {
+        padding: 30px 22px;
+        border-radius: 22px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="index.html#escuelas" class="nav-btn">Escuelas</a>
+        <a href="listas-utiles.html" class="nav-btn">Listas de útiles</a>
+        <a href="contacto.html" class="nav-btn">Contacto</a>
+        <button class="nav-btn" id="cartBtn">Carrito</button>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="lists-page">
+    <section class="lists-hero">
+      <h1>Listas de útiles 2026–2027</h1>
+      <p>
+        Consulta las listas oficiales de la escuela y la lista preparada por Papelería Sulamita
+        para facilitar la compra de útiles, libros, cuadernos y materiales.
+      </p>
+    </section>
+
+    <div class="lists-note">
+      <strong>Tip:</strong> La lista oficial de la escuela sirve para revisar los requisitos por grado.
+      La lista de Papelería Sulamita incluye artículos con códigos, precios y totales para compra.
+    </div>
+
+    <h2 class="lists-section-title">Lista de Papelería Sulamita</h2>
+
+    <section class="lists-grid">
+      <article class="list-card">
+        <span class="list-card-tag">Papelería</span>
+        <h3>Preparatoria IPAE 2026–2027</h3>
+        <p>
+          Documento general de Papelería Sulamita con listas de 4°, 5° y áreas de 6° de preparatoria.
+        </p>
+        <div class="list-actions">
+          <a class="btn-primary" href="listas/lista-papeleria-ipae-preparatoria-2026-2027.docx" download>
+            Descargar documento
+          </a>
+        </div>
+      </article>
+    </section>
+
+    <h2 class="lists-section-title">Listas oficiales de la escuela</h2>
+
+    <section class="lists-grid">
+      <article class="list-card">
+        <span class="list-card-tag">Escuela</span>
+        <h3>4° de Preparatoria</h3>
+        <p>Lista oficial IPAE ciclo escolar 2026–2027 para 4° de preparatoria.</p>
+        <div class="list-actions">
+          <a class="btn-primary" href="listas/lista-escuela-4-prepa.pdf" target="_blank" rel="noopener">
+            Ver PDF
+          </a>
+          <a class="btn-outline" href="listas/lista-escuela-4-prepa.pdf" download>
+            Descargar
+          </a>
+        </div>
+      </article>
+
+      <article class="list-card">
+        <span class="list-card-tag">Escuela</span>
+        <h3>5° de Preparatoria</h3>
+        <p>Lista oficial IPAE ciclo escolar 2026–2027 para 5° de preparatoria.</p>
+        <div class="list-actions">
+          <a class="btn-primary" href="listas/lista-escuela-5-prepa.pdf" target="_blank" rel="noopener">
+            Ver PDF
+          </a>
+          <a class="btn-outline" href="listas/lista-escuela-5-prepa.pdf" download>
+            Descargar
+          </a>
+        </div>
+      </article>
+
+      <article class="list-card">
+        <span class="list-card-tag">Escuela</span>
+        <h3>Área III</h3>
+        <p>Lista oficial IPAE ciclo escolar 2026–2027 para Área III de preparatoria.</p>
+        <div class="list-actions">
+          <a class="btn-primary" href="listas/lista-escuela-area-iii.pdf" target="_blank" rel="noopener">
+            Ver PDF
+          </a>
+          <a class="btn-outline" href="listas/lista-escuela-area-iii.pdf" download>
+            Descargar
+          </a>
+        </div>
+      </article>
+
+      <article class="list-card">
+        <span class="list-card-tag">Escuela</span>
+        <h3>Área IV</h3>
+        <p>Lista oficial IPAE ciclo escolar 2026–2027 para Área IV de preparatoria.</p>
+        <div class="list-actions">
+          <a class="btn-primary" href="listas/lista-escuela-area-iv.pdf" target="_blank" rel="noopener">
+            Ver PDF
+          </a>
+          <a class="btn-outline" href="listas/lista-escuela-area-iv.pdf" download>
+            Descargar
+          </a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Listas de útiles</p>
+  </footer>
+
+  <script src="tienda.js?v=26"></script>
+  <script>
+    protectPage();
+    setupHeader();
+  </script>
+</body>
+</html>
