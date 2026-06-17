@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -134,30 +135,18 @@
 
               <input type="hidden" id="productImage" />
 
-              <input
-                type="file"
-                id="productImageFile"
-                accept="image/png, image/jpeg, image/jpg, image/webp"
-              />
+              <input type="file" id="productImageFile" accept="image/png, image/jpeg, image/jpg, image/webp" />
 
               <p class="subtext">
                 Sube una imagen JPG, PNG o WEBP. Máximo 5 MB.
               </p>
 
               <div id="productImagePreview" style="display: none; margin-top: 12px;">
-                <img
-                  id="productImagePreviewImg"
-                  src=""
-                  alt="Vista previa del producto"
-                  style="width: 140px; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe3f0;"
-                />
+                <img id="productImagePreviewImg" src="" alt="Vista previa del producto"
+                  style="width: 140px; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe3f0;" />
 
-                <button
-                  type="button"
-                  class="btn-outline btn-sm"
-                  id="removeProductImageBtn"
-                  style="display: none; margin-top: 10px;"
-                >
+                <button type="button" class="btn-outline btn-sm" id="removeProductImageBtn"
+                  style="display: none; margin-top: 10px;">
                   Eliminar imagen
                 </button>
               </div>
@@ -198,13 +187,7 @@
 
             <div class="form-group" id="unitStockGroup" style="display: none;">
               <label for="unitStock">Stock disponible</label>
-              <input
-                type="number"
-                id="unitStock"
-                min="0"
-                placeholder="Ej. 30"
-                value="0"
-              />
+              <input type="number" id="unitStock" min="0" placeholder="Ej. 30" value="0" />
             </div>
 
             <div class="form-group" id="sizesGroup">
@@ -222,12 +205,8 @@
               Guardar producto
             </button>
 
-            <button
-              type="button"
-              class="btn-outline full-width"
-              id="cancelEditBtn"
-              style="display: none; margin-top: 10px;"
-            >
+            <button type="button" class="btn-outline full-width" id="cancelEditBtn"
+              style="display: none; margin-top: 10px;">
               Cancelar edición
             </button>
           </form>
@@ -294,33 +273,17 @@
           <form id="packageForm">
             <div class="form-group">
               <label for="packageName">Nombre del paquete</label>
-              <input
-                type="text"
-                id="packageName"
-                placeholder="Ej. Uniforme completo diario con gala"
-                required
-              />
+              <input type="text" id="packageName" placeholder="Ej. Uniforme completo diario con gala" required />
             </div>
 
             <div class="form-group">
               <label for="packageDescription">Descripción</label>
-              <textarea
-                id="packageDescription"
-                rows="4"
-                placeholder="Describe qué incluye el paquete"
-              ></textarea>
+              <textarea id="packageDescription" rows="4" placeholder="Describe qué incluye el paquete"></textarea>
             </div>
 
             <div class="form-group">
               <label for="packageDiscount">Descuento del paquete (%)</label>
-              <input
-                type="number"
-                id="packageDiscount"
-                min="0"
-                max="100"
-                step="0.01"
-                value="10"
-              />
+              <input type="number" id="packageDiscount" min="0" max="100" step="0.01" value="10" />
               <p class="subtext">
                 Ejemplo: escribe 10 para aplicar 10% de descuento.
               </p>
@@ -340,11 +303,8 @@
               </p>
 
               <div class="package-filter-box">
-                <input
-                  type="text"
-                  id="packageProductSearch"
-                  placeholder="Buscar producto por nombre, categoría o descripción..."
-                />
+                <input type="text" id="packageProductSearch"
+                  placeholder="Buscar producto por nombre, categoría o descripción..." />
 
                 <div class="package-filter-grid">
                   <select id="packageSchoolFilter">
@@ -408,12 +368,8 @@
               Guardar paquete
             </button>
 
-            <button
-              type="button"
-              class="btn-outline full-width"
-              id="cancelPackageEditBtn"
-              style="display: none; margin-top: 10px;"
-            >
+            <button type="button" class="btn-outline full-width" id="cancelPackageEditBtn"
+              style="display: none; margin-top: 10px;">
               Cancelar edición de paquete
             </button>
           </form>
@@ -1439,12 +1395,12 @@
 
       const tallasHtml = tallas.length
         ? tallas
-            .map(item => `
+          .map(item => `
               <span class="customer-size-badge">
                 ${escapeHtml(item.talla || "Unidad")} · ${formatMoney(item.precio || product.precio || 0)} · Stock: ${Number(item.stock || 0)}
               </span>
             `)
-            .join("")
+          .join("")
         : `<span class="customer-size-badge empty">Sin tallas registradas</span>`;
 
       const meta = buildAdminProductMeta(product);
@@ -1483,6 +1439,13 @@
                 >
                   Editar producto
                 </button>
+                <button
+                  type="button"
+                  class="btn-danger btn-sm"
+                  onclick="deleteProduct('${productId}')"
+                >
+                  Eliminar producto
+                </button>
               </div>
             </div>
           </div>
@@ -1513,6 +1476,38 @@
       return parts.join(" - ") || "Sin ubicación";
     }
 
+    async function deleteProduct(productId) {
+      const product = window.adminProductsMap?.[String(productId)];
+
+      const productName = product?.nombre || `Producto #${productId}`;
+
+      const confirmDelete = confirm(
+        `¿Seguro que quieres eliminar "${productName}"? Esta acción no se puede deshacer.`
+      );
+
+      if (!confirmDelete) return;
+
+      try {
+        const response = await fetch(`/api/admin/productos/${productId}`, {
+          method: "DELETE"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showAdminMessage(data.message || "No se pudo eliminar el producto.", true);
+          return;
+        }
+
+        showAdminMessage("Producto eliminado correctamente.");
+
+        await loadAdminProducts();
+        await loadAdminPackages();
+      } catch (error) {
+        console.error(error);
+        showAdminMessage("No se pudo conectar con el servidor.", true);
+      }
+    }
     function startEditProduct(productId) {
       const product = window.adminProductsMap?.[String(productId)];
 
@@ -1826,8 +1821,8 @@
 
       const productosHtml = productos.length
         ? productos.map((item) => {
-            const product = item.producto || {};
-            return `
+          const product = item.producto || {};
+          return `
               <li>
                 <strong>${escapeHtml(product.nombre || "Producto")}</strong>
                 <span>
@@ -1835,7 +1830,7 @@
                 </span>
               </li>
             `;
-          }).join("")
+        }).join("")
         : "<li>Sin productos</li>";
 
       return `
@@ -2087,4 +2082,5 @@
     }
   </script>
 </body>
+
 </html>
