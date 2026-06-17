@@ -1956,7 +1956,7 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(publicDir, "login.html"));
 });
 
-aapp.get("/usuarios-admin", (req, res) => {
+app.get("/usuarios-admin", (req, res) => {
   res.sendFile(path.join(publicDir, "usuarios-admin.html"));
 });
 
