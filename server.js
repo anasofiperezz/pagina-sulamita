@@ -625,6 +625,71 @@ app.put("/api/admin/usuarios/:id", async (req, res) => {
   }
 });
 
+app.delete("/api/admin/usuarios/:id", async (req, res) => {
+  try {
+    if (!validateAdminCreationCode(req, res)) return;
+
+    const userId = Number(req.params.id);
+
+    if (!userId) {
+      return res.status(400).json({
+        message: "Usuario inválido."
+      });
+    }
+
+    const userResult = await pool.query(
+      `
+      SELECT id, nombre, email, rol, activo
+      FROM usuarios
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    const user = userResult.rows[0];
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Usuario no encontrado."
+      });
+    }
+
+    if (user.rol === "admin" && user.activo !== false) {
+      const activeAdminsResult = await pool.query(
+        `
+        SELECT COUNT(*)::int AS total
+        FROM usuarios
+        WHERE rol = 'admin' AND activo IS NOT FALSE
+        `
+      );
+
+      const activeAdmins = Number(activeAdminsResult.rows[0]?.total || 0);
+
+      if (activeAdmins <= 1) {
+        return res.status(400).json({
+          message: "No puedes borrar el único administrador activo."
+        });
+      }
+    }
+
+    await pool.query(
+      "DELETE FROM usuarios WHERE id = $1",
+      [userId]
+    );
+
+    res.json({
+      message: "Usuario eliminado correctamente."
+    });
+  } catch (error) {
+    console.error("Error en DELETE /api/admin/usuarios/:id:", error);
+
+    res.status(500).json({
+      message: "Error al eliminar usuario."
+    });
+  }
+});
+
 /* =========================
    CATÁLOGO
 ========================= */

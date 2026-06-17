@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Usuarios | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 
 <body>
@@ -30,7 +30,7 @@
         <h1>Gestión de usuarios</h1>
         <p>
           Crea usuarios para clientes o administradores de la papelería.
-          Para crear o modificar usuarios necesitas la clave privada de administrador.
+          Para crear, modificar o borrar usuarios necesitas la clave privada de administrador.
         </p>
       </div>
     </section>
@@ -122,7 +122,7 @@
     <p>© 2026 Papelería Sulamita - Usuarios</p>
   </footer>
 
-  <script src="tienda.js?v=24"></script>
+  <script src="tienda.js?v=25"></script>
 
   <script>
     protectPage();
@@ -137,6 +137,7 @@
     const reloadUsersBtn = document.getElementById("reloadUsersBtn");
 
     const savedCode = sessionStorage.getItem("adminCreationCode");
+
     if (savedCode) {
       adminCodeInput.value = savedCode;
     }
@@ -196,8 +197,10 @@
         }
 
         showUserMessage("Usuario creado correctamente.");
+
         userForm.reset();
         document.getElementById("userRole").value = "cliente";
+
         loadUsers();
       } catch (error) {
         console.error(error);
@@ -249,6 +252,7 @@
         usersList.innerHTML = data.map(renderUserCard).join("");
       } catch (error) {
         console.error(error);
+
         usersList.innerHTML = `
           <div class="note error">
             No se pudo conectar con el servidor.
@@ -262,6 +266,7 @@
       const statusText = isActive ? "Activo" : "Desactivado";
       const nextStatus = isActive ? false : true;
       const buttonText = isActive ? "Desactivar" : "Activar";
+
       const nextRole = user.rol === "admin" ? "cliente" : "admin";
       const nextRoleText = user.rol === "admin" ? "cliente" : "admin";
 
@@ -269,9 +274,21 @@
         <article class="admin-product-card">
           <div class="admin-product-info">
             <h3>${escapeHtml(user.nombre || "Usuario")}</h3>
-            <p><strong>Correo:</strong> ${escapeHtml(user.email || "")}</p>
-            <p><strong>Rol:</strong> ${escapeHtml(user.rol || "")}</p>
-            <p><strong>Estado:</strong> ${escapeHtml(statusText)}</p>
+
+            <p>
+              <strong>Correo:</strong>
+              ${escapeHtml(user.email || "")}
+            </p>
+
+            <p>
+              <strong>Rol:</strong>
+              ${escapeHtml(user.rol || "")}
+            </p>
+
+            <p>
+              <strong>Estado:</strong>
+              ${escapeHtml(statusText)}
+            </p>
 
             <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
               <button
@@ -288,6 +305,14 @@
                 onclick="changeUserRole(${Number(user.id)}, '${nextRole}')"
               >
                 Cambiar a ${escapeHtml(nextRoleText)}
+              </button>
+
+              <button
+                type="button"
+                class="btn-danger btn-sm"
+                onclick="deleteUser(${Number(user.id)})"
+              >
+                Borrar usuario
               </button>
             </div>
           </div>
@@ -310,7 +335,9 @@
             "Content-Type": "application/json",
             "x-admin-code": adminCode
           },
-          body: JSON.stringify({ activo })
+          body: JSON.stringify({
+            activo
+          })
         });
 
         const data = await response.json();
@@ -349,7 +376,9 @@
             "Content-Type": "application/json",
             "x-admin-code": adminCode
           },
-          body: JSON.stringify({ rol })
+          body: JSON.stringify({
+            rol
+          })
         });
 
         const data = await response.json();
@@ -360,6 +389,53 @@
         }
 
         showUserMessage("Rol actualizado correctamente.");
+        loadUsers();
+      } catch (error) {
+        console.error(error);
+        showUserMessage("No se pudo conectar con el servidor.", true);
+      }
+    }
+
+    async function deleteUser(userId) {
+      const adminCode = getAdminCode();
+
+      if (!adminCode) {
+        showUserMessage("Escribe la clave privada de administrador.", true);
+        return;
+      }
+
+      const currentUserId = Number(localStorage.getItem("userId") || 0);
+
+      if (Number(userId) === currentUserId) {
+        const confirmSelfDelete = confirm(
+          "Estás intentando borrar el usuario con el que iniciaste sesión. Si lo borras, podrías perder acceso. ¿Seguro que quieres continuar?"
+        );
+
+        if (!confirmSelfDelete) return;
+      }
+
+      const confirmDelete = confirm(
+        "¿Seguro que quieres borrar este usuario? Esta acción no se puede deshacer."
+      );
+
+      if (!confirmDelete) return;
+
+      try {
+        const response = await fetch(`/api/admin/usuarios/${userId}`, {
+          method: "DELETE",
+          headers: {
+            "x-admin-code": adminCode
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showUserMessage(data.message || "No se pudo eliminar el usuario.", true);
+          return;
+        }
+
+        showUserMessage("Usuario eliminado correctamente.");
         loadUsers();
       } catch (error) {
         console.error(error);
