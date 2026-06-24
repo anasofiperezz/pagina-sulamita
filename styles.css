@@ -1859,7 +1859,7 @@ select:disabled {
 .product-photo img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -2424,4 +2424,25 @@ select:disabled {
   .package-filter-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.admin-product-thumb {
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-image,
+.product-card img,
+.product-img,
+.catalog-product-image img {
+  object-fit: contain !important;
+  background: #f8fafc;
 }
