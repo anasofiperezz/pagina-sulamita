@@ -89,6 +89,28 @@ function uploadBufferToCloudinary(buffer, options = {}) {
 ========================= */
 
 function normalizeProduct(row) {
+  let imagenesUrl = [];
+
+  try {
+    if (Array.isArray(row.imagenes_url)) {
+      imagenesUrl = row.imagenes_url;
+    } else if (typeof row.imagenes_url === "string" && row.imagenes_url.trim()) {
+      imagenesUrl = JSON.parse(row.imagenes_url);
+    }
+  } catch (error) {
+    imagenesUrl = [];
+  }
+
+  imagenesUrl = imagenesUrl
+    .map((url) => String(url || "").trim())
+    .filter(Boolean);
+
+  const mainImage = String(row.imagen_url || "").trim();
+
+  if (mainImage && !imagenesUrl.includes(mainImage)) {
+    imagenesUrl.unshift(mainImage);
+  }
+
   return {
     id: Number(row.id),
     escuela: row.escuela,
@@ -101,7 +123,8 @@ function normalizeProduct(row) {
     genero_uniforme: row.genero_uniforme || "",
     nombre: row.nombre,
     descripcion: row.descripcion || "",
-    imagen_url: row.imagen_url || "",
+    imagen_url: mainImage || imagenesUrl[0] || "",
+    imagenes_url: imagenesUrl,
     precio: Number(row.precio || 0),
     disponible: row.disponible !== false,
     requiere_precio: row.requiere_precio === true,
@@ -115,6 +138,32 @@ function normalizeProduct(row) {
         }))
       : []
   };
+}
+
+function cleanProductImages(value, mainImage = "") {
+  let images = [];
+
+  if (Array.isArray(value)) {
+    images = value;
+  } else if (typeof value === "string" && value.trim()) {
+    try {
+      images = JSON.parse(value);
+    } catch (error) {
+      images = [value];
+    }
+  }
+
+  images = images
+    .map((url) => String(url || "").trim())
+    .filter(Boolean);
+
+  const cleanMainImage = String(mainImage || "").trim();
+
+  if (cleanMainImage && !images.includes(cleanMainImage)) {
+    images.unshift(cleanMainImage);
+  }
+
+  return Array.from(new Set(images));
 }
 
 async function getProductsWithSizes(whereSql = "", params = []) {
@@ -318,6 +367,11 @@ async function ensureDatabaseUpdates() {
     await pool.query(`
       ALTER TABLE productos
       ADD COLUMN IF NOT EXISTS imagen_url TEXT DEFAULT '';
+    `);
+
+    await pool.query(`
+      ALTER TABLE productos
+      ADD COLUMN IF NOT EXISTS imagenes_url JSONB DEFAULT '[]'::jsonb;
     `);
 
     await pool.query(`
@@ -1225,6 +1279,7 @@ app.post("/api/admin/productos", async (req, res) => {
       nombre,
       descripcion,
       imagen_url,
+      imagenes_url,
       precio,
       disponible,
       requiere_precio,
@@ -1255,6 +1310,8 @@ app.post("/api/admin/productos", async (req, res) => {
     }
 
     const generoFinal = cleanUniformGender(categoria, genero_uniforme);
+    const cleanImages = cleanProductImages(imagenes_url, imagen_url);
+    const mainImage = cleanImages[0] || String(imagen_url || "").trim();
 
     await client.query("BEGIN");
 
@@ -1272,6 +1329,7 @@ app.post("/api/admin/productos", async (req, res) => {
         nombre,
         descripcion,
         imagen_url,
+        imagenes_url,
         precio,
         disponible,
         requiere_precio,
@@ -1279,7 +1337,7 @@ app.post("/api/admin/productos", async (req, res) => {
       )
       VALUES (
         $1, $2, $3, $4, $5, $6,
-        $7, $8, $9, $10, $11, $12, $13, $14, $15
+        $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
       )
       RETURNING id
       `,
@@ -1300,7 +1358,8 @@ app.post("/api/admin/productos", async (req, res) => {
         generoFinal,
         nombre,
         descripcion || "",
-        imagen_url || "",
+        mainImage,
+        JSON.stringify(cleanImages),
         productPrice,
         disponible !== false,
         Boolean(requiere_precio),
@@ -1357,6 +1416,7 @@ app.put("/api/admin/productos/:id", async (req, res) => {
       nombre,
       descripcion,
       imagen_url,
+      imagenes_url,
       precio,
       disponible,
       requiere_precio,
@@ -1410,6 +1470,19 @@ app.put("/api/admin/productos/:id", async (req, res) => {
     const newPrice =
       precio != null ? Number(precio) || 0 : Number(current.precio) || 0;
 
+    const currentImages = cleanProductImages(current.imagenes_url, current.imagen_url);
+    const cleanImages =
+      imagenes_url != null
+        ? cleanProductImages(imagenes_url, imagen_url != null ? imagen_url : current.imagen_url)
+        : currentImages;
+
+    const mainImage =
+      imagen_url != null
+        ? String(imagen_url || "").trim()
+        : cleanImages[0] || String(current.imagen_url || "").trim();
+
+    const finalImages = cleanProductImages(cleanImages, mainImage);
+
     await client.query("BEGIN");
 
     await client.query(
@@ -1427,11 +1500,12 @@ app.put("/api/admin/productos/:id", async (req, res) => {
         nombre = $9,
         descripcion = $10,
         imagen_url = $11,
-        precio = $12,
-        disponible = $13,
-        requiere_precio = $14,
-        aplica_general = $15
-      WHERE id = $16
+        imagenes_url = $12,
+        precio = $13,
+        disponible = $14,
+        requiere_precio = $15,
+        aplica_general = $16
+      WHERE id = $17
       `,
       [
         newEscuela,
@@ -1444,7 +1518,8 @@ app.put("/api/admin/productos/:id", async (req, res) => {
         newGeneroUniforme,
         nombre != null ? nombre : current.nombre,
         descripcion != null ? descripcion : current.descripcion,
-        imagen_url != null ? imagen_url : current.imagen_url || "",
+        mainImage,
+        JSON.stringify(finalImages),
         newPrice,
         disponible != null ? Boolean(disponible) : current.disponible,
         requiere_precio != null ? Boolean(requiere_precio) : current.requiere_precio,

@@ -6,7 +6,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=26">
+
+  <style>
+    .admin-product-thumb {
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .admin-product-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain !important;
+    }
+
+    .product-gallery-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .product-gallery-preview img {
+      width: 92px;
+      height: 92px;
+      object-fit: contain;
+      border-radius: 14px;
+      border: 1px solid #dbe3f0;
+      background: #f8fafc;
+      padding: 6px;
+    }
+
+    .admin-product-gallery {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .admin-product-gallery img {
+      width: 62px;
+      height: 62px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid #dbe3f0;
+      background: #f8fafc;
+      padding: 4px;
+    }
+  </style>
+
 </head>
 
 <body>
@@ -134,20 +185,26 @@
               <label for="productImageFile">Fotografía del producto</label>
 
               <input type="hidden" id="productImage" />
+              <input type="hidden" id="productImages" />
 
-              <input type="file" id="productImageFile" accept="image/png, image/jpeg, image/jpg, image/webp" />
+              <input
+                type="file"
+                id="productImageFile"
+                accept="image/png, image/jpeg, image/jpg, image/webp"
+                multiple
+              />
 
               <p class="subtext">
-                Sube una imagen JPG, PNG o WEBP. Máximo 5 MB.
+                Puedes subir una o varias imágenes JPG, PNG o WEBP. Máximo 5 MB por imagen.
+                La primera imagen será la principal.
               </p>
 
               <div id="productImagePreview" style="display: none; margin-top: 12px;">
-                <img id="productImagePreviewImg" src="" alt="Vista previa del producto"
-                  style="width: 140px; height: 140px; object-fit: cover; border-radius: 16px; border: 1px solid #dbe3f0;" />
+                <div id="productImagePreviewList" class="product-gallery-preview"></div>
 
                 <button type="button" class="btn-outline btn-sm" id="removeProductImageBtn"
                   style="display: none; margin-top: 10px;">
-                  Eliminar imagen
+                  Eliminar imágenes
                 </button>
               </div>
             </div>
@@ -398,7 +455,7 @@
     <p>© 2026 Papelería Sulamita - Panel administrador</p>
   </footer>
 
-  <script src="tienda.js?v=24"></script>
+  <script src="tienda.js?v=26"></script>
 
   <script>
     protectPage();
@@ -463,10 +520,13 @@
     const uniformGender = document.getElementById("uniformGender");
 
     const productImage = document.getElementById("productImage");
+    const productImages = document.getElementById("productImages");
     const productImageFile = document.getElementById("productImageFile");
     const productImagePreview = document.getElementById("productImagePreview");
-    const productImagePreviewImg = document.getElementById("productImagePreviewImg");
+    const productImagePreviewList = document.getElementById("productImagePreviewList");
     const removeProductImageBtn = document.getElementById("removeProductImageBtn");
+
+    let currentProductImages = [];
 
     const packageForm = document.getElementById("packageForm");
     const packageFormTitle = document.getElementById("packageFormTitle");
@@ -628,22 +688,24 @@
     productNoSize.addEventListener("change", toggleNoSizeFields);
 
     productImageFile.addEventListener("change", function () {
-      const file = productImageFile.files && productImageFile.files[0];
+      const files = Array.from(productImageFile.files || []);
 
-      if (!file) {
-        updateImagePreview(productImage.value);
+      if (!files.length) {
+        updateImagePreview(currentProductImages);
         return;
       }
 
-      const previewUrl = URL.createObjectURL(file);
-      updateImagePreview(previewUrl);
+      const previewUrls = files.map((file) => URL.createObjectURL(file));
+      updateImagePreview(previewUrls);
     });
 
     removeProductImageBtn.addEventListener("click", function () {
+      currentProductImages = [];
       productImage.value = "";
+      productImages.value = "[]";
       productImageFile.value = "";
-      updateImagePreview("");
-      showAdminMessage("Imagen eliminada. Presiona Actualizar producto para guardar el cambio.");
+      updateImagePreview([]);
+      showAdminMessage("Imágenes eliminadas. Presiona Actualizar producto para guardar el cambio.");
     });
 
     categorySelect.addEventListener("change", function () {
@@ -721,10 +783,13 @@
         return;
       }
 
-      let uploadedImageUrl = "";
+      let uploadedImages = {
+        mainUrl: "",
+        imageUrls: []
+      };
 
       try {
-        uploadedImageUrl = await uploadSelectedProductImage();
+        uploadedImages = await uploadSelectedProductImage();
       } catch (error) {
         console.error(error);
         showAdminMessage(error.message || "No se pudo subir la imagen.", true);
@@ -755,7 +820,8 @@
         genero_uniforme: selectedCategory === "Uniformes" ? uniformGender.value : "",
         nombre: document.getElementById("productName").value.trim(),
         descripcion: document.getElementById("productDescription").value.trim(),
-        imagen_url: uploadedImageUrl,
+        imagen_url: uploadedImages.mainUrl,
+        imagenes_url: uploadedImages.imageUrls,
         precio: generalPrice,
         disponible: document.getElementById("productAvailable").checked,
         requiere_precio: document.getElementById("productRequiresPrice").checked,
@@ -1367,24 +1433,67 @@
       return matchesSchool && matchesLevel && matchesGrade && matchesArea && matchesCategory;
     }
 
-    function renderAdminProductCard(product) {
-      const tallas = Array.isArray(product.tallas) ? product.tallas : [];
+    function getProductImages(product) {
+      let images = [];
 
-      const imageUrl = String(
-        product.imagen_url ||
-        product.imagen ||
-        product.image_url ||
+      if (Array.isArray(product?.imagenes_url)) {
+        images = product.imagenes_url;
+      } else if (typeof product?.imagenes_url === "string" && product.imagenes_url.trim()) {
+        try {
+          images = JSON.parse(product.imagenes_url);
+        } catch (error) {
+          images = [product.imagenes_url];
+        }
+      }
+
+      const mainImage = String(
+        product?.imagen_url ||
+        product?.imagen ||
+        product?.image_url ||
         ""
       ).trim();
 
+      images = images
+        .map((url) => String(url || "").trim())
+        .filter(Boolean);
+
+      if (mainImage && !images.includes(mainImage)) {
+        images.unshift(mainImage);
+      }
+
+      return Array.from(new Set(images));
+    }
+
+    function renderAdminProductCard(product) {
+      const tallas = Array.isArray(product.tallas) ? product.tallas : [];
+
+      const productImagesList = getProductImages(product);
+      const imageUrl = productImagesList[0] || "";
+
       const imageHtml = imageUrl
         ? `
-          <div class="admin-product-thumb">
-            <img
-              src="${escapeHtmlAttr(imageUrl)}"
-              alt="${escapeHtmlAttr(product.nombre || "Producto")}"
-              loading="lazy"
-            />
+          <div>
+            <div class="admin-product-thumb">
+              <img
+                src="${escapeHtmlAttr(imageUrl)}"
+                alt="${escapeHtmlAttr(product.nombre || "Producto")}"
+                loading="lazy"
+              />
+            </div>
+
+            ${productImagesList.length > 1
+              ? `
+                <div class="admin-product-gallery">
+                  ${productImagesList.slice(1).map((url) => `
+                    <img
+                      src="${escapeHtmlAttr(url)}"
+                      alt="${escapeHtmlAttr(product.nombre || "Producto")}"
+                      loading="lazy"
+                    />
+                  `).join("")}
+                </div>
+              `
+              : ""}
           </div>
         `
         : `
@@ -1567,9 +1676,11 @@
       document.getElementById("productName").value = product.nombre || "";
       document.getElementById("productDescription").value = product.descripcion || "";
 
-      productImage.value = product.imagen_url || product.imagen || product.image_url || "";
+      currentProductImages = getProductImages(product);
+      productImage.value = currentProductImages[0] || "";
+      productImages.value = JSON.stringify(currentProductImages);
       productImageFile.value = "";
-      updateImagePreview(productImage.value);
+      updateImagePreview(currentProductImages);
 
       document.getElementById("productPrice").value = Number(product.precio || 0);
       document.getElementById("productAvailable").checked = product.disponible !== false;
@@ -1634,51 +1745,118 @@
       document.getElementById("productRequiresPrice").checked = false;
       unitStock.value = "0";
 
+      currentProductImages = [];
       productImage.value = "";
+      productImages.value = "[]";
       productImageFile.value = "";
-      updateImagePreview("");
+      updateImagePreview([]);
     }
 
-    function updateImagePreview(imageUrl) {
-      const url = String(imageUrl || "").trim();
+    function updateImagePreview(imageUrls) {
+      const urls = Array.isArray(imageUrls)
+        ? imageUrls
+        : [imageUrls];
 
-      if (!url) {
+      const cleanUrls = urls
+        .map((url) => String(url || "").trim())
+        .filter(Boolean);
+
+      productImagePreviewList.innerHTML = "";
+
+      if (!cleanUrls.length) {
         productImagePreview.style.display = "none";
-        productImagePreviewImg.src = "";
         removeProductImageBtn.style.display = "none";
         return;
       }
 
       productImagePreview.style.display = "block";
-      productImagePreviewImg.src = url;
       removeProductImageBtn.style.display = "inline-block";
+
+      productImagePreviewList.innerHTML = cleanUrls
+        .map((url) => `
+          <img
+            src="${escapeHtmlAttr(url)}"
+            alt="Vista previa del producto"
+          />
+        `)
+        .join("");
     }
 
     async function uploadSelectedProductImage() {
-      const file = productImageFile.files && productImageFile.files[0];
+      const files = Array.from(productImageFile.files || []);
 
-      if (!file) {
-        return productImage.value || "";
+      if (!files.length) {
+        const savedImages = currentProductImages.length
+          ? currentProductImages
+          : getSavedProductImagesFromInput();
+
+        const mainUrl = savedImages[0] || productImage.value || "";
+
+        currentProductImages = savedImages;
+        productImage.value = mainUrl;
+        productImages.value = JSON.stringify(savedImages);
+        updateImagePreview(savedImages);
+
+        return {
+          mainUrl,
+          imageUrls: savedImages
+        };
       }
 
-      const formData = new FormData();
-      formData.append("imagen", file);
+      const uploadedUrls = [];
 
-      const response = await fetch("/api/admin/subir-imagen", {
-        method: "POST",
-        body: formData
-      });
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("imagen", file);
 
-      const data = await response.json();
+        const response = await fetch("/api/admin/subir-imagen", {
+          method: "POST",
+          body: formData
+        });
 
-      if (!response.ok) {
-        throw new Error(data.message || "No se pudo subir la imagen.");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "No se pudo subir una de las imágenes.");
+        }
+
+        if (data.imagen_url) {
+          uploadedUrls.push(data.imagen_url);
+        }
       }
 
-      productImage.value = data.imagen_url || "";
-      updateImagePreview(productImage.value);
+      const imageUrls = Array.from(new Set([
+        ...currentProductImages,
+        ...uploadedUrls
+      ]));
 
-      return productImage.value;
+      const mainUrl = imageUrls[0] || "";
+
+      currentProductImages = imageUrls;
+      productImage.value = mainUrl;
+      productImages.value = JSON.stringify(imageUrls);
+      updateImagePreview(imageUrls);
+
+      return {
+        mainUrl,
+        imageUrls
+      };
+    }
+
+    function getSavedProductImagesFromInput() {
+      try {
+        const parsed = JSON.parse(productImages.value || "[]");
+
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((url) => String(url || "").trim())
+            .filter(Boolean);
+        }
+      } catch (error) {
+        return productImage.value ? [productImage.value] : [];
+      }
+
+      return productImage.value ? [productImage.value] : [];
     }
 
     function renderPackageProductOptions(selectedIds = null) {
