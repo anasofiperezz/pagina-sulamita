@@ -2446,3 +2446,25 @@ select:disabled {
   object-fit: contain !important;
   background: #f8fafc;
 }
+
+.payment-notice {
+  margin: 18px 0;
+  padding: 16px 18px;
+  border: 1px solid #f4c542;
+  border-radius: 18px;
+  background: #fff8df;
+  color: #3f2f00;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.payment-notice strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #0f2f5f;
+  font-weight: 800;
+}
+
+.payment-notice p {
+  margin: 4px 0 0;
+}

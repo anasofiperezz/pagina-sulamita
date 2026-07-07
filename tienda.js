@@ -184,6 +184,163 @@ function isUnitallaProduct(product) {
   );
 }
 
+
+/* =========================
+   AVISOS Y REGLAS DE PAGO
+========================= */
+
+function getPaymentNoticeHtml(compact = false) {
+  return `
+    <div class="payment-notice ${compact ? "payment-notice-compact" : ""}">
+      <strong>Aviso importante sobre pagos</strong>
+      <p>
+        Por el momento, los pedidos a distancia únicamente pueden pagarse por
+        transferencia bancaria.
+      </p>
+      <p>
+        Los pagos con tarjeta y efectivo se reciben únicamente en tienda física.
+      </p>
+    </div>
+  `;
+}
+
+function injectPaymentNoticeStyles() {
+  if (document.getElementById("paymentNoticeStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "paymentNoticeStyles";
+  style.textContent = `
+    .payment-notice {
+      margin: 18px auto;
+      padding: 16px 18px;
+      border: 1px solid #f4c542;
+      border-radius: 18px;
+      background: #fff8df;
+      color: #3f2f00;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      box-shadow: 0 8px 22px rgba(15, 47, 95, 0.08);
+    }
+
+    .payment-notice strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #0f2f5f;
+      font-weight: 800;
+    }
+
+    .payment-notice p {
+      margin: 4px 0 0;
+    }
+
+    .payment-notice-compact {
+      max-width: 1100px;
+      width: calc(100% - 32px);
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function setupPaymentMethodOptions() {
+  const paymentMethod = document.getElementById("paymentMethod");
+  if (!paymentMethod) return;
+
+  const currentValue = paymentMethod.value;
+
+  paymentMethod.innerHTML = `
+    <option value="">Selecciona método de pago</option>
+    <option value="transferencia">Transferencia bancaria para pedido a distancia</option>
+    <option value="efectivo_tienda">Efectivo en tienda física</option>
+    <option value="tarjeta_tienda">Tarjeta en tienda física</option>
+  `;
+
+  const allowedValues = ["", "transferencia", "efectivo_tienda", "tarjeta_tienda"];
+  paymentMethod.value = allowedValues.includes(currentValue) ? currentValue : "";
+}
+
+function insertCartPaymentNotice() {
+  const paymentMethod = document.getElementById("paymentMethod");
+  if (!paymentMethod || document.getElementById("cartPaymentNotice")) return;
+
+  const wrapper = document.createElement("div");
+  wrapper.id = "cartPaymentNotice";
+  wrapper.innerHTML = getPaymentNoticeHtml();
+
+  const formGroup = paymentMethod.closest(".form-group") || paymentMethod.parentElement;
+
+  if (formGroup && formGroup.parentElement) {
+    formGroup.parentElement.insertBefore(wrapper, formGroup);
+  } else {
+    paymentMethod.insertAdjacentElement("beforebegin", wrapper);
+  }
+}
+
+function insertHomePaymentNotice() {
+  const path = window.location.pathname || "";
+  const isBlockedPage =
+    path.includes("admin") ||
+    path.includes("login") ||
+    path.includes("carrito") ||
+    path.includes("pago-") ||
+    path.includes("usuarios-admin") ||
+    path.includes("pedidos-admin");
+
+  if (isBlockedPage || document.getElementById("homePaymentNotice")) return;
+
+  const main = document.querySelector("main");
+  if (!main) return;
+
+  const wrapper = document.createElement("section");
+  wrapper.id = "homePaymentNotice";
+  wrapper.className = "payment-notice-compact";
+  wrapper.innerHTML = getPaymentNoticeHtml(true);
+
+  const firstSection = main.querySelector("section");
+
+  if (firstSection && firstSection.nextSibling) {
+    firstSection.insertAdjacentElement("afterend", wrapper);
+  } else {
+    main.insertBefore(wrapper, main.firstChild);
+  }
+}
+
+function setupPaymentNotices() {
+  injectPaymentNoticeStyles();
+  setupPaymentMethodOptions();
+  insertCartPaymentNotice();
+  insertHomePaymentNotice();
+}
+
+function validatePaymentRules(deliveryValue, paymentMethod) {
+  const cleanDelivery = String(deliveryValue || "").trim();
+  const cleanPayment = String(paymentMethod || "").trim();
+  const isDistanceOrder = cleanDelivery === "delivery";
+
+  if (isDistanceOrder && cleanPayment !== "transferencia") {
+    alert(
+      "Por el momento, los pedidos a distancia únicamente pueden pagarse por transferencia bancaria. Los pagos con tarjeta y efectivo se reciben únicamente en tienda física."
+    );
+    return false;
+  }
+
+  if (cleanPayment === "tarjeta") {
+    alert(
+      "Por el momento el pago con tarjeta en línea no está disponible. El pago con tarjeta se recibe únicamente en tienda física."
+    );
+    return false;
+  }
+
+  if (cleanPayment === "efectivo" && isDistanceOrder) {
+    alert(
+      "El pago en efectivo se recibe únicamente en tienda física. Para pedidos a distancia selecciona transferencia bancaria."
+    );
+    return false;
+  }
+
+  return true;
+}
+
 /* =========================
    CARRITO
 ========================= */
@@ -291,6 +448,7 @@ function calculateCartAmounts(deliveryValue = null) {
 }
 
 function setupCartPage() {
+  setupPaymentNotices();
   renderCart();
 
   const deliveryMethod = document.getElementById("deliveryMethod");
@@ -320,6 +478,10 @@ function setupCartPage() {
 
       const paymentMethod = document.getElementById("paymentMethod")?.value || "";
       const deliveryValue = document.getElementById("deliveryMethod")?.value || "";
+
+      if (!validatePaymentRules(deliveryValue, paymentMethod)) {
+        return;
+      }
 
       const shippingAddressData = getShippingAddressData();
       const shippingAddress = formatShippingAddress(shippingAddressData);

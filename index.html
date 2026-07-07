@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Inicio | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
+
 <body>
   <header>
     <div class="navbar">
@@ -27,12 +28,24 @@
   <main>
     <section class="hero">
       <div class="hero-text">
-        <h1>Compra útiles, uniformes y materiales de papeleria</h1>
+        <h1>Compra útiles, uniformes y materiales de papelería</h1>
+
         <p>
           Bienvenido a Papelería Sulamita. Aquí podrás elegir una escuela,
           entrar al nivel correspondiente y revisar el catálogo disponible
           para cada sección escolar.
         </p>
+
+        <div class="payment-notice">
+          <strong>Aviso importante sobre pagos</strong>
+          <p>
+            Por el momento, los pedidos a distancia únicamente pueden pagarse por
+            transferencia bancaria.
+          </p>
+          <p>
+            Los pagos con tarjeta y efectivo se reciben únicamente en tienda física.
+          </p>
+        </div>
 
         <div class="actions">
           <a href="#escuelas" class="btn-primary">Ver escuelas</a>
@@ -47,6 +60,7 @@
           <li>Niveles por colegio</li>
           <li>Útiles, uniformes y materiales</li>
           <li>Carrito de compras</li>
+          <li>Listas de útiles escolares</li>
         </ul>
       </div>
     </section>
@@ -62,9 +76,18 @@
 
           <div class="school-content">
             <h3>Instituto Pedagógico Anglo Español (IPAE)</h3>
+
             <p><strong>Niveles:</strong> Secundaria y Preparatoria</p>
-            <p><strong>Secundaria:</strong> Jalapa 44, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700</p>
-            <p><strong>Preparatoria:</strong> Durango 101, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700</p>
+
+            <p>
+              <strong>Secundaria:</strong> Jalapa 44, Col. Roma Norte,
+              Alcaldía Cuauhtémoc, CDMX. C.P. 06700
+            </p>
+
+            <p>
+              <strong>Preparatoria:</strong> Durango 101, Col. Roma Norte,
+              Alcaldía Cuauhtémoc, CDMX. C.P. 06700
+            </p>
 
             <div class="grades">
               <span class="grade-tag">Secundaria</span>
@@ -73,6 +96,7 @@
 
             <div class="actions">
               <a href="escuela1.html" class="btn-primary">Ver niveles</a>
+
               <button class="btn-outline" type="button" onclick="showSchoolInfo('ipae')">
                 Más información
               </button>
@@ -87,10 +111,23 @@
 
           <div class="school-content">
             <h3>Instituto Anglo Español (IAE)</h3>
-            <p><strong>Niveles:</strong> Jardín de niños y Primaria</p>
-            <p><strong>Jardín de niños:</strong> Sadi Carnot #23, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
-            <p><strong>Primaria:</strong> Sadi Carnot #44, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
-            <p><strong>Secundaria:</strong> Sadi Carnot #13, Col. an Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
+
+            <p><strong>Niveles:</strong> Jardín de niños, Primaria y Secundaria</p>
+
+            <p>
+              <strong>Jardín de niños:</strong> Sadi Carnot #23,
+              Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470
+            </p>
+
+            <p>
+              <strong>Primaria:</strong> Sadi Carnot #44,
+              Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470
+            </p>
+
+            <p>
+              <strong>Secundaria:</strong> Sadi Carnot #13,
+              Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470
+            </p>
 
             <div class="grades">
               <span class="grade-tag">Jardín de niños</span>
@@ -100,6 +137,7 @@
 
             <div class="actions">
               <a href="escuela2.html" class="btn-primary">Ver niveles</a>
+
               <button class="btn-outline" type="button" onclick="showSchoolInfo('iae')">
                 Más información
               </button>
@@ -112,11 +150,9 @@
     <section class="info-section">
       <div class="info-card">
         <h3>Contacto general</h3>
+
         <p>
           <strong>Nombre comercial:</strong> Papelería Sulamita<br />
-          <strong>Teléfono:</strong> 55 5533 5177
-          <strong>Teléfono:</strong> 55 5533 5177
-          <strong>Teléfono:</strong> 55 5533 5177
           <strong>Teléfono:</strong> 55 5533 5177<br />
           <strong>Correo:</strong> solisruizdevelasco@gmail.com
         </p>
@@ -124,19 +160,22 @@
 
       <div class="info-card">
         <h3>Métodos de entrega</h3>
+
         <p>
           Recoger en sucursal.<br />
-          Envío a domicilio.<br />
+          Envío a domicilio.
         </p>
       </div>
 
       <div class="info-card">
         <h3>Métodos de pago</h3>
+
         <p>
-          Pago con tarjeta.<br />
-          Transferencia.<br />
-          Efectivo.<br />
-          Pago al recoger o contra entrega.
+          <strong>Pedidos a distancia:</strong><br />
+          Transferencia bancaria.<br /><br />
+
+          <strong>En tienda física:</strong><br />
+          Efectivo y tarjeta.
         </p>
       </div>
     </section>
@@ -146,7 +185,8 @@
     <p>© 2026 Papelería Sulamita - Todos los derechos reservados</p>
   </footer>
 
-  <script src="tienda.js?v=22"></script>
+  <script src="tienda.js?v=25"></script>
+
   <script>
     protectPage();
     setupHeader();
@@ -156,6 +196,7 @@
 
     if (role === "admin" && adminBtn) {
       adminBtn.style.display = "inline-block";
+
       adminBtn.addEventListener("click", function () {
         window.location.href = "admin.html";
       });
@@ -168,7 +209,7 @@
         );
       } else {
         alert(
-          "Instituto Anglo Español (IAE)\n\nJardín de niños:\nSadi Carnot #23, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470\n\nPrimaria:\nSadi Carnot #44, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470"
+          "Instituto Anglo Español (IAE)\n\nJardín de niños:\nSadi Carnot #23, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470\n\nPrimaria:\nSadi Carnot #44, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470\n\nSecundaria:\nSadi Carnot #13, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470"
         );
       }
     }
