@@ -324,6 +324,13 @@ function validatePaymentRules(deliveryValue, paymentMethod) {
     return false;
   }
 
+  if (isDistanceOrder && (cleanPayment === "efectivo_tienda" || cleanPayment === "tarjeta_tienda")) {
+    alert(
+      "Los pagos con tarjeta y efectivo se reciben únicamente en tienda física. Para pedidos a distancia selecciona transferencia bancaria."
+    );
+    return false;
+  }
+
   if (cleanPayment === "tarjeta") {
     alert(
       "Por el momento el pago con tarjeta en línea no está disponible. El pago con tarjeta se recibe únicamente en tienda física."
@@ -448,7 +455,7 @@ function calculateCartAmounts(deliveryValue = null) {
 }
 
 function setupCartPage() {
-  setupPaymentNotices();
+  setupPaymentMethodOptions();
   renderCart();
 
   const deliveryMethod = document.getElementById("deliveryMethod");

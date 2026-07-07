@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 
 <body>
@@ -71,10 +71,12 @@
             </div>
 
             <div class="info-card">
-              <h3>Pago con Mercado Pago</h3>
+              <h3>Formas de pago</h3>
               <p>
-                Si eliges tarjeta, la página te enviará a Mercado Pago para realizar el pago
-                de forma segura. No escribas datos de tarjeta dentro de esta página.
+                Para pedidos a distancia, por el momento únicamente aceptamos transferencia bancaria.
+              </p>
+              <p>
+                Si recoges tu pedido en tienda física, puedes pagar con efectivo o tarjeta.
               </p>
             </div>
           </div>
@@ -172,29 +174,27 @@
             <div class="form-group">
               <label for="paymentMethod">Método de pago</label>
               <select id="paymentMethod">
-                <option value="tarjeta">Tarjeta / Mercado Pago</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="efectivo">Efectivo contraentrega</option>
+                <option value="">Selecciona método de pago</option>
+                <option value="transferencia">Transferencia bancaria para pedido a distancia</option>
+                <option value="efectivo_tienda">Efectivo en tienda física</option>
+                <option value="tarjeta_tienda">Tarjeta en tienda física</option>
               </select>
             </div>
 
-            <div class="payment-info-card" id="cardPaymentInfo">
-              <h4>Pago con Mercado Pago</h4>
+            <div class="payment-info-card" id="cardPaymentInfo" style="display: none;">
+              <h4>Pago con tarjeta en tienda física</h4>
               <p>
-                Al confirmar el pedido, serás redirigido a Mercado Pago para completar el pago.
-              </p>
-              <p>
-                Puedes pagar con tarjeta u otros métodos disponibles dentro de Mercado Pago.
+                El pago con tarjeta se realiza únicamente al recoger el pedido en la papelería.
               </p>
               <p class="subtext">
-                Por seguridad, no escribas datos de tu tarjeta dentro de esta página.
+                Por el momento no hay pago con tarjeta en línea.
               </p>
             </div>
 
             <div class="payment-info-card" id="cashPaymentInfo" style="display: none;">
-              <h4>Pago en efectivo</h4>
+              <h4>Pago en efectivo en tienda física</h4>
               <p>
-                El pago se realiza en efectivo al recibir el pedido o al recogerlo en papelería.
+                El pago en efectivo se realiza únicamente al recoger el pedido en la papelería.
               </p>
             </div>
 
@@ -286,14 +286,14 @@
               </div>
 
               <div class="form-group" id="invoiceVoucherGroup" style="display: none;">
-                <label for="invoiceVoucherFile">Comprobante de pago Mercado Pago / voucher</label>
+                <label for="invoiceVoucherFile">Comprobante de pago / voucher</label>
                 <input
                   type="file"
                   id="invoiceVoucherFile"
                   accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
                 />
                 <p class="subtext">
-                  Opcional. Si ya tienes comprobante de Mercado Pago, puedes subirlo.
+                  Opcional. Si ya tienes comprobante de pago, puedes subirlo.
                 </p>
               </div>
 
@@ -320,7 +320,7 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=22"></script>
+  <script src="tienda.js?v=25"></script>
 
   <script>
     protectPage();
@@ -350,18 +350,18 @@
     function updatePaymentInfo() {
       const value = paymentMethod.value;
 
-      cardPaymentInfo.style.display = value === "tarjeta" ? "block" : "none";
-      cashPaymentInfo.style.display = value === "efectivo" ? "block" : "none";
+      cardPaymentInfo.style.display = value === "tarjeta_tienda" ? "block" : "none";
+      cashPaymentInfo.style.display = value === "efectivo_tienda" ? "block" : "none";
       transferPaymentInfo.style.display = value === "transferencia" ? "block" : "none";
 
       if (invoicePaymentMode) {
-        if (value === "tarjeta") invoicePaymentMode.value = "Tarjeta";
+        if (value === "tarjeta_tienda") invoicePaymentMode.value = "Tarjeta";
         if (value === "transferencia") invoicePaymentMode.value = "Transferencia";
-        if (value === "efectivo") invoicePaymentMode.value = "Efectivo";
+        if (value === "efectivo_tienda") invoicePaymentMode.value = "Efectivo";
       }
 
       if (invoiceVoucherGroup) {
-        invoiceVoucherGroup.style.display = value === "tarjeta" ? "block" : "none";
+        invoiceVoucherGroup.style.display = value === "tarjeta_tienda" ? "block" : "none";
       }
     }
 
