@@ -1,3 +1,5 @@
+const CART_TEMPORARILY_DISABLED = true;
+
 const API_URL = "";
 
 function isGitHubPages() {
@@ -34,10 +36,21 @@ function setupHeader() {
   }
 
   const cartBtn = document.getElementById("cartBtn");
+
   if (cartBtn) {
-    cartBtn.addEventListener("click", function () {
-      goTo("carrito.html");
-    });
+    if (CART_TEMPORARILY_DISABLED) {
+      cartBtn.textContent = "Carrito desactivado";
+
+      cartBtn.addEventListener("click", function () {
+        alert(
+          "Por el momento las compras en línea están temporalmente desactivadas. Puedes contactar a Papelería Sulamita para realizar tu pedido."
+        );
+      });
+    } else {
+      cartBtn.addEventListener("click", function () {
+        goTo("carrito.html");
+      });
+    }
   }
 
   updateCartCount();
@@ -456,6 +469,44 @@ function calculateCartAmounts(deliveryValue = null) {
 
 function setupCartPage() {
   setupPaymentMethodOptions();
+
+  if (CART_TEMPORARILY_DISABLED) {
+    localStorage.removeItem("cart");
+    updateCartCount();
+
+    const cartItemsContainer = document.getElementById("cartItems");
+    const emptyCartMessage = document.getElementById("emptyCartMessage");
+    const checkoutBtn = document.getElementById("checkoutBtn");
+    const clearCartBtn = document.getElementById("clearCartBtn");
+
+    if (cartItemsContainer) {
+      cartItemsContainer.innerHTML = `
+        <div class="note">
+          <h3>Compras en línea temporalmente desactivadas</h3>
+          <p>
+            Por el momento no se pueden confirmar pedidos desde la página.
+            Puedes contactar a Papelería Sulamita para realizar tu pedido.
+          </p>
+        </div>
+      `;
+    }
+
+    if (emptyCartMessage) {
+      emptyCartMessage.style.display = "none";
+    }
+
+    if (checkoutBtn) {
+      checkoutBtn.disabled = true;
+      checkoutBtn.textContent = "Compras temporalmente desactivadas";
+    }
+
+    if (clearCartBtn) {
+      clearCartBtn.disabled = true;
+    }
+
+    return;
+  }
+
   renderCart();
 
   const deliveryMethod = document.getElementById("deliveryMethod");
@@ -855,6 +906,13 @@ function updateCartTotals() {
 }
 
 function addProductToCart(product) {
+  if (CART_TEMPORARILY_DISABLED) {
+    alert(
+      "Por el momento las compras en línea están temporalmente desactivadas. Puedes contactar a Papelería Sulamita para realizar tu pedido."
+    );
+    return;
+  }
+
   const isUnitalla = isUnitallaProduct(product);
 
   let talla = "Unidad";
@@ -1490,6 +1548,13 @@ function updatePackageDisplayedPrice(packageId) {
 }
 
 function addPackageToCart(packageId) {
+  if (CART_TEMPORARILY_DISABLED) {
+    alert(
+      "Por el momento las compras en línea están temporalmente desactivadas. Puedes contactar a Papelería Sulamita para realizar tu pedido."
+    );
+    return;
+  }
+
   const pkg = window.currentCatalogPackagesMap?.[packageId];
 
   if (!pkg) {
