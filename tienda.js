@@ -1,4 +1,4 @@
-const CART_TEMPORARILY_DISABLED = true;
+const CART_TEMPORARILY_DISABLED = false;
 
 const API_URL = "";
 
