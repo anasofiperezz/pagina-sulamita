@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Administrar listas | Papelería Sulamita</title>
+  <link rel="icon" href="img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=31">
+
+  <style>
+    .lists-admin-page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 48px 22px 70px;
+    }
+
+    .lists-admin-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 420px) 1fr;
+      gap: 26px;
+      align-items: start;
+    }
+
+    .lists-admin-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .lists-admin-card h2 {
+      margin-top: 0;
+    }
+
+    .admin-list-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 14px;
+      background: #ffffff;
+    }
+
+    .admin-list-item h3 {
+      margin: 0 0 8px;
+      color: #111827;
+    }
+
+    .admin-list-item p {
+      margin: 4px 0;
+      color: #4b5563;
+      line-height: 1.45;
+    }
+
+    .admin-list-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .admin-code-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #0f2f5f;
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .lists-admin-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita - Admin</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="admin.html" class="nav-btn">Inventario</a>
+        <a href="pedidos-admin.html" class="nav-btn">Pedidos</a>
+        <a href="usuarios-admin.html" class="nav-btn">Usuarios</a>
+        <a href="listas-utiles.html" class="nav-btn">Ver listas</a>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="lists-admin-page">
+    <section class="page-hero admin-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Administrador</span>
+        <h1>Administrar listas de útiles</h1>
+        <p>
+          Sube listas nuevas, consulta las listas publicadas y elimina las que ya no deban aparecer en la página.
+        </p>
+      </div>
+    </section>
+
+    <section class="lists-admin-layout">
+      <div class="lists-admin-card">
+        <h2>Subir nueva lista</h2>
+
+        <div class="admin-code-box">
+          Usa la misma clave privada de administrador que usas para administrar usuarios.
+        </div>
+
+        <form id="listForm">
+          <div class="form-group">
+            <label for="adminCode">Clave de administrador</label>
+            <input type="password" id="adminCode" placeholder="Clave privada" required />
+          </div>
+
+          <div class="form-group">
+            <label for="listName">Nombre de la lista</label>
+            <input type="text" id="listName" placeholder="Ej. 4° de Preparatoria" required />
+          </div>
+
+          <div class="form-group">
+            <label for="listDescription">Descripción</label>
+            <textarea id="listDescription" rows="4" placeholder="Ej. Lista oficial IPAE ciclo escolar 2026-2027"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="listType">Tipo de lista</label>
+            <select id="listType">
+              <option value="Escuela">Lista oficial de la escuela</option>
+              <option value="Papelería">Lista de Papelería Sulamita</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="listSchool">Escuela</label>
+            <select id="listSchool">
+              <option value="">Sin escuela específica</option>
+              <option value="IAE">IAE</option>
+              <option value="IPAE">IPAE</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="listLevel">Nivel</label>
+            <select id="listLevel">
+              <option value="">Sin nivel específico</option>
+              <option value="Jardín de niños">Jardín de niños</option>
+              <option value="Primaria">Primaria</option>
+              <option value="Secundaria">Secundaria</option>
+              <option value="Preparatoria">Preparatoria</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="listGrade">Grado / Área</label>
+            <input type="text" id="listGrade" placeholder="Ej. 4°, 5°, Área III, 1° Secundaria" />
+          </div>
+
+          <div class="form-group">
+            <label for="listFile">Archivo</label>
+            <input
+              type="file"
+              id="listFile"
+              accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              required
+            />
+            <p class="subtext">
+              Puedes subir PDF, imagen o Word. Para que se vea dentro de la página, lo mejor es PDF o imagen.
+            </p>
+          </div>
+
+          <button type="submit" class="btn-primary full-width" id="saveListBtn">
+            Subir lista
+          </button>
+        </form>
+
+        <div class="note" id="listMessage"></div>
+      </div>
+
+      <div class="lists-admin-card">
+        <div class="admin-table-header">
+          <h2>Listas actuales</h2>
+          <button class="btn-outline" id="reloadListsBtn" type="button">
+            Actualizar
+          </button>
+        </div>
+
+        <div id="adminListsContainer">
+          <div class="note">Escribe tu clave y presiona Actualizar para ver las listas.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Administrar listas</p>
+  </footer>
+
+  <script src="tienda.js?v=31"></script>
+  <script>
+    protectPage();
+    protectAdminPage();
+    setupHeader();
+
+    const listForm = document.getElementById("listForm");
+    const adminCode = document.getElementById("adminCode");
+    const listName = document.getElementById("listName");
+    const listDescription = document.getElementById("listDescription");
+    const listType = document.getElementById("listType");
+    const listSchool = document.getElementById("listSchool");
+    const listLevel = document.getElementById("listLevel");
+    const listGrade = document.getElementById("listGrade");
+    const listFile = document.getElementById("listFile");
+    const saveListBtn = document.getElementById("saveListBtn");
+    const listMessage = document.getElementById("listMessage");
+    const reloadListsBtn = document.getElementById("reloadListsBtn");
+    const adminListsContainer = document.getElementById("adminListsContainer");
+
+    const savedCode = localStorage.getItem("sulamitaAdminCode") || "";
+    adminCode.value = savedCode;
+
+    reloadListsBtn.addEventListener("click", loadAdminLists);
+
+    adminCode.addEventListener("change", function () {
+      localStorage.setItem("sulamitaAdminCode", adminCode.value.trim());
+    });
+
+    listForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const cleanCode = adminCode.value.trim();
+
+      if (!cleanCode) {
+        showListMessage("Escribe la clave de administrador.", true);
+        return;
+      }
+
+      if (!listName.value.trim()) {
+        showListMessage("Escribe el nombre de la lista.", true);
+        return;
+      }
+
+      if (!listFile.files || !listFile.files[0]) {
+        showListMessage("Selecciona un archivo.", true);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("admin_code", cleanCode);
+      formData.append("nombre", listName.value.trim());
+      formData.append("descripcion", listDescription.value.trim());
+      formData.append("tipo", listType.value);
+      formData.append("escuela", listSchool.value);
+      formData.append("nivel", listLevel.value);
+      formData.append("grado", listGrade.value.trim());
+      formData.append("archivo", listFile.files[0]);
+
+      try {
+        saveListBtn.disabled = true;
+        saveListBtn.textContent = "Subiendo...";
+
+        const response = await fetch("/api/admin/listas-utiles", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showListMessage(data.message || "No se pudo subir la lista.", true);
+          return;
+        }
+
+        localStorage.setItem("sulamitaAdminCode", cleanCode);
+
+        showListMessage("Lista subida correctamente.");
+        listForm.reset();
+        adminCode.value = cleanCode;
+
+        await loadAdminLists();
+      } catch (error) {
+        console.error(error);
+        showListMessage("No se pudo conectar con el servidor.", true);
+      } finally {
+        saveListBtn.disabled = false;
+        saveListBtn.textContent = "Subir lista";
+      }
+    });
+
+    async function loadAdminLists() {
+      const cleanCode = adminCode.value.trim();
+
+      if (!cleanCode) {
+        adminListsContainer.innerHTML = `
+          <div class="note error">
+            Escribe la clave de administrador para cargar las listas.
+          </div>
+        `;
+        return;
+      }
+
+      adminListsContainer.innerHTML = `
+        <div class="note">
+          Cargando listas...
+        </div>
+      `;
+
+      try {
+        const response = await fetch("/api/admin/listas-utiles", {
+          headers: {
+            "x-admin-code": cleanCode
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          adminListsContainer.innerHTML = `
+            <div class="note error">
+              ${escapeHtml(data.message || "No se pudieron cargar las listas.")}
+            </div>
+          `;
+          return;
+        }
+
+        const lists = Array.isArray(data) ? data : [];
+
+        if (!lists.length) {
+          adminListsContainer.innerHTML = `
+            <div class="note">
+              Aún no hay listas subidas desde el panel.
+            </div>
+          `;
+          return;
+        }
+
+        adminListsContainer.innerHTML = lists.map(renderAdminListItem).join("");
+      } catch (error) {
+        console.error(error);
+        adminListsContainer.innerHTML = `
+          <div class="note error">
+            No se pudo conectar con el servidor.
+          </div>
+        `;
+      }
+    }
+
+    function renderAdminListItem(item) {
+      const meta = [item.tipo, item.escuela, item.nivel, item.grado]
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+        .join(" · ");
+
+      return `
+        <article class="admin-list-item">
+          <h3>${escapeHtml(item.nombre || "Lista de útiles")}</h3>
+          <p>${escapeHtml(item.descripcion || "Sin descripción")}</p>
+          ${meta ? `<p><strong>${escapeHtml(meta)}</strong></p>` : ""}
+          <p><small>${escapeHtml(item.archivo_nombre || item.archivo_tipo || "Archivo")}</small></p>
+
+          <div class="admin-list-actions">
+            <a class="btn-outline btn-sm" href="${escapeHtmlAttr(item.archivo_url)}" target="_blank" rel="noopener">
+              Ver archivo
+            </a>
+
+            <button class="btn-danger btn-sm" type="button" onclick="deleteSchoolList(${Number(item.id)}, '${escapeHtmlAttr(item.nombre || "Lista")}')">
+              Borrar lista
+            </button>
+          </div>
+        </article>
+      `;
+    }
+
+    async function deleteSchoolList(listId, listNameText) {
+      const cleanCode = adminCode.value.trim();
+
+      if (!cleanCode) {
+        showListMessage("Escribe la clave de administrador.", true);
+        return;
+      }
+
+      const confirmDelete = confirm(
+        `¿Seguro que quieres borrar "${listNameText}"? Esta acción no se puede deshacer.`
+      );
+
+      if (!confirmDelete) return;
+
+      try {
+        const response = await fetch(`/api/admin/listas-utiles/${Number(listId)}`, {
+          method: "DELETE",
+          headers: {
+            "x-admin-code": cleanCode
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showListMessage(data.message || "No se pudo borrar la lista.", true);
+          return;
+        }
+
+        showListMessage("Lista eliminada correctamente.");
+        await loadAdminLists();
+      } catch (error) {
+        console.error(error);
+        showListMessage("No se pudo conectar con el servidor.", true);
+      }
+    }
+
+    function showListMessage(message, isError = false) {
+      listMessage.textContent = message;
+      listMessage.className = isError ? "note error" : "note success";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeHtmlAttr(value) {
+      return escapeHtml(value);
+    }
+
+    if (adminCode.value.trim()) {
+      loadAdminLists();
+    }
+  </script>
+</body>
+</html>

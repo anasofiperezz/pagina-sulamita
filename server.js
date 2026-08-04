@@ -52,7 +52,9 @@ const uploadFile = multer({
       "image/png",
       "image/webp",
       "image/jpg",
-      "application/pdf"
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ];
 
     if (!allowedTypes.includes(file.mimetype)) {
@@ -402,6 +404,23 @@ async function ensureDatabaseUpdates() {
         paquete_id INTEGER NOT NULL REFERENCES paquetes(id) ON DELETE CASCADE,
         producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
         orden INTEGER DEFAULT 0
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS listas_utiles (
+        id SERIAL PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        descripcion TEXT DEFAULT '',
+        tipo TEXT DEFAULT 'Escuela',
+        escuela TEXT DEFAULT '',
+        nivel TEXT DEFAULT '',
+        grado TEXT DEFAULT '',
+        archivo_url TEXT NOT NULL,
+        archivo_tipo TEXT DEFAULT '',
+        archivo_nombre TEXT DEFAULT '',
+        activo BOOLEAN DEFAULT TRUE,
+        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -2057,6 +2076,186 @@ app.delete("/api/pedidos/:id", async (req, res) => {
   }
 });
 
+
+/* =========================
+   LISTAS DE ÚTILES
+========================= */
+
+function normalizeSchoolList(row) {
+  return {
+    id: Number(row.id),
+    nombre: row.nombre || "",
+    descripcion: row.descripcion || "",
+    tipo: row.tipo || "Escuela",
+    escuela: row.escuela || "",
+    nivel: row.nivel || "",
+    grado: row.grado || "",
+    archivo_url: row.archivo_url || "",
+    archivo_tipo: row.archivo_tipo || "",
+    archivo_nombre: row.archivo_nombre || "",
+    activo: row.activo !== false,
+    creado_en: row.creado_en
+  };
+}
+
+app.get("/api/listas-utiles", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM listas_utiles
+      WHERE activo IS NOT FALSE
+      ORDER BY
+        CASE
+          WHEN tipo = 'Papelería' THEN 1
+          ELSE 2
+        END,
+        id DESC
+      `
+    );
+
+    res.json(result.rows.map(normalizeSchoolList));
+  } catch (error) {
+    console.error("Error en GET /api/listas-utiles:", error);
+    res.status(500).json({ message: "Error al obtener listas de útiles." });
+  }
+});
+
+app.get("/api/admin/listas-utiles", async (req, res) => {
+  try {
+    if (!validateAdminCreationCode(req, res)) return;
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM listas_utiles
+      ORDER BY id DESC
+      `
+    );
+
+    res.json(result.rows.map(normalizeSchoolList));
+  } catch (error) {
+    console.error("Error en GET /api/admin/listas-utiles:", error);
+    res.status(500).json({ message: "Error al obtener listas de útiles." });
+  }
+});
+
+app.post("/api/admin/listas-utiles", function (req, res) {
+  uploadFile.single("archivo")(req, res, async function (error) {
+    try {
+      if (!validateAdminCreationCode(req, res)) return;
+
+      if (error) {
+        return res.status(400).json({
+          message: error.message || "No se pudo procesar el archivo."
+        });
+      }
+
+      if (
+        !process.env.CLOUDINARY_CLOUD_NAME ||
+        !process.env.CLOUDINARY_API_KEY ||
+        !process.env.CLOUDINARY_API_SECRET
+      ) {
+        return res.status(500).json({
+          message: "Faltan las variables de Cloudinary en Render."
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          message: "Selecciona un archivo PDF, imagen o Word."
+        });
+      }
+
+      const nombre = String(req.body.nombre || "").trim();
+      const descripcion = String(req.body.descripcion || "").trim();
+      const tipo = String(req.body.tipo || "Escuela").trim();
+      const escuela = String(req.body.escuela || "").trim();
+      const nivel = String(req.body.nivel || "").trim();
+      const grado = String(req.body.grado || "").trim();
+
+      if (!nombre) {
+        return res.status(400).json({
+          message: "Escribe el nombre de la lista."
+        });
+      }
+
+      const result = await uploadBufferToCloudinary(req.file.buffer, {
+        folder: "papeleria-sulamita/listas-utiles",
+        resource_type: "auto"
+      });
+
+      const insertResult = await pool.query(
+        `
+        INSERT INTO listas_utiles (
+          nombre,
+          descripcion,
+          tipo,
+          escuela,
+          nivel,
+          grado,
+          archivo_url,
+          archivo_tipo,
+          archivo_nombre,
+          activo
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
+        RETURNING *
+        `,
+        [
+          nombre,
+          descripcion,
+          tipo || "Escuela",
+          escuela,
+          nivel,
+          grado,
+          result.secure_url,
+          req.file.mimetype || "",
+          req.file.originalname || ""
+        ]
+      );
+
+      res.status(201).json({
+        message: "Lista subida correctamente.",
+        lista: normalizeSchoolList(insertResult.rows[0])
+      });
+    } catch (uploadError) {
+      console.error("Error en POST /api/admin/listas-utiles:", uploadError);
+
+      res.status(500).json({
+        message: uploadError.message || "Error al subir la lista."
+      });
+    }
+  });
+});
+
+app.delete("/api/admin/listas-utiles/:id", async (req, res) => {
+  try {
+    if (!validateAdminCreationCode(req, res)) return;
+
+    const listId = Number(req.params.id);
+
+    if (!listId) {
+      return res.status(400).json({ message: "Lista inválida." });
+    }
+
+    const result = await pool.query(
+      "DELETE FROM listas_utiles WHERE id = $1 RETURNING id",
+      [listId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: "Lista no encontrada." });
+    }
+
+    res.json({ message: "Lista eliminada correctamente." });
+  } catch (error) {
+    console.error("Error en DELETE /api/admin/listas-utiles/:id:", error);
+    res.status(500).json({ message: "Error al eliminar lista." });
+  }
+});
+
+
 /* =========================
    CONTACTO
 ========================= */
@@ -2098,6 +2297,14 @@ app.get("/login", (req, res) => {
 
 app.get("/usuarios-admin", (req, res) => {
   res.sendFile(path.join(publicDir, "usuarios-admin.html"));
+});
+
+app.get("/listas-admin", (req, res) => {
+  res.sendFile(path.join(publicDir, "listas-admin.html"));
+});
+
+app.get("/listas-utiles", (req, res) => {
+  res.sendFile(path.join(publicDir, "listas-utiles.html"));
 });
 
 app.get("/admin", (req, res) => {

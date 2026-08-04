@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listas de útiles | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=27">
+  <link rel="stylesheet" href="styles.css?v=31">
 
   <style>
     .lists-page {
@@ -79,6 +79,7 @@
       font-size: 0.82rem;
       letter-spacing: 0.02em;
       margin-bottom: 10px;
+      display: inline-block;
     }
 
     .list-card h3 {
@@ -104,9 +105,10 @@
       text-decoration: none;
     }
 
-    .pdf-viewer {
+    .pdf-viewer,
+    .file-viewer {
       width: 100%;
-      height: 720px;
+      min-height: 560px;
       border: 1px solid #dbe3f0;
       border-radius: 18px;
       background: #f8fafc;
@@ -115,8 +117,35 @@
 
     .pdf-viewer iframe {
       width: 100%;
-      height: 100%;
+      height: 720px;
       border: 0;
+    }
+
+    .image-viewer {
+      min-height: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+    }
+
+    .image-viewer img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 14px;
+      display: block;
+    }
+
+    .file-message {
+      padding: 32px;
+      text-align: center;
+      color: #334155;
+    }
+
+    .file-message h4 {
+      margin: 0 0 8px;
+      color: #0f172a;
+      font-size: 1.2rem;
     }
 
     @media (max-width: 720px) {
@@ -125,7 +154,7 @@
         border-radius: 22px;
       }
 
-      .pdf-viewer {
+      .pdf-viewer iframe {
         height: 560px;
       }
     }
@@ -142,6 +171,7 @@
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="index.html#escuelas" class="nav-btn">Escuelas</a>
         <a href="listas-utiles.html" class="nav-btn">Listas de útiles</a>
+        <a href="listas-admin.html" class="nav-btn" id="adminListsBtn" style="display: none;">Administrar listas</a>
         <a href="contacto.html" class="nav-btn">Contacto</a>
         <button class="nav-btn" id="cartBtn">Carrito</button>
         <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
@@ -159,121 +189,223 @@
     </section>
 
     <div class="lists-note">
-      <strong>Nota:</strong> En algunos celulares el PDF puede abrirse en una pestaña nueva. Por eso también dejamos el botón de descarga como respaldo.
+      <strong>Nota:</strong> En algunos celulares el archivo puede abrirse en una pestaña nueva.
+      Por eso también dejamos el botón de descarga como respaldo.
     </div>
 
-    <h2 class="lists-section-title">Lista de Papelería Sulamita</h2>
-
-    <article class="list-card">
-      <div class="list-card-header">
-        <div>
-          <span class="list-card-tag">Papelería</span>
-          <h3>Preparatoria IPAE 2026-2027</h3>
-          <p>Lista general de Papelería Sulamita con artículos, códigos, precios y totales.</p>
-        </div>
-
-        <div class="list-actions">
-          <a class="btn-primary" href="listas/lista-papeleria-ipae-preparatoria-2026-2027.pdf" target="_blank" rel="noopener">
-            Abrir en pestaña
-          </a>
-          <a class="btn-outline" href="listas/lista-papeleria-ipae-preparatoria-2026-2027.pdf" download>
-            Descargar
-          </a>
-        </div>
-      </div>
-
-      <div class="pdf-viewer">
-        <iframe src="listas/lista-papeleria-ipae-preparatoria-2026-2027.pdf#toolbar=1&navpanes=0"></iframe>
-      </div>
-    </article>
-
-    <h2 class="lists-section-title">Listas oficiales de la escuela</h2>
-
-    <article class="list-card">
-      <div class="list-card-header">
-        <div>
-          <span class="list-card-tag">Escuela</span>
-          <h3>4° de Preparatoria</h3>
-          <p>Lista oficial IPAE ciclo escolar 2026-2027 para 4° de preparatoria.</p>
-        </div>
-
-        <div class="list-actions">
-          <a class="btn-primary" href="listas/lista-escuela-4-prepa.pdf" target="_blank" rel="noopener">Abrir en pestaña</a>
-          <a class="btn-outline" href="listas/lista-escuela-4-prepa.pdf" download>Descargar</a>
-        </div>
-      </div>
-
-      <div class="pdf-viewer">
-        <iframe src="listas/lista-escuela-4-prepa.pdf#toolbar=1&navpanes=0"></iframe>
-      </div>
-    </article>
-
-    <article class="list-card">
-      <div class="list-card-header">
-        <div>
-          <span class="list-card-tag">Escuela</span>
-          <h3>5° de Preparatoria</h3>
-          <p>Lista oficial IPAE ciclo escolar 2026-2027 para 5° de preparatoria.</p>
-        </div>
-
-        <div class="list-actions">
-          <a class="btn-primary" href="listas/lista-escuela-5-prepa.pdf" target="_blank" rel="noopener">Abrir en pestaña</a>
-          <a class="btn-outline" href="listas/lista-escuela-5-prepa.pdf" download>Descargar</a>
-        </div>
-      </div>
-
-      <div class="pdf-viewer">
-        <iframe src="listas/lista-escuela-5-prepa.pdf#toolbar=1&navpanes=0"></iframe>
-      </div>
-    </article>
-
-    <article class="list-card">
-      <div class="list-card-header">
-        <div>
-          <span class="list-card-tag">Escuela</span>
-          <h3>Área III</h3>
-          <p>Lista oficial IPAE ciclo escolar 2026-2027 para Área III de preparatoria.</p>
-        </div>
-
-        <div class="list-actions">
-          <a class="btn-primary" href="listas/lista-escuela-area-iii.pdf" target="_blank" rel="noopener">Abrir en pestaña</a>
-          <a class="btn-outline" href="listas/lista-escuela-area-iii.pdf" download>Descargar</a>
-        </div>
-      </div>
-
-      <div class="pdf-viewer">
-        <iframe src="listas/lista-escuela-area-iii.pdf#toolbar=1&navpanes=0"></iframe>
-      </div>
-    </article>
-
-    <article class="list-card">
-      <div class="list-card-header">
-        <div>
-          <span class="list-card-tag">Escuela</span>
-          <h3>Área IV</h3>
-          <p>Lista oficial IPAE ciclo escolar 2026-2027 para Área IV de preparatoria.</p>
-        </div>
-
-        <div class="list-actions">
-          <a class="btn-primary" href="listas/lista-escuela-area-iv.pdf" target="_blank" rel="noopener">Abrir en pestaña</a>
-          <a class="btn-outline" href="listas/lista-escuela-area-iv.pdf" download>Descargar</a>
-        </div>
-      </div>
-
-      <div class="pdf-viewer">
-        <iframe src="listas/lista-escuela-area-iv.pdf#toolbar=1&navpanes=0"></iframe>
-      </div>
-    </article>
+    <div id="listsContainer">
+      <article class="list-card">
+        <h3>Cargando listas...</h3>
+        <p>Estamos consultando las listas disponibles.</p>
+      </article>
+    </div>
   </main>
 
   <footer>
     <p>© 2026 Papelería Sulamita - Listas de útiles</p>
   </footer>
 
-  <script src="tienda.js?v=27"></script>
+  <script src="tienda.js?v=31"></script>
   <script>
     protectPage();
     setupHeader();
+
+    const role = localStorage.getItem("userRole");
+    const adminListsBtn = document.getElementById("adminListsBtn");
+
+    if (role === "admin" && adminListsBtn) {
+      adminListsBtn.style.display = "inline-block";
+    }
+
+    const fallbackLists = [
+      {
+        id: "static-papeleria",
+        nombre: "Preparatoria IPAE 2026-2027",
+        descripcion: "Lista general de Papelería Sulamita con artículos, códigos, precios y totales.",
+        tipo: "Papelería",
+        escuela: "IPAE",
+        nivel: "Preparatoria",
+        grado: "General",
+        archivo_url: "listas/lista-papeleria-ipae-preparatoria-2026-2027.pdf",
+        archivo_tipo: "application/pdf"
+      },
+      {
+        id: "static-4",
+        nombre: "4° de Preparatoria",
+        descripcion: "Lista oficial IPAE ciclo escolar 2026-2027 para 4° de preparatoria.",
+        tipo: "Escuela",
+        escuela: "IPAE",
+        nivel: "Preparatoria",
+        grado: "4°",
+        archivo_url: "listas/lista-escuela-4-prepa.pdf",
+        archivo_tipo: "application/pdf"
+      },
+      {
+        id: "static-5",
+        nombre: "5° de Preparatoria",
+        descripcion: "Lista oficial IPAE ciclo escolar 2026-2027 para 5° de preparatoria.",
+        tipo: "Escuela",
+        escuela: "IPAE",
+        nivel: "Preparatoria",
+        grado: "5°",
+        archivo_url: "listas/lista-escuela-5-prepa.pdf",
+        archivo_tipo: "application/pdf"
+      },
+      {
+        id: "static-area-iii",
+        nombre: "Área III",
+        descripcion: "Lista oficial IPAE ciclo escolar 2026-2027 para Área III de preparatoria.",
+        tipo: "Escuela",
+        escuela: "IPAE",
+        nivel: "Preparatoria",
+        grado: "Área III",
+        archivo_url: "listas/lista-escuela-area-iii.pdf",
+        archivo_tipo: "application/pdf"
+      },
+      {
+        id: "static-area-iv",
+        nombre: "Área IV",
+        descripcion: "Lista oficial IPAE ciclo escolar 2026-2027 para Área IV de preparatoria.",
+        tipo: "Escuela",
+        escuela: "IPAE",
+        nivel: "Preparatoria",
+        grado: "Área IV",
+        archivo_url: "listas/lista-escuela-area-iv.pdf",
+        archivo_tipo: "application/pdf"
+      }
+    ];
+
+    loadSchoolLists();
+
+    async function loadSchoolLists() {
+      const container = document.getElementById("listsContainer");
+
+      try {
+        const response = await fetch("/api/listas-utiles");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "No se pudieron cargar las listas.");
+        }
+
+        const lists = Array.isArray(data) && data.length ? data : fallbackLists;
+        renderLists(lists);
+      } catch (error) {
+        console.error(error);
+        renderLists(fallbackLists);
+      }
+    }
+
+    function renderLists(lists) {
+      const container = document.getElementById("listsContainer");
+
+      const papeleriaLists = lists.filter((item) => item.tipo === "Papelería");
+      const escuelaLists = lists.filter((item) => item.tipo !== "Papelería");
+
+      const sections = [];
+
+      if (papeleriaLists.length) {
+        sections.push(`
+          <h2 class="lists-section-title">Lista de Papelería Sulamita</h2>
+          ${papeleriaLists.map(renderListCard).join("")}
+        `);
+      }
+
+      if (escuelaLists.length) {
+        sections.push(`
+          <h2 class="lists-section-title">Listas oficiales de la escuela</h2>
+          ${escuelaLists.map(renderListCard).join("")}
+        `);
+      }
+
+      if (!sections.length) {
+        container.innerHTML = `
+          <article class="list-card">
+            <h3>Aún no hay listas publicadas</h3>
+            <p>Cuando la papelería suba listas, aparecerán aquí.</p>
+          </article>
+        `;
+        return;
+      }
+
+      container.innerHTML = sections.join("");
+    }
+
+    function renderListCard(item) {
+      const fileUrl = String(item.archivo_url || "").trim();
+      const fileType = String(item.archivo_tipo || "").toLowerCase();
+      const isPdf = fileUrl.toLowerCase().includes(".pdf") || fileType.includes("pdf");
+      const isImage =
+        fileType.includes("image") ||
+        fileUrl.toLowerCase().match(/\.(png|jpg|jpeg|webp)(\?|$)/);
+
+      const meta = [item.escuela, item.nivel, item.grado]
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+        .join(" · ");
+
+      let viewerHtml = `
+        <div class="file-viewer">
+          <div class="file-message">
+            <h4>Vista previa no disponible para este formato</h4>
+            <p>Abre o descarga el archivo para consultarlo.</p>
+          </div>
+        </div>
+      `;
+
+      if (isPdf) {
+        viewerHtml = `
+          <div class="pdf-viewer">
+            <iframe src="${escapeHtmlAttr(fileUrl)}#toolbar=1&navpanes=0"></iframe>
+          </div>
+        `;
+      }
+
+      if (isImage) {
+        viewerHtml = `
+          <div class="file-viewer image-viewer">
+            <img src="${escapeHtmlAttr(fileUrl)}" alt="${escapeHtmlAttr(item.nombre || "Lista de útiles")}" loading="lazy">
+          </div>
+        `;
+      }
+
+      return `
+        <article class="list-card">
+          <div class="list-card-header">
+            <div>
+              <span class="list-card-tag">${escapeHtml(item.tipo || "Lista")}</span>
+              <h3>${escapeHtml(item.nombre || "Lista de útiles")}</h3>
+              <p>${escapeHtml(item.descripcion || meta || "Lista disponible para consulta.")}</p>
+              ${meta ? `<p style="margin-top: 8px;"><strong>${escapeHtml(meta)}</strong></p>` : ""}
+            </div>
+
+            <div class="list-actions">
+              <a class="btn-primary" href="${escapeHtmlAttr(fileUrl)}" target="_blank" rel="noopener">
+                Abrir en pestaña
+              </a>
+              <a class="btn-outline" href="${escapeHtmlAttr(fileUrl)}" download>
+                Descargar
+              </a>
+            </div>
+          </div>
+
+          ${viewerHtml}
+        </article>
+      `;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeHtmlAttr(value) {
+      return escapeHtml(value);
+    }
   </script>
 </body>
 </html>
