@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listas de útiles | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=32">
+  <link rel="stylesheet" href="styles.css?v=33">
 
   <style>
     .lists-page {
@@ -105,20 +105,20 @@
       text-decoration: none;
     }
 
-    .pdf-viewer,
     .file-viewer {
       width: 100%;
-      min-height: 560px;
+      min-height: 220px;
       border: 1px solid #dbe3f0;
       border-radius: 18px;
       background: #f8fafc;
       overflow: hidden;
     }
 
-    .pdf-viewer iframe {
-      width: 100%;
-      height: 720px;
-      border: 0;
+    .document-viewer {
+      min-height: 220px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .image-viewer {
@@ -154,8 +154,8 @@
         border-radius: 22px;
       }
 
-      .pdf-viewer iframe {
-        height: 560px;
+      .document-viewer {
+        min-height: 180px;
       }
     }
   </style>
@@ -184,13 +184,12 @@
       <h1>Listas de útiles 2026-2027</h1>
       <p>
         Consulta las listas oficiales de la escuela y la lista preparada por Papelería Sulamita
-        directamente desde esta página, sin tener que descargar primero.
+        desde esta página. Las imágenes se muestran aquí; los PDFs se pueden abrir o descargar.
       </p>
     </section>
 
     <div class="lists-note">
-      <strong>Nota:</strong> En algunos celulares el archivo puede abrirse en una pestaña nueva.
-      Por eso también dejamos el botón de descarga como respaldo.
+      <strong>Nota:</strong> Los archivos PDF se abren con el botón “Abrir en pestaña” o “Descargar”. Las imágenes sí se muestran directamente en la página.
     </div>
 
     <div id="listsContainer">
@@ -205,7 +204,7 @@
     <p>© 2026 Papelería Sulamita - Listas de útiles</p>
   </footer>
 
-  <script src="tienda.js?v=32"></script>
+  <script src="tienda.js?v=33"></script>
   <script>
     protectPage();
     setupHeader();
@@ -302,8 +301,11 @@
 
       if (isPdf) {
         viewerHtml = `
-          <div class="pdf-viewer">
-            <iframe src="${escapeHtmlAttr(fileUrl)}#toolbar=1&navpanes=0"></iframe>
+          <div class="file-viewer document-viewer">
+            <div class="file-message">
+              <h4>PDF disponible</h4>
+              <p>Para evitar errores de carga en algunos navegadores, abre o descarga el PDF con los botones de arriba.</p>
+            </div>
           </div>
         `;
       }
