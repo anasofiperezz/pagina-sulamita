@@ -2180,9 +2180,11 @@ app.post("/api/admin/listas-utiles", function (req, res) {
         });
       }
 
+      const isPdfFile = req.file.mimetype === "application/pdf";
+
       const result = await uploadBufferToCloudinary(req.file.buffer, {
         folder: "papeleria-sulamita/listas-utiles",
-        resource_type: "auto"
+        resource_type: isPdfFile ? "image" : "auto"
       });
 
       const insertResult = await pool.query(

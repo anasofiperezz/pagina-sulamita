@@ -1,19 +1,19 @@
-LISTAS SOLO SUBIR Y ELIMINAR
+LISTAS SIN ERROR DE PDF
 
 Sube estos archivos a la raíz del proyecto en GitHub:
 - server.js
 - listas-admin.html
 - listas-utiles.html
 
-Qué hace esta versión:
-- La página pública listas-utiles.html ya NO muestra listas fijas de GitHub.
-- Solo muestra listas subidas desde listas-admin.html.
-- Desde listas-admin.html puedes subir y borrar listas.
-- Si no hay listas subidas, aparece un mensaje de “Aún no hay listas publicadas”.
+Esta versión:
+- Mantiene subir y eliminar listas desde listas-admin.html.
+- La página pública listas-utiles.html solo muestra las listas subidas desde el panel.
+- Ya no incrusta PDFs en iframe, para evitar el error "Failed to load PDF document".
+- Las imágenes sí se muestran directamente.
+- Los PDFs se muestran como tarjeta con botones Abrir en pestaña y Descargar.
 
 Después de subirlos:
-1. Haz Commit changes.
+1. Commit changes.
 2. Espera el deploy de Render.
-3. Abre https://www.sulamita.com.mx/listas-admin.html
-4. Sube tus listas desde ahí.
-5. Revisa https://www.sulamita.com.mx/listas-utiles.html
+3. Abre listas-utiles.html.
+4. Haz Cmd + Shift + R.

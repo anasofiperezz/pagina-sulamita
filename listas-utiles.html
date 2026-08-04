@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listas de útiles | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=33">
+  <link rel="stylesheet" href="styles.css?v=34">
 
   <style>
     .lists-page {
@@ -107,26 +107,37 @@
 
     .file-viewer {
       width: 100%;
-      min-height: 220px;
       border: 1px solid #dbe3f0;
       border-radius: 18px;
       background: #f8fafc;
       overflow: hidden;
     }
 
-    .document-viewer {
-      min-height: 220px;
+    .small-preview {
+      max-width: 320px;
+      min-height: 210px;
       display: flex;
       justify-content: center;
       align-items: center;
+      margin-top: 12px;
+    }
+
+    .pdf-preview-img,
+    .image-preview-img {
+      width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      display: block;
+      background: #ffffff;
     }
 
     .image-viewer {
-      min-height: auto;
+      max-width: 360px;
+      padding: 10px;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 18px;
+      margin-top: 12px;
     }
 
     .image-viewer img {
@@ -184,12 +195,12 @@
       <h1>Listas de útiles 2026-2027</h1>
       <p>
         Consulta las listas oficiales de la escuela y la lista preparada por Papelería Sulamita
-        desde esta página. Las imágenes se muestran aquí; los PDFs se pueden abrir o descargar.
+        desde esta página. Los PDFs se muestran en vista previa pequeña y también puedes abrirlos o descargarlos.
       </p>
     </section>
 
     <div class="lists-note">
-      <strong>Nota:</strong> Los archivos PDF se abren con el botón “Abrir en pestaña” o “Descargar”. Las imágenes sí se muestran directamente en la página.
+      <strong>Nota:</strong> Si la vista previa del PDF tarda en cargar, usa “Abrir en pestaña” o “Descargar”.
     </div>
 
     <div id="listsContainer">
@@ -204,7 +215,7 @@
     <p>© 2026 Papelería Sulamita - Listas de útiles</p>
   </footer>
 
-  <script src="tienda.js?v=33"></script>
+  <script src="tienda.js?v=34"></script>
   <script>
     protectPage();
     setupHeader();
@@ -300,20 +311,38 @@
       `;
 
       if (isPdf) {
-        viewerHtml = `
-          <div class="file-viewer document-viewer">
-            <div class="file-message">
-              <h4>PDF disponible</h4>
-              <p>Para evitar errores de carga en algunos navegadores, abre o descarga el PDF con los botones de arriba.</p>
+        const previewUrl = buildPdfPreviewUrl(fileUrl);
+
+        viewerHtml = previewUrl
+          ? `
+            <div class="file-viewer small-preview">
+              <img
+                class="pdf-preview-img"
+                src="${escapeHtmlAttr(previewUrl)}"
+                alt="Vista previa de ${escapeHtmlAttr(item.nombre || "Lista de útiles")}"
+                loading="lazy"
+                onerror="this.style.display='none'; this.parentElement.querySelector('.file-message').style.display='block';"
+              >
+              <div class="file-message" style="display: none;">
+                <h4>PDF disponible</h4>
+                <p>La vista previa no cargó en este navegador. Usa Abrir en pestaña o Descargar.</p>
+              </div>
             </div>
-          </div>
-        `;
+          `
+          : `
+            <div class="file-viewer small-preview">
+              <div class="file-message">
+                <h4>PDF disponible</h4>
+                <p>Usa Abrir en pestaña o Descargar para consultarlo.</p>
+              </div>
+            </div>
+          `;
       }
 
       if (isImage) {
         viewerHtml = `
           <div class="file-viewer image-viewer">
-            <img src="${escapeHtmlAttr(fileUrl)}" alt="${escapeHtmlAttr(item.nombre || "Lista de útiles")}" loading="lazy">
+            <img class="image-preview-img" src="${escapeHtmlAttr(fileUrl)}" alt="${escapeHtmlAttr(item.nombre || "Lista de útiles")}" loading="lazy">
           </div>
         `;
       }
@@ -341,6 +370,29 @@
           ${viewerHtml}
         </article>
       `;
+    }
+
+    function buildPdfPreviewUrl(fileUrl) {
+      const url = String(fileUrl || "").trim();
+
+      if (!url) return "";
+
+      if (url.includes("res.cloudinary.com") && url.includes("/upload/")) {
+        let previewUrl = url
+          .replace("/raw/upload/", "/image/upload/")
+          .replace("/auto/upload/", "/image/upload/");
+
+        previewUrl = previewUrl.replace(
+          "/upload/",
+          "/upload/w_420,h_560,c_fit,pg_1,f_jpg/"
+        );
+
+        previewUrl = previewUrl.replace(/\.pdf(\?.*)?$/i, ".jpg$1");
+
+        return previewUrl;
+      }
+
+      return "";
     }
 
     function escapeHtml(value) {
