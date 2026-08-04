@@ -1,18 +1,19 @@
-Papelería Sulamita - Listas administrables
+LISTAS SOLO SUBIR Y ELIMINAR
 
-Archivos incluidos:
+Sube estos archivos a la raíz del proyecto en GitHub:
 - server.js
-- listas-utiles.html
 - listas-admin.html
+- listas-utiles.html
 
-Sube los tres archivos a la raíz del proyecto en GitHub, reemplazando server.js y listas-utiles.html actuales.
+Qué hace esta versión:
+- La página pública listas-utiles.html ya NO muestra listas fijas de GitHub.
+- Solo muestra listas subidas desde listas-admin.html.
+- Desde listas-admin.html puedes subir y borrar listas.
+- Si no hay listas subidas, aparece un mensaje de “Aún no hay listas publicadas”.
 
-Después:
-1. Commit changes.
-2. Espera deploy en Render.
+Después de subirlos:
+1. Haz Commit changes.
+2. Espera el deploy de Render.
 3. Abre https://www.sulamita.com.mx/listas-admin.html
-4. Usa la misma clave ADMIN_CREATION_CODE para subir o borrar listas.
-
-Nota:
-Las listas viejas que están subidas como archivos fijos en GitHub se muestran como respaldo si todavía no has subido listas desde el panel.
-Para poder borrarlas desde la página, primero sube esas listas desde listas-admin.html.
+4. Sube tus listas desde ahí.
+5. Revisa https://www.sulamita.com.mx/listas-utiles.html

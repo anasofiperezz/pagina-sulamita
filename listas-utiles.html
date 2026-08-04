@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listas de útiles | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=31">
+  <link rel="stylesheet" href="styles.css?v=32">
 
   <style>
     .lists-page {
@@ -205,7 +205,7 @@
     <p>© 2026 Papelería Sulamita - Listas de útiles</p>
   </footer>
 
-  <script src="tienda.js?v=31"></script>
+  <script src="tienda.js?v=32"></script>
   <script>
     protectPage();
     setupHeader();
@@ -216,64 +216,6 @@
     if (role === "admin" && adminListsBtn) {
       adminListsBtn.style.display = "inline-block";
     }
-
-    const fallbackLists = [
-      {
-        id: "static-papeleria",
-        nombre: "Preparatoria IPAE 2026-2027",
-        descripcion: "Lista general de Papelería Sulamita con artículos, códigos, precios y totales.",
-        tipo: "Papelería",
-        escuela: "IPAE",
-        nivel: "Preparatoria",
-        grado: "General",
-        archivo_url: "listas/lista-papeleria-ipae-preparatoria-2026-2027.pdf",
-        archivo_tipo: "application/pdf"
-      },
-      {
-        id: "static-4",
-        nombre: "4° de Preparatoria",
-        descripcion: "Lista oficial IPAE ciclo escolar 2026-2027 para 4° de preparatoria.",
-        tipo: "Escuela",
-        escuela: "IPAE",
-        nivel: "Preparatoria",
-        grado: "4°",
-        archivo_url: "listas/lista-escuela-4-prepa.pdf",
-        archivo_tipo: "application/pdf"
-      },
-      {
-        id: "static-5",
-        nombre: "5° de Preparatoria",
-        descripcion: "Lista oficial IPAE ciclo escolar 2026-2027 para 5° de preparatoria.",
-        tipo: "Escuela",
-        escuela: "IPAE",
-        nivel: "Preparatoria",
-        grado: "5°",
-        archivo_url: "listas/lista-escuela-5-prepa.pdf",
-        archivo_tipo: "application/pdf"
-      },
-      {
-        id: "static-area-iii",
-        nombre: "Área III",
-        descripcion: "Lista oficial IPAE ciclo escolar 2026-2027 para Área III de preparatoria.",
-        tipo: "Escuela",
-        escuela: "IPAE",
-        nivel: "Preparatoria",
-        grado: "Área III",
-        archivo_url: "listas/lista-escuela-area-iii.pdf",
-        archivo_tipo: "application/pdf"
-      },
-      {
-        id: "static-area-iv",
-        nombre: "Área IV",
-        descripcion: "Lista oficial IPAE ciclo escolar 2026-2027 para Área IV de preparatoria.",
-        tipo: "Escuela",
-        escuela: "IPAE",
-        nivel: "Preparatoria",
-        grado: "Área IV",
-        archivo_url: "listas/lista-escuela-area-iv.pdf",
-        archivo_tipo: "application/pdf"
-      }
-    ];
 
     loadSchoolLists();
 
@@ -288,11 +230,16 @@
           throw new Error(data.message || "No se pudieron cargar las listas.");
         }
 
-        const lists = Array.isArray(data) && data.length ? data : fallbackLists;
+        const lists = Array.isArray(data) ? data : [];
         renderLists(lists);
       } catch (error) {
         console.error(error);
-        renderLists(fallbackLists);
+        container.innerHTML = `
+          <article class="list-card">
+            <h3>No se pudieron cargar las listas</h3>
+            <p>Intenta actualizar la página. Si el problema continúa, contacta a la papelería.</p>
+          </article>
+        `;
       }
     }
 
@@ -322,7 +269,7 @@
         container.innerHTML = `
           <article class="list-card">
             <h3>Aún no hay listas publicadas</h3>
-            <p>Cuando la papelería suba listas, aparecerán aquí.</p>
+            <p>Cuando subas una lista desde el panel de administración, aparecerá aquí.</p>
           </article>
         `;
         return;
