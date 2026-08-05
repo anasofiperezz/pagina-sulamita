@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listas de útiles | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=35">
+  <link rel="stylesheet" href="styles.css?v=37">
 
   <style>
     .lists-page {
@@ -116,19 +116,67 @@
       box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
     }
 
-    .pdf-iframe-viewer {
+    .pdf-pages-viewer {
+      width: min(100%, 920px);
+      min-height: 260px;
+      padding: 18px;
+      overflow: visible;
+      background: #f8fafc;
+    }
+
+    .pdf-pages-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
       width: 100%;
-      min-height: 980px;
-      border: 0;
+    }
+
+    .pdf-page {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #ffffff;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.10);
+    }
+
+    .pdf-page img {
       display: block;
+      width: 100%;
+      height: auto;
       background: #ffffff;
     }
 
-    .pdf-frame-wrapper {
-      width: 100%;
-      padding: 0;
-      overflow: hidden;
-      background: #ffffff;
+    .pdf-page-number {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.78);
+      color: #ffffff;
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
+    .pdf-loading {
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 28px;
+      text-align: center;
+      color: #334155;
+      font-weight: 700;
+    }
+
+    .pdf-loading small {
+      color: #64748b;
+      font-weight: 500;
     }
 
     .image-preview-img {
@@ -199,8 +247,12 @@
         padding: 30px 18px;
       }
 
-      .pdf-iframe-viewer {
-        min-height: 760px;
+      .pdf-pages-viewer {
+        padding: 10px;
+      }
+
+      .pdf-pages-container {
+        gap: 14px;
       }
 
       .image-preview-img,
@@ -234,12 +286,13 @@
       <h1>Listas de útiles 2026-2027</h1>
       <p>
         Consulta las listas oficiales de la escuela y la lista preparada por Papelería Sulamita
-        desde esta página. Los archivos PDF se muestran completos dentro de la misma página, y también puedes abrirlos o descargarlos.
+        desde esta página. Todas las páginas de cada PDF se muestran una debajo de otra.
       </p>
     </section>
 
     <div class="lists-note">
-      <strong>Nota:</strong> Si un PDF tarda en cargar, espera unos segundos. También puedes abrirlo en otra pestaña o descargarlo.
+      <strong>Nota:</strong> Las páginas del PDF se cargan como imágenes para evitar errores del visor del navegador.
+      En documentos largos, espera unos segundos mientras aparecen todas las hojas.
     </div>
 
     <div id="listsContainer">
@@ -254,7 +307,7 @@
     <p>© 2026 Papelería Sulamita - Listas de útiles</p>
   </footer>
 
-  <script src="tienda.js?v=35"></script>
+  <script src="tienda.js?v=37"></script>
   <script>
     protectPage();
     setupHeader();
@@ -325,6 +378,164 @@
       }
 
       container.innerHTML = sections.join("");
+      setupPdfImageViewers();
+    }
+
+    function setupPdfImageViewers() {
+      const viewers = document.querySelectorAll(
+        ".pdf-pages-viewer[data-pdf-url]"
+      );
+
+      if (!viewers.length) return;
+
+      if (!("IntersectionObserver" in window)) {
+        viewers.forEach((viewer) => loadCloudinaryPdfPages(viewer));
+        return;
+      }
+
+      const observer = new IntersectionObserver(
+        (entries, currentObserver) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+
+            currentObserver.unobserve(entry.target);
+            loadCloudinaryPdfPages(entry.target);
+          });
+        },
+        {
+          rootMargin: "600px 0px"
+        }
+      );
+
+      viewers.forEach((viewer) => observer.observe(viewer));
+    }
+
+    async function loadCloudinaryPdfPages(viewer) {
+      if (
+        viewer.dataset.loaded === "true" ||
+        viewer.dataset.loading === "true"
+      ) {
+        return;
+      }
+
+      const fileUrl = String(viewer.dataset.pdfUrl || "").trim();
+
+      if (!fileUrl || !isCloudinaryUrl(fileUrl)) {
+        showPdfLoadError(
+          viewer,
+          "Este PDF no está alojado en Cloudinary y no se puede convertir automáticamente."
+        );
+        return;
+      }
+
+      viewer.dataset.loading = "true";
+      viewer.innerHTML = `
+        <div class="pdf-loading">
+          <span>Cargando páginas del PDF...</span>
+          <small id="pdfStatus-${viewer.dataset.viewerId}">Preparando página 1</small>
+        </div>
+        <div class="pdf-pages-container"></div>
+      `;
+
+      const pagesContainer = viewer.querySelector(".pdf-pages-container");
+      const loadingBox = viewer.querySelector(".pdf-loading");
+      const status = viewer.querySelector("small");
+      const maxPages = 100;
+      let loadedPages = 0;
+
+      try {
+        for (let pageNumber = 1; pageNumber <= maxPages; pageNumber += 1) {
+          status.textContent = `Cargando página ${pageNumber}...`;
+
+          const pageUrl = buildCloudinaryPdfPageUrl(fileUrl, pageNumber);
+          const image = await loadImage(pageUrl);
+
+          if (!image) {
+            break;
+          }
+
+          const pageWrapper = document.createElement("div");
+          pageWrapper.className = "pdf-page";
+
+          const pageLabel = document.createElement("span");
+          pageLabel.className = "pdf-page-number";
+          pageLabel.textContent = `Página ${pageNumber}`;
+
+          image.alt = `Página ${pageNumber} del documento`;
+          image.loading = pageNumber <= 2 ? "eager" : "lazy";
+          image.decoding = "async";
+
+          pageWrapper.append(pageLabel, image);
+          pagesContainer.appendChild(pageWrapper);
+          loadedPages += 1;
+        }
+
+        if (!loadedPages) {
+          throw new Error(
+            "Cloudinary no pudo generar imágenes de las páginas del PDF."
+          );
+        }
+
+        loadingBox.remove();
+        viewer.dataset.loaded = "true";
+      } catch (error) {
+        console.error("Error cargando páginas del PDF:", error);
+        showPdfLoadError(
+          viewer,
+          error.message || "No se pudieron cargar las páginas."
+        );
+      } finally {
+        delete viewer.dataset.loading;
+      }
+    }
+
+    function loadImage(url) {
+      return new Promise((resolve) => {
+        const image = new Image();
+
+        image.onload = function () {
+          resolve(image);
+        };
+
+        image.onerror = function () {
+          resolve(null);
+        };
+
+        image.src = url;
+      });
+    }
+
+    function isCloudinaryUrl(url) {
+      return (
+        url.includes("res.cloudinary.com") &&
+        url.includes("/upload/")
+      );
+    }
+
+    function buildCloudinaryPdfPageUrl(fileUrl, pageNumber) {
+      let url = String(fileUrl || "").trim();
+
+      url = url
+        .replace("/raw/upload/", "/image/upload/")
+        .replace("/auto/upload/", "/image/upload/");
+
+      url = url.replace(
+        "/upload/",
+        `/upload/w_1400,c_limit,q_auto:good,pg_${pageNumber},f_jpg/`
+      );
+
+      url = url.replace(/\.pdf(\?.*)?$/i, ".jpg$1");
+
+      return url;
+    }
+
+    function showPdfLoadError(viewer, detail) {
+      viewer.innerHTML = `
+        <div class="file-message">
+          <h4>No se pudieron generar las páginas</h4>
+          <p>${escapeHtml(detail || "Intenta abrir el documento en otra pestaña.")}</p>
+        </div>
+      `;
     }
 
     function renderListCard(item) {
@@ -350,16 +561,16 @@
       `;
 
       if (isPdf) {
-        const frameUrl = buildPdfFrameUrl(fileUrl);
-
         viewerHtml = `
-          <div class="file-viewer pdf-frame-wrapper">
-            <iframe
-              class="pdf-iframe-viewer"
-              src="${escapeHtmlAttr(frameUrl)}"
-              title="Vista completa de ${escapeHtmlAttr(item.nombre || "Lista de útiles")}"
-              loading="lazy"
-            ></iframe>
+          <div
+            class="file-viewer pdf-pages-viewer"
+            data-pdf-url="${escapeHtmlAttr(fileUrl)}"
+            data-viewer-id="${Number(item.id) || Date.now()}"
+            aria-label="Todas las páginas de ${escapeHtmlAttr(item.nombre || "Lista de útiles")}"
+          >
+            <div class="pdf-loading">
+              <span>Preparando todas las páginas del PDF...</span>
+            </div>
           </div>
         `;
       }
@@ -395,16 +606,6 @@
           ${viewerHtml}
         </article>
       `;
-    }
-
-    function buildPdfFrameUrl(fileUrl) {
-      const url = String(fileUrl || "").trim();
-
-      if (!url) return "";
-
-      const separator = url.includes("?") ? "&" : "#";
-
-      return `${url}${separator}view=FitH`;
     }
 
     function escapeHtml(value) {
