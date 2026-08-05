@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Zonas de envío | Papelería Sulamita</title>
+  <title>Zonas de envío CDMX | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=38">
+  <link rel="stylesheet" href="styles.css?v=39">
 
   <style>
     .shipping-admin-page {
@@ -164,10 +164,10 @@
     <section class="page-hero admin-hero">
       <div class="page-hero-content">
         <span class="page-badge">Administrador</span>
-        <h1>Zonas y cobertura de envío</h1>
+        <h1>Zonas y cobertura de envío en CDMX</h1>
         <p>
-          Registra las colonias y códigos postales que pertenecen a cada zona.
-          El cliente no podrá elegir el precio manualmente.
+          Registra las colonias, códigos postales y alcaldías de la Ciudad de México
+          que pertenecen a cada zona. El cliente no podrá elegir el precio manualmente.
         </p>
       </div>
     </section>
@@ -181,7 +181,12 @@
         </div>
 
         <div class="zone-price-list" id="zonePriceList">
-          <div class="zone-price-item">Cargando precios...</div>
+          <div class="zone-price-item">Zona 1: $150.00</div>
+          <div class="zone-price-item">Zona 2: $175.00</div>
+          <div class="zone-price-item">Zona 3: $200.00</div>
+          <div class="zone-price-item">Zona 4: $225.00</div>
+          <div class="zone-price-item">Zona 5: $250.00</div>
+          <div class="zone-price-item">Zona 6: $275.00</div>
         </div>
 
         <form id="coverageForm">
@@ -201,7 +206,7 @@
               id="coverageZip"
               maxlength="5"
               inputmode="numeric"
-              placeholder="Ej. 72760"
+              placeholder="Ej. 06700"
               required
             />
           </div>
@@ -211,27 +216,28 @@
             <input
               type="text"
               id="coverageNeighborhood"
-              placeholder="Ej. Santiago Momoxpan"
+              placeholder="Ej. Roma Norte"
               required
             />
           </div>
 
           <div class="form-group">
-            <label for="coverageCity">Alcaldía o municipio</label>
+            <label for="coverageCity">Alcaldía</label>
             <input
               type="text"
               id="coverageCity"
-              placeholder="Ej. San Pedro Cholula"
+              placeholder="Ej. Cuauhtémoc"
               required
             />
           </div>
 
           <div class="form-group">
-            <label for="coverageState">Estado o entidad federativa</label>
+            <label for="coverageState">Entidad federativa</label>
             <input
               type="text"
               id="coverageState"
-              placeholder="Ej. Puebla"
+              value="Ciudad de México"
+              readonly
               required
             />
           </div>
@@ -261,7 +267,7 @@
           <input
             type="search"
             id="coverageSearch"
-            placeholder="Buscar colonia, C.P. o municipio"
+            placeholder="Buscar colonia, C.P. o alcaldía"
           />
 
           <select id="coverageZoneFilter">
@@ -284,7 +290,7 @@
     <p>© 2026 Papelería Sulamita - Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=38"></script>
+  <script src="tienda.js?v=39"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -427,7 +433,7 @@
               </span>
               <h3>${escapeHtml(coverage.colonia)}</h3>
               <p><strong>C.P.:</strong> ${escapeHtml(coverage.codigo_postal)}</p>
-              <p><strong>Municipio / Alcaldía:</strong> ${escapeHtml(coverage.municipio)}</p>
+              <p><strong>Alcaldía:</strong> ${escapeHtml(coverage.municipio)}</p>
               <p><strong>Estado:</strong> ${escapeHtml(coverage.estado)}</p>
             </div>
           </div>
@@ -463,7 +469,7 @@
         codigo_postal: coverageZip.value.trim(),
         colonia: coverageNeighborhood.value.trim(),
         municipio: coverageCity.value.trim(),
-        estado: coverageState.value.trim(),
+        estado: "Ciudad de México",
         activo: true
       };
 
@@ -523,7 +529,7 @@
       coverageZip.value = coverage.codigo_postal;
       coverageNeighborhood.value = coverage.colonia;
       coverageCity.value = coverage.municipio;
-      coverageState.value = coverage.estado;
+      coverageState.value = "Ciudad de México";
 
       formTitle.textContent = "Editar ubicación";
       saveCoverageBtn.textContent = "Guardar cambios";
@@ -564,6 +570,7 @@
 
     function resetCoverageForm(clearMessageToo = true) {
       coverageForm.reset();
+      coverageState.value = "Ciudad de México";
       coverageId.value = "";
       formTitle.textContent = "Agregar ubicación";
       saveCoverageBtn.textContent = "Agregar ubicación";

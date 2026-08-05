@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=38">
+  <link rel="stylesheet" href="styles.css?v=39">
 
   <style>
     .shipping-help-card {
@@ -61,6 +61,30 @@
       background: #f8fafc !important;
       color: #475569;
     }
+
+    .shipping-price-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .shipping-price-item {
+      padding: 9px 10px;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #0f2f5f;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .shipping-price-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -75,6 +99,9 @@
         <a href="contacto.html" class="nav-btn">Contacto</a>
         <a href="carrito.html" class="nav-btn">Carrito</a>
         <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
+        <a href="zonas-envio-admin.html" class="nav-btn" id="shippingZonesAdminBtn" style="display: none;">
+          Zonas de envío
+        </a>
         <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
       </div>
     </div>
@@ -173,8 +200,17 @@
             <div id="addressGroup" style="display: none;">
               <div class="shipping-help-card">
                 <strong>Envío a domicilio</strong>
-                El costo se calcula automáticamente con tu código postal y colonia.
+                El costo se calcula automáticamente con tu código postal y colonia dentro de CDMX.
                 La entrega tarda de 1 a 3 días hábiles y se realiza después de las 3:00 p. m.
+
+                <div class="shipping-price-grid" aria-label="Precios por zona">
+                  <div class="shipping-price-item">Zona 1 · $150</div>
+                  <div class="shipping-price-item">Zona 2 · $175</div>
+                  <div class="shipping-price-item">Zona 3 · $200</div>
+                  <div class="shipping-price-item">Zona 4 · $225</div>
+                  <div class="shipping-price-item">Zona 5 · $250</div>
+                  <div class="shipping-price-item">Zona 6 · $275</div>
+                </div>
               </div>
 
               <div class="form-group">
@@ -193,7 +229,7 @@
                   type="tel"
                   id="shippingPhone"
                   autocomplete="tel"
-                  placeholder="Ej. 222 123 4567"
+                  placeholder="Ej. 55 1234 5678"
                 />
               </div>
 
@@ -227,7 +263,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingCity">Alcaldía / Municipio</label>
+                <label for="shippingCity">Alcaldía</label>
                 <input
                   type="text"
                   id="shippingCity"
@@ -243,8 +279,8 @@
                   type="text"
                   id="shippingState"
                   class="readonly-shipping-field"
+                  value="Ciudad de México"
                   readonly
-                  placeholder="Se completa al elegir la colonia"
                 />
               </div>
 
@@ -468,8 +504,8 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=38"></script>
-  <script src="zonas-envio.js?v=1"></script>
+  <script src="tienda.js?v=39"></script>
+  <script src="zonas-envio.js?v=2"></script>
 
   <script>
     protectPage();
@@ -478,12 +514,19 @@
 
     const role = localStorage.getItem("userRole");
     const adminBtn = document.getElementById("adminBtn");
+    const shippingZonesAdminBtn = document.getElementById("shippingZonesAdminBtn");
 
-    if (role === "admin" && adminBtn) {
-      adminBtn.style.display = "inline-block";
-      adminBtn.addEventListener("click", function () {
-        window.location.href = "admin.html";
-      });
+    if (role === "admin") {
+      if (adminBtn) {
+        adminBtn.style.display = "inline-block";
+        adminBtn.addEventListener("click", function () {
+          window.location.href = "admin.html";
+        });
+      }
+
+      if (shippingZonesAdminBtn) {
+        shippingZonesAdminBtn.style.display = "inline-block";
+      }
     }
 
     const paymentMethod = document.getElementById("paymentMethod");
