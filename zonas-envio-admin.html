@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zonas de envío | Papelería Sulamita</title>
+  <link rel="icon" href="img/angel.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=38">
+
+  <style>
+    .shipping-admin-page {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 48px 22px 70px;
+    }
+
+    .shipping-admin-layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 420px) 1fr;
+      gap: 26px;
+      align-items: start;
+    }
+
+    .shipping-admin-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .shipping-admin-card h2 {
+      margin-top: 0;
+    }
+
+    .zone-price-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .zone-price-item {
+      padding: 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      background: #eff6ff;
+      color: #0f2f5f;
+      font-weight: 800;
+    }
+
+    .coverage-toolbar {
+      display: grid;
+      grid-template-columns: 1fr minmax(150px, 190px) auto;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .coverage-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .coverage-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 18px;
+      background: #ffffff;
+    }
+
+    .coverage-item-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .coverage-zone-badge {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #004aad;
+      font-weight: 800;
+      font-size: 0.82rem;
+    }
+
+    .coverage-item h3 {
+      margin: 0 0 7px;
+      color: #111827;
+    }
+
+    .coverage-item p {
+      margin: 4px 0;
+      color: #4b5563;
+      line-height: 1.45;
+    }
+
+    .coverage-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .form-actions .btn-primary {
+      flex: 1;
+    }
+
+    .session-note {
+      margin-bottom: 18px;
+      padding: 14px;
+      border: 1px solid #a7f3d0;
+      border-radius: 16px;
+      background: #ecfdf5;
+      color: #065f46;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 920px) {
+      .shipping-admin-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .coverage-toolbar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .zone-price-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">Papelería Sulamita - Admin</div>
+
+      <div class="nav-right">
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="admin.html" class="nav-btn">Inventario</a>
+        <a href="pedidos-admin.html" class="nav-btn">Pedidos</a>
+        <a href="listas-admin.html" class="nav-btn">Listas</a>
+        <a href="zonas-envio-admin.html" class="nav-btn">Zonas de envío</a>
+        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shipping-admin-page">
+    <section class="page-hero admin-hero">
+      <div class="page-hero-content">
+        <span class="page-badge">Administrador</span>
+        <h1>Zonas y cobertura de envío</h1>
+        <p>
+          Registra las colonias y códigos postales que pertenecen a cada zona.
+          El cliente no podrá elegir el precio manualmente.
+        </p>
+      </div>
+    </section>
+
+    <section class="shipping-admin-layout">
+      <div class="shipping-admin-card">
+        <h2 id="formTitle">Agregar ubicación</h2>
+
+        <div class="session-note">
+          Ya iniciaste sesión como administrador. No necesitas volver a escribir una contraseña.
+        </div>
+
+        <div class="zone-price-list" id="zonePriceList">
+          <div class="zone-price-item">Cargando precios...</div>
+        </div>
+
+        <form id="coverageForm">
+          <input type="hidden" id="coverageId" />
+
+          <div class="form-group">
+            <label for="coverageZone">Zona</label>
+            <select id="coverageZone" required>
+              <option value="">Selecciona una zona</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="coverageZip">Código postal</label>
+            <input
+              type="text"
+              id="coverageZip"
+              maxlength="5"
+              inputmode="numeric"
+              placeholder="Ej. 72760"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="coverageNeighborhood">Colonia</label>
+            <input
+              type="text"
+              id="coverageNeighborhood"
+              placeholder="Ej. Santiago Momoxpan"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="coverageCity">Alcaldía o municipio</label>
+            <input
+              type="text"
+              id="coverageCity"
+              placeholder="Ej. San Pedro Cholula"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="coverageState">Estado o entidad federativa</label>
+            <input
+              type="text"
+              id="coverageState"
+              placeholder="Ej. Puebla"
+              required
+            />
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-primary" id="saveCoverageBtn" type="submit">
+              Agregar ubicación
+            </button>
+            <button class="btn-outline" id="cancelEditBtn" type="button" style="display: none;">
+              Cancelar edición
+            </button>
+          </div>
+        </form>
+
+        <div class="note" id="coverageMessage" aria-live="polite"></div>
+      </div>
+
+      <div class="shipping-admin-card">
+        <div class="admin-table-header">
+          <h2>Ubicaciones registradas</h2>
+          <button class="btn-outline" id="reloadCoverageBtn" type="button">
+            Actualizar
+          </button>
+        </div>
+
+        <div class="coverage-toolbar">
+          <input
+            type="search"
+            id="coverageSearch"
+            placeholder="Buscar colonia, C.P. o municipio"
+          />
+
+          <select id="coverageZoneFilter">
+            <option value="">Todas las zonas</option>
+          </select>
+
+          <button class="btn-outline" id="clearFiltersBtn" type="button">
+            Limpiar
+          </button>
+        </div>
+
+        <div id="coverageList" class="coverage-list">
+          <div class="note">Cargando ubicaciones...</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 Papelería Sulamita - Zonas de envío</p>
+  </footer>
+
+  <script src="tienda.js?v=38"></script>
+  <script>
+    protectPage();
+    protectAdminPage();
+    setupHeader();
+
+    const coverageForm = document.getElementById("coverageForm");
+    const coverageId = document.getElementById("coverageId");
+    const coverageZone = document.getElementById("coverageZone");
+    const coverageZip = document.getElementById("coverageZip");
+    const coverageNeighborhood = document.getElementById("coverageNeighborhood");
+    const coverageCity = document.getElementById("coverageCity");
+    const coverageState = document.getElementById("coverageState");
+    const saveCoverageBtn = document.getElementById("saveCoverageBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
+    const coverageMessage = document.getElementById("coverageMessage");
+    const zonePriceList = document.getElementById("zonePriceList");
+    const coverageList = document.getElementById("coverageList");
+    const coverageSearch = document.getElementById("coverageSearch");
+    const coverageZoneFilter = document.getElementById("coverageZoneFilter");
+    const reloadCoverageBtn = document.getElementById("reloadCoverageBtn");
+    const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+    const formTitle = document.getElementById("formTitle");
+
+    let shippingZones = [];
+    let shippingCoverages = [];
+
+    coverageZip.addEventListener("input", function () {
+      coverageZip.value = coverageZip.value.replace(/\D/g, "").slice(0, 5);
+    });
+
+    coverageForm.addEventListener("submit", saveCoverage);
+    cancelEditBtn.addEventListener("click", resetCoverageForm);
+    reloadCoverageBtn.addEventListener("click", loadShippingAdminData);
+    coverageSearch.addEventListener("input", renderCoverageList);
+    coverageZoneFilter.addEventListener("change", renderCoverageList);
+
+    clearFiltersBtn.addEventListener("click", function () {
+      coverageSearch.value = "";
+      coverageZoneFilter.value = "";
+      renderCoverageList();
+    });
+
+    async function loadShippingAdminData() {
+      coverageList.innerHTML = `<div class="note">Cargando ubicaciones...</div>`;
+
+      try {
+        const response = await fetch("/api/admin/zonas-envio", {
+          credentials: "include"
+        });
+
+        const data = await readJsonResponse(response);
+
+        if (!response.ok) {
+          throw new Error(data.message || "No se pudieron cargar las zonas.");
+        }
+
+        shippingZones = Array.isArray(data.zonas) ? data.zonas : [];
+        shippingCoverages = Array.isArray(data.coberturas) ? data.coberturas : [];
+
+        renderZoneOptions();
+        renderZonePrices();
+        renderCoverageList();
+      } catch (error) {
+        console.error(error);
+        coverageList.innerHTML = `
+          <div class="note error">
+            ${escapeHtml(error.message || "No se pudo conectar con el servidor.")}
+          </div>
+        `;
+      }
+    }
+
+    function renderZoneOptions() {
+      const options = shippingZones.map((zone) => `
+        <option value="${Number(zone.id)}">
+          ${escapeHtml(zone.nombre)} — ${formatMoney(zone.costo)}
+        </option>
+      `).join("");
+
+      const currentZone = coverageZone.value;
+      coverageZone.innerHTML = `
+        <option value="">Selecciona una zona</option>
+        ${options}
+      `;
+
+      coverageZoneFilter.innerHTML = `
+        <option value="">Todas las zonas</option>
+        ${shippingZones.map((zone) => `
+          <option value="${Number(zone.id)}">${escapeHtml(zone.nombre)}</option>
+        `).join("")}
+      `;
+
+      if (currentZone) coverageZone.value = currentZone;
+    }
+
+    function renderZonePrices() {
+      if (!shippingZones.length) {
+        zonePriceList.innerHTML = `<div class="zone-price-item">No hay zonas configuradas.</div>`;
+        return;
+      }
+
+      zonePriceList.innerHTML = shippingZones.map((zone) => `
+        <div class="zone-price-item">
+          ${escapeHtml(zone.nombre)}: ${formatMoney(zone.costo)}
+        </div>
+      `).join("");
+    }
+
+    function renderCoverageList() {
+      const search = normalizeText(coverageSearch.value);
+      const selectedZone = Number(coverageZoneFilter.value || 0);
+
+      const filtered = shippingCoverages.filter((coverage) => {
+        const matchesZone = !selectedZone || Number(coverage.zona_id) === selectedZone;
+        const searchable = normalizeText([
+          coverage.colonia,
+          coverage.codigo_postal,
+          coverage.municipio,
+          coverage.estado,
+          coverage.zona
+        ].join(" "));
+        const matchesSearch = !search || searchable.includes(search);
+
+        return matchesZone && matchesSearch;
+      });
+
+      if (!filtered.length) {
+        coverageList.innerHTML = `
+          <div class="note">No se encontraron ubicaciones con esos filtros.</div>
+        `;
+        return;
+      }
+
+      coverageList.innerHTML = filtered.map((coverage) => `
+        <article class="coverage-item">
+          <div class="coverage-item-header">
+            <div>
+              <span class="coverage-zone-badge">
+                ${escapeHtml(coverage.zona)} · ${formatMoney(coverage.costo)}
+              </span>
+              <h3>${escapeHtml(coverage.colonia)}</h3>
+              <p><strong>C.P.:</strong> ${escapeHtml(coverage.codigo_postal)}</p>
+              <p><strong>Municipio / Alcaldía:</strong> ${escapeHtml(coverage.municipio)}</p>
+              <p><strong>Estado:</strong> ${escapeHtml(coverage.estado)}</p>
+            </div>
+          </div>
+
+          <div class="coverage-actions">
+            <button
+              class="btn-outline btn-sm"
+              type="button"
+              onclick="editCoverage(${Number(coverage.id)})"
+            >
+              Editar
+            </button>
+
+            <button
+              class="btn-danger btn-sm"
+              type="button"
+              onclick="deleteCoverage(${Number(coverage.id)})"
+            >
+              Borrar
+            </button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    async function saveCoverage(event) {
+      event.preventDefault();
+      clearMessage();
+
+      const id = Number(coverageId.value || 0);
+      const payload = {
+        zona_id: Number(coverageZone.value),
+        codigo_postal: coverageZip.value.trim(),
+        colonia: coverageNeighborhood.value.trim(),
+        municipio: coverageCity.value.trim(),
+        estado: coverageState.value.trim(),
+        activo: true
+      };
+
+      if (
+        !payload.zona_id ||
+        !/^\d{5}$/.test(payload.codigo_postal) ||
+        !payload.colonia ||
+        !payload.municipio ||
+        !payload.estado
+      ) {
+        showMessage("Completa zona, C.P., colonia, municipio y estado.", true);
+        return;
+      }
+
+      try {
+        saveCoverageBtn.disabled = true;
+        saveCoverageBtn.textContent = id ? "Guardando..." : "Agregando...";
+
+        const response = await fetch(
+          id
+            ? `/api/admin/zonas-envio/coberturas/${id}`
+            : "/api/admin/zonas-envio/coberturas",
+          {
+            method: id ? "PUT" : "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          }
+        );
+
+        const data = await readJsonResponse(response);
+
+        if (!response.ok) {
+          throw new Error(data.message || "No se pudo guardar la ubicación.");
+        }
+
+        showMessage(id ? "Ubicación actualizada correctamente." : "Ubicación agregada correctamente.");
+        resetCoverageForm(false);
+        await loadShippingAdminData();
+      } catch (error) {
+        console.error(error);
+        showMessage(error.message || "No se pudo conectar con el servidor.", true);
+      } finally {
+        saveCoverageBtn.disabled = false;
+        saveCoverageBtn.textContent = coverageId.value ? "Guardar cambios" : "Agregar ubicación";
+      }
+    }
+
+    function editCoverage(id) {
+      const coverage = shippingCoverages.find((item) => Number(item.id) === Number(id));
+      if (!coverage) return;
+
+      coverageId.value = String(coverage.id);
+      coverageZone.value = String(coverage.zona_id);
+      coverageZip.value = coverage.codigo_postal;
+      coverageNeighborhood.value = coverage.colonia;
+      coverageCity.value = coverage.municipio;
+      coverageState.value = coverage.estado;
+
+      formTitle.textContent = "Editar ubicación";
+      saveCoverageBtn.textContent = "Guardar cambios";
+      cancelEditBtn.style.display = "inline-block";
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function deleteCoverage(id) {
+      const coverage = shippingCoverages.find((item) => Number(item.id) === Number(id));
+      if (!coverage) return;
+
+      const confirmed = confirm(
+        `¿Seguro que quieres borrar ${coverage.colonia}, C.P. ${coverage.codigo_postal}?`
+      );
+
+      if (!confirmed) return;
+
+      try {
+        const response = await fetch(`/api/admin/zonas-envio/coberturas/${Number(id)}`, {
+          method: "DELETE",
+          credentials: "include"
+        });
+
+        const data = await readJsonResponse(response);
+
+        if (!response.ok) {
+          throw new Error(data.message || "No se pudo borrar la ubicación.");
+        }
+
+        showMessage("Ubicación eliminada correctamente.");
+        await loadShippingAdminData();
+      } catch (error) {
+        console.error(error);
+        showMessage(error.message || "No se pudo conectar con el servidor.", true);
+      }
+    }
+
+    function resetCoverageForm(clearMessageToo = true) {
+      coverageForm.reset();
+      coverageId.value = "";
+      formTitle.textContent = "Agregar ubicación";
+      saveCoverageBtn.textContent = "Agregar ubicación";
+      cancelEditBtn.style.display = "none";
+
+      if (clearMessageToo) clearMessage();
+    }
+
+    function showMessage(message, isError = false) {
+      coverageMessage.textContent = message;
+      coverageMessage.className = isError ? "note error" : "note success";
+    }
+
+    function clearMessage() {
+      coverageMessage.textContent = "";
+      coverageMessage.className = "note";
+    }
+
+    function normalizeText(value) {
+      return String(value || "")
+        .toLocaleLowerCase("es-MX")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    async function readJsonResponse(response) {
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) return {};
+      return response.json();
+    }
+
+    loadShippingAdminData();
+  </script>
+</body>
+</html>

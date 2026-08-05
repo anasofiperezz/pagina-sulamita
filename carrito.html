@@ -5,7 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="styles.css?v=38">
+
+  <style>
+    .shipping-help-card {
+      margin-bottom: 16px;
+      padding: 15px 16px;
+      border: 1px solid #bfdbfe;
+      border-radius: 16px;
+      background: #eff6ff;
+      color: #0f2f5f;
+      line-height: 1.5;
+    }
+
+    .shipping-help-card strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .shipping-zone-status {
+      margin: 12px 0 18px;
+      padding: 13px 14px;
+      border: 1px solid #dbe3f0;
+      border-radius: 14px;
+      background: #f8fafc;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    .shipping-zone-status.is-loading {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+
+    .shipping-zone-status.is-ready {
+      border-color: #fde68a;
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+    .shipping-zone-status.is-success {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .shipping-zone-status.is-error {
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .readonly-shipping-field {
+      background: #f8fafc !important;
+      color: #475569;
+    }
+  </style>
 </head>
 
 <body>
@@ -115,47 +171,139 @@
             </div>
 
             <div id="addressGroup" style="display: none;">
-              <div class="form-group">
-                <label for="shippingStreet">Calle</label>
-                <input type="text" id="shippingStreet" placeholder="Ej. Durango" />
+              <div class="shipping-help-card">
+                <strong>Envío a domicilio</strong>
+                El costo se calcula automáticamente con tu código postal y colonia.
+                La entrega tarda de 1 a 3 días hábiles y se realiza después de las 3:00 p. m.
               </div>
 
               <div class="form-group">
-                <label for="shippingExtNumber">Número exterior</label>
-                <input type="text" id="shippingExtNumber" placeholder="Ej. 101" />
+                <label for="shippingFullName">Nombre completo de quien recibe</label>
+                <input
+                  type="text"
+                  id="shippingFullName"
+                  autocomplete="name"
+                  placeholder="Nombre y apellidos"
+                />
               </div>
 
               <div class="form-group">
-                <label for="shippingIntNumber">Número interior / departamento</label>
-                <input type="text" id="shippingIntNumber" placeholder="Opcional" />
+                <label for="shippingPhone">Número de contacto</label>
+                <input
+                  type="tel"
+                  id="shippingPhone"
+                  autocomplete="tel"
+                  placeholder="Ej. 222 123 4567"
+                />
               </div>
 
               <div class="form-group">
-                <label for="shippingNeighborhood">Colonia</label>
-                <input type="text" id="shippingNeighborhood" placeholder="Ej. Roma Norte" />
+                <label for="shippingEmail">Correo electrónico</label>
+                <input
+                  type="email"
+                  id="shippingEmail"
+                  autocomplete="email"
+                  placeholder="correo@ejemplo.com"
+                />
               </div>
 
               <div class="form-group">
                 <label for="shippingZip">Código postal</label>
-                <input type="text" id="shippingZip" placeholder="Ej. 06700" />
+                <input
+                  type="text"
+                  id="shippingZip"
+                  inputmode="numeric"
+                  maxlength="5"
+                  autocomplete="postal-code"
+                  placeholder="Escribe los 5 dígitos"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingNeighborhood">Colonia</label>
+                <select id="shippingNeighborhood" disabled>
+                  <option value="">Primero escribe el código postal</option>
+                </select>
               </div>
 
               <div class="form-group">
                 <label for="shippingCity">Alcaldía / Municipio</label>
-                <input type="text" id="shippingCity" placeholder="Ej. Cuauhtémoc" />
+                <input
+                  type="text"
+                  id="shippingCity"
+                  class="readonly-shipping-field"
+                  readonly
+                  placeholder="Se completa al elegir la colonia"
+                />
               </div>
 
               <div class="form-group">
-                <label for="shippingState">Estado</label>
-                <input type="text" id="shippingState" placeholder="Ej. CDMX" />
+                <label for="shippingState">Estado o entidad federativa</label>
+                <input
+                  type="text"
+                  id="shippingState"
+                  class="readonly-shipping-field"
+                  readonly
+                  placeholder="Se completa al elegir la colonia"
+                />
               </div>
 
               <div class="form-group">
-                <label for="shippingReferences">Referencias</label>
+                <label for="shippingCountry">País</label>
+                <select id="shippingCountry">
+                  <option value="México">México</option>
+                </select>
+              </div>
+
+              <div id="shippingCoverageStatus" class="shipping-zone-status">
+                Escribe tu código postal y selecciona tu colonia.
+              </div>
+
+              <div class="form-group">
+                <label for="shippingStreet">Calle / Dirección</label>
+                <input
+                  type="text"
+                  id="shippingStreet"
+                  autocomplete="address-line1"
+                  placeholder="Ej. Avenida Reforma"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingExtNumber">Número exterior</label>
+                <input
+                  type="text"
+                  id="shippingExtNumber"
+                  placeholder="Ej. 101"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingIntNumber">Número interior / departamento</label>
+                <input
+                  type="text"
+                  id="shippingIntNumber"
+                  placeholder="Opcional"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="shippingReceiveTime">Hora en que puedes recibir</label>
+                <input
+                  type="time"
+                  id="shippingReceiveTime"
+                  min="15:00"
+                  step="900"
+                />
+                <p class="subtext">Selecciona una hora a partir de las 3:00 p. m.</p>
+              </div>
+
+              <div class="form-group">
+                <label for="shippingReferences">Referencias de la dirección</label>
                 <textarea
                   id="shippingReferences"
                   rows="3"
-                  placeholder="Ej. Entre calles, color de fachada, indicaciones para entregar"
+                  placeholder="Entre calles, color de fachada o instrucciones para entregar"
                 ></textarea>
               </div>
             </div>
@@ -320,7 +468,8 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=25"></script>
+  <script src="tienda.js?v=38"></script>
+  <script src="zonas-envio.js?v=1"></script>
 
   <script>
     protectPage();

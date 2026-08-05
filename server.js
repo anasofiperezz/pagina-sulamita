@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const crypto = require("crypto");
 const multer = require("multer");
 const { Readable } = require("stream");
 const { v2: cloudinary } = require("cloudinary");
@@ -10,6 +11,168 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const publicDir = __dirname;
+
+app.set("trust proxy", 1);
+
+const SESSION_COOKIE_NAME = "sulamita_session";
+const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+function parseCookies(req) {
+  const cookieHeader = String(req.headers.cookie || "");
+  const cookies = {};
+
+  cookieHeader.split(";").forEach((part) => {
+    const separatorIndex = part.indexOf("=");
+
+    if (separatorIndex < 0) return;
+
+    const rawName = part.slice(0, separatorIndex).trim();
+    const rawValue = part.slice(separatorIndex + 1).trim();
+
+    if (!rawName) return;
+
+    try {
+      cookies[rawName] = decodeURIComponent(rawValue);
+    } catch (error) {
+      cookies[rawName] = rawValue;
+    }
+  });
+
+  return cookies;
+}
+
+function hashSessionToken(token) {
+  return crypto
+    .createHash("sha256")
+    .update(String(token || ""))
+    .digest("hex");
+}
+
+function isSecureRequest(req) {
+  return (
+    req.secure ||
+    String(req.headers["x-forwarded-proto"] || "")
+      .toLowerCase()
+      .split(",")[0]
+      .trim() === "https" ||
+    process.env.NODE_ENV === "production"
+  );
+}
+
+function setSessionCookie(req, res, token) {
+  res.cookie(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: isSecureRequest(req),
+    sameSite: "lax",
+    maxAge: SESSION_DURATION_MS,
+    path: "/"
+  });
+}
+
+function clearSessionCookie(req, res) {
+  res.clearCookie(SESSION_COOKIE_NAME, {
+    httpOnly: true,
+    secure: isSecureRequest(req),
+    sameSite: "lax",
+    path: "/"
+  });
+}
+
+async function createUserSession(userId) {
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashSessionToken(token);
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+
+  await pool.query(
+    `
+    INSERT INTO sesiones_usuario (
+      token_hash,
+      usuario_id,
+      expira_en
+    )
+    VALUES ($1, $2, $3)
+    `,
+    [tokenHash, Number(userId), expiresAt]
+  );
+
+  return token;
+}
+
+async function requireAuthenticatedSession(req, res, next) {
+  try {
+    const cookies = parseCookies(req);
+    const token = String(cookies[SESSION_COOKIE_NAME] || "").trim();
+
+    if (!token) {
+      return res.status(401).json({
+        message: "Tu sesión terminó. Inicia sesión nuevamente."
+      });
+    }
+
+    const tokenHash = hashSessionToken(token);
+
+    const result = await pool.query(
+      `
+      SELECT
+        u.id,
+        u.nombre,
+        u.email,
+        u.rol,
+        u.activo,
+        s.expira_en
+      FROM sesiones_usuario s
+      INNER JOIN usuarios u ON u.id = s.usuario_id
+      WHERE
+        s.token_hash = $1
+        AND s.expira_en > NOW()
+      LIMIT 1
+      `,
+      [tokenHash]
+    );
+
+    const user = result.rows[0];
+
+    if (!user || user.activo === false) {
+      await pool.query(
+        "DELETE FROM sesiones_usuario WHERE token_hash = $1",
+        [tokenHash]
+      );
+
+      clearSessionCookie(req, res);
+
+      return res.status(401).json({
+        message: "Tu sesión ya no es válida. Inicia sesión nuevamente."
+      });
+    }
+
+    req.user = {
+      id: Number(user.id),
+      nombre: user.nombre,
+      email: user.email,
+      rol: user.rol
+    };
+
+    next();
+  } catch (error) {
+    console.error("Error validando sesión:", error);
+
+    res.status(500).json({
+      message: "No se pudo validar la sesión."
+    });
+  }
+}
+
+function requireAdminSession(req, res, next) {
+  requireAuthenticatedSession(req, res, function () {
+    if (!req.user || req.user.rol !== "admin") {
+      return res.status(403).json({
+        message: "Necesitas iniciar sesión como administrador."
+      });
+    }
+
+    next();
+  });
+}
 
 app.use(cors());
 app.use(express.json());
@@ -59,6 +222,24 @@ const uploadFile = multer({
 
     if (!allowedTypes.includes(file.mimetype)) {
       return cb(new Error("Solo se permiten archivos JPG, PNG, WEBP o PDF."));
+    }
+
+    cb(null, true);
+  }
+});
+
+const uploadSchoolListPdf = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 25 * 1024 * 1024
+  },
+  fileFilter: function (req, file, cb) {
+    const isPdf =
+      file.mimetype === "application/pdf" ||
+      String(file.originalname || "").toLowerCase().endsWith(".pdf");
+
+    if (!isPdf) {
+      return cb(new Error("Solo se permiten archivos PDF."));
     }
 
     cb(null, true);
@@ -367,6 +548,30 @@ async function ensureDatabaseUpdates() {
     `);
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS sesiones_usuario (
+        token_hash TEXT PRIMARY KEY,
+        usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        expira_en TIMESTAMP NOT NULL,
+        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_sesiones_usuario_id
+      ON sesiones_usuario(usuario_id);
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_sesiones_expira_en
+      ON sesiones_usuario(expira_en);
+    `);
+
+    await pool.query(`
+      DELETE FROM sesiones_usuario
+      WHERE expira_en <= NOW();
+    `);
+
+    await pool.query(`
       ALTER TABLE productos
       ADD COLUMN IF NOT EXISTS imagen_url TEXT DEFAULT '';
     `);
@@ -377,6 +582,52 @@ async function ensureDatabaseUpdates() {
     `);
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS zonas_envio (
+        id SERIAL PRIMARY KEY,
+        numero INTEGER NOT NULL UNIQUE,
+        nombre TEXT NOT NULL,
+        costo NUMERIC(10, 2) NOT NULL,
+        activo BOOLEAN DEFAULT TRUE,
+        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      INSERT INTO zonas_envio (numero, nombre, costo, activo)
+      VALUES
+        (1, 'Zona 1', 150.00, TRUE),
+        (2, 'Zona 2', 175.00, TRUE),
+        (3, 'Zona 3', 200.00, TRUE),
+        (4, 'Zona 4', 225.00, TRUE),
+        (5, 'Zona 5', 250.00, TRUE),
+        (6, 'Zona 6', 275.00, TRUE)
+      ON CONFLICT (numero)
+      DO UPDATE SET
+        nombre = EXCLUDED.nombre,
+        costo = EXCLUDED.costo,
+        activo = TRUE;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cobertura_envio (
+        id SERIAL PRIMARY KEY,
+        zona_id INTEGER NOT NULL REFERENCES zonas_envio(id) ON DELETE CASCADE,
+        colonia TEXT NOT NULL,
+        codigo_postal TEXT NOT NULL,
+        municipio TEXT NOT NULL,
+        estado TEXT NOT NULL,
+        activo BOOLEAN DEFAULT TRUE,
+        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (codigo_postal, colonia, municipio, estado)
+      );
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_cobertura_envio_cp
+      ON cobertura_envio(codigo_postal);
+    `);
+
+    await pool.query(`
       ALTER TABLE pedidos
       ADD COLUMN IF NOT EXISTS requiere_factura BOOLEAN DEFAULT FALSE,
       ADD COLUMN IF NOT EXISTS datos_factura JSONB,
@@ -384,7 +635,11 @@ async function ensureDatabaseUpdates() {
       ADD COLUMN IF NOT EXISTS estado_pago TEXT DEFAULT 'pendiente',
       ADD COLUMN IF NOT EXISTS mp_preference_id TEXT DEFAULT '',
       ADD COLUMN IF NOT EXISTS mp_payment_id TEXT DEFAULT '',
-      ADD COLUMN IF NOT EXISTS mp_status TEXT DEFAULT '';
+      ADD COLUMN IF NOT EXISTS mp_status TEXT DEFAULT '',
+      ADD COLUMN IF NOT EXISTS zona_envio_id INTEGER REFERENCES zonas_envio(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS zona_envio TEXT DEFAULT '',
+      ADD COLUMN IF NOT EXISTS datos_envio JSONB,
+      ADD COLUMN IF NOT EXISTS tiempo_entrega TEXT DEFAULT '';
     `);
 
     await pool.query(`
@@ -476,6 +731,9 @@ app.post("/api/login", async (req, res) => {
       });
     }
 
+    const sessionToken = await createUserSession(user.id);
+    setSessionCookie(req, res, sessionToken);
+
     res.json({
       message: "Login correcto",
       user: {
@@ -488,6 +746,40 @@ app.post("/api/login", async (req, res) => {
   } catch (error) {
     console.error("Error en /api/login:", error);
     res.status(500).json({ message: "Error en el servidor" });
+  }
+});
+
+app.get("/api/session", requireAuthenticatedSession, (req, res) => {
+  res.json({
+    authenticated: true,
+    user: req.user
+  });
+});
+
+app.post("/api/logout", async (req, res) => {
+  try {
+    const cookies = parseCookies(req);
+    const token = String(cookies[SESSION_COOKIE_NAME] || "").trim();
+
+    if (token) {
+      await pool.query(
+        "DELETE FROM sesiones_usuario WHERE token_hash = $1",
+        [hashSessionToken(token)]
+      );
+    }
+
+    clearSessionCookie(req, res);
+
+    res.json({
+      message: "Sesión cerrada correctamente."
+    });
+  } catch (error) {
+    console.error("Error en POST /api/logout:", error);
+    clearSessionCookie(req, res);
+
+    res.status(500).json({
+      message: "No se pudo cerrar la sesión correctamente."
+    });
   }
 });
 
@@ -1603,6 +1895,289 @@ app.delete("/api/admin/productos/:id", async (req, res) => {
 });
 
 /* =========================
+   ZONAS Y COBERTURA DE ENVÍO
+========================= */
+
+function normalizeShippingCoverage(row) {
+  return {
+    id: Number(row.id),
+    zona_id: Number(row.zona_id),
+    zona_numero: Number(row.zona_numero),
+    zona: row.zona || `Zona ${Number(row.zona_numero || 0)}`,
+    costo: Number(row.costo || 0),
+    colonia: row.colonia || "",
+    codigo_postal: row.codigo_postal || "",
+    municipio: row.municipio || "",
+    estado: row.estado || "",
+    activo: row.activo !== false,
+    creado_en: row.creado_en
+  };
+}
+
+function cleanPostalCode(value) {
+  return String(value || "").replace(/\D/g, "").slice(0, 5);
+}
+
+function normalizeComparableText(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("es-MX")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isValidReceiveTime(value) {
+  const match = String(value || "").match(/^(\d{2}):(\d{2})$/);
+
+  if (!match) return false;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return false;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return false;
+
+  return hour >= 15;
+}
+
+function cleanShippingData(value) {
+  const data = value && typeof value === "object" ? value : {};
+
+  return {
+    nombre_completo: String(data.nombre_completo || "").trim(),
+    telefono: String(data.telefono || "").trim(),
+    email: String(data.email || "").trim().toLowerCase(),
+    calle: String(data.calle || "").trim(),
+    numero_exterior: String(data.numero_exterior || "").trim(),
+    numero_interior: String(data.numero_interior || "").trim(),
+    colonia: String(data.colonia || "").trim(),
+    codigo_postal: cleanPostalCode(data.codigo_postal),
+    municipio: String(data.municipio || "").trim(),
+    estado: String(data.estado || "").trim(),
+    pais: String(data.pais || "México").trim() || "México",
+    horario_recepcion: String(data.horario_recepcion || "").trim(),
+    referencias: String(data.referencias || "").trim(),
+    tiempo_estimado: "1 a 3 días hábiles"
+  };
+}
+
+app.get("/api/zonas-envio/cobertura", async (req, res) => {
+  try {
+    const codigoPostal = cleanPostalCode(req.query.codigo_postal);
+
+    if (!/^\d{5}$/.test(codigoPostal)) {
+      return res.status(400).json({
+        message: "Escribe un código postal de 5 dígitos."
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT
+        ce.id,
+        ce.zona_id,
+        ce.colonia,
+        ce.codigo_postal,
+        ce.municipio,
+        ce.estado,
+        ce.activo,
+        ce.creado_en,
+        z.numero AS zona_numero,
+        z.nombre AS zona,
+        z.costo
+      FROM cobertura_envio ce
+      INNER JOIN zonas_envio z ON z.id = ce.zona_id
+      WHERE
+        ce.codigo_postal = $1
+        AND ce.activo IS NOT FALSE
+        AND z.activo IS NOT FALSE
+      ORDER BY ce.colonia ASC
+      `,
+      [codigoPostal]
+    );
+
+    res.json(result.rows.map(normalizeShippingCoverage));
+  } catch (error) {
+    console.error("Error en GET /api/zonas-envio/cobertura:", error);
+    res.status(500).json({ message: "Error al consultar la cobertura de envío." });
+  }
+});
+
+app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
+  try {
+    const zonesResult = await pool.query(
+      `
+      SELECT id, numero, nombre, costo, activo
+      FROM zonas_envio
+      ORDER BY numero ASC
+      `
+    );
+
+    const coverageResult = await pool.query(
+      `
+      SELECT
+        ce.id,
+        ce.zona_id,
+        ce.colonia,
+        ce.codigo_postal,
+        ce.municipio,
+        ce.estado,
+        ce.activo,
+        ce.creado_en,
+        z.numero AS zona_numero,
+        z.nombre AS zona,
+        z.costo
+      FROM cobertura_envio ce
+      INNER JOIN zonas_envio z ON z.id = ce.zona_id
+      ORDER BY z.numero ASC, ce.codigo_postal ASC, ce.colonia ASC
+      `
+    );
+
+    res.json({
+      zonas: zonesResult.rows.map((zone) => ({
+        id: Number(zone.id),
+        numero: Number(zone.numero),
+        nombre: zone.nombre,
+        costo: Number(zone.costo || 0),
+        activo: zone.activo !== false
+      })),
+      coberturas: coverageResult.rows.map(normalizeShippingCoverage)
+    });
+  } catch (error) {
+    console.error("Error en GET /api/admin/zonas-envio:", error);
+    res.status(500).json({ message: "Error al obtener las zonas de envío." });
+  }
+});
+
+app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, res) => {
+  try {
+    const zonaId = Number(req.body.zona_id);
+    const colonia = String(req.body.colonia || "").trim();
+    const codigoPostal = cleanPostalCode(req.body.codigo_postal);
+    const municipio = String(req.body.municipio || "").trim();
+    const estado = String(req.body.estado || "").trim();
+
+    if (!zonaId || !colonia || !/^\d{5}$/.test(codigoPostal) || !municipio || !estado) {
+      return res.status(400).json({
+        message: "Completa zona, colonia, C.P., municipio y estado."
+      });
+    }
+
+    const zoneResult = await pool.query(
+      "SELECT id FROM zonas_envio WHERE id = $1 AND activo IS NOT FALSE LIMIT 1",
+      [zonaId]
+    );
+
+    if (!zoneResult.rows.length) {
+      return res.status(400).json({ message: "La zona seleccionada no existe." });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO cobertura_envio (
+        zona_id,
+        colonia,
+        codigo_postal,
+        municipio,
+        estado,
+        activo
+      )
+      VALUES ($1, $2, $3, $4, $5, TRUE)
+      RETURNING id
+      `,
+      [zonaId, colonia, codigoPostal, municipio, estado]
+    );
+
+    res.status(201).json({
+      message: "Ubicación agregada correctamente.",
+      id: Number(result.rows[0].id)
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(400).json({
+        message: "Esa colonia y código postal ya están registrados."
+      });
+    }
+
+    console.error("Error en POST /api/admin/zonas-envio/coberturas:", error);
+    res.status(500).json({ message: "Error al agregar la ubicación." });
+  }
+});
+
+app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req, res) => {
+  try {
+    const coverageId = Number(req.params.id);
+    const zonaId = Number(req.body.zona_id);
+    const colonia = String(req.body.colonia || "").trim();
+    const codigoPostal = cleanPostalCode(req.body.codigo_postal);
+    const municipio = String(req.body.municipio || "").trim();
+    const estado = String(req.body.estado || "").trim();
+    const activo = req.body.activo !== false;
+
+    if (!coverageId || !zonaId || !colonia || !/^\d{5}$/.test(codigoPostal) || !municipio || !estado) {
+      return res.status(400).json({
+        message: "Completa zona, colonia, C.P., municipio y estado."
+      });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE cobertura_envio
+      SET
+        zona_id = $1,
+        colonia = $2,
+        codigo_postal = $3,
+        municipio = $4,
+        estado = $5,
+        activo = $6
+      WHERE id = $7
+      RETURNING id
+      `,
+      [zonaId, colonia, codigoPostal, municipio, estado, activo, coverageId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: "Ubicación no encontrada." });
+    }
+
+    res.json({ message: "Ubicación actualizada correctamente." });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(400).json({
+        message: "Esa colonia y código postal ya están registrados."
+      });
+    }
+
+    console.error("Error en PUT /api/admin/zonas-envio/coberturas/:id:", error);
+    res.status(500).json({ message: "Error al actualizar la ubicación." });
+  }
+});
+
+app.delete("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req, res) => {
+  try {
+    const coverageId = Number(req.params.id);
+
+    if (!coverageId) {
+      return res.status(400).json({ message: "Ubicación inválida." });
+    }
+
+    const result = await pool.query(
+      "DELETE FROM cobertura_envio WHERE id = $1 RETURNING id",
+      [coverageId]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ message: "Ubicación no encontrada." });
+    }
+
+    res.json({ message: "Ubicación eliminada correctamente." });
+  } catch (error) {
+    console.error("Error en DELETE /api/admin/zonas-envio/coberturas/:id:", error);
+    res.status(500).json({ message: "Error al eliminar la ubicación." });
+  }
+});
+
+/* =========================
    CREAR PEDIDO
 ========================= */
 
@@ -1628,7 +2203,10 @@ app.post("/api/pedidos", async (req, res) => {
       estado_pago,
       mp_preference_id,
       mp_payment_id,
-      mp_status
+      mp_status,
+      cobertura_envio_id,
+      datos_envio,
+      tiempo_entrega
     } = req.body;
 
     if (
@@ -1647,7 +2225,127 @@ app.post("/api/pedidos", async (req, res) => {
 
     const requiereFacturaFinal = Boolean(requiere_factura);
     const datosFacturaFinal = requiereFacturaFinal ? datos_factura || {} : null;
-    const descuentoFinal = Number(descuento || 0);
+    const descuentoFinal = Math.max(0, Number(descuento || 0));
+    const subtotalFinal = Math.max(0, Number(subtotal || 0));
+    const isDelivery = tipo_entrega === "delivery";
+
+    let shippingCostFinal = 0;
+    let shippingZoneIdFinal = null;
+    let shippingZoneNameFinal = "";
+    let shippingDataFinal = null;
+    let deliveryTimeFinal = "";
+    let customerNameFinal = String(nombre_cliente || "").trim();
+    let customerEmailFinal = String(email_cliente || "").trim().toLowerCase();
+    let customerPhoneFinal = String(telefono_cliente || "").trim();
+    let shippingAddressFinal = String(direccion_envio || "").trim();
+
+    if (isDelivery) {
+      const coverageId = Number(cobertura_envio_id);
+      shippingDataFinal = cleanShippingData(datos_envio);
+
+      if (!coverageId) {
+        return res.status(400).json({
+          message: "Selecciona una colonia con cobertura de envío."
+        });
+      }
+
+      if (
+        !shippingDataFinal.nombre_completo ||
+        !shippingDataFinal.telefono ||
+        !shippingDataFinal.email ||
+        !shippingDataFinal.calle ||
+        !shippingDataFinal.numero_exterior ||
+        !shippingDataFinal.colonia ||
+        !/^\d{5}$/.test(shippingDataFinal.codigo_postal) ||
+        !shippingDataFinal.municipio ||
+        !shippingDataFinal.estado ||
+        !shippingDataFinal.pais ||
+        !isValidReceiveTime(shippingDataFinal.horario_recepcion)
+      ) {
+        return res.status(400).json({
+          message: "Completa correctamente todos los datos del envío a domicilio."
+        });
+      }
+
+      const coverageResult = await pool.query(
+        `
+        SELECT
+          ce.id,
+          ce.zona_id,
+          ce.colonia,
+          ce.codigo_postal,
+          ce.municipio,
+          ce.estado,
+          z.numero AS zona_numero,
+          z.nombre AS zona,
+          z.costo
+        FROM cobertura_envio ce
+        INNER JOIN zonas_envio z ON z.id = ce.zona_id
+        WHERE
+          ce.id = $1
+          AND ce.activo IS NOT FALSE
+          AND z.activo IS NOT FALSE
+        LIMIT 1
+        `,
+        [coverageId]
+      );
+
+      const coverage = coverageResult.rows[0];
+
+      if (!coverage) {
+        return res.status(400).json({
+          message: "La ubicación seleccionada ya no tiene cobertura."
+        });
+      }
+
+      const coverageMatches =
+        coverage.codigo_postal === shippingDataFinal.codigo_postal &&
+        normalizeComparableText(coverage.colonia) === normalizeComparableText(shippingDataFinal.colonia) &&
+        normalizeComparableText(coverage.municipio) === normalizeComparableText(shippingDataFinal.municipio) &&
+        normalizeComparableText(coverage.estado) === normalizeComparableText(shippingDataFinal.estado);
+
+      if (!coverageMatches) {
+        return res.status(400).json({
+          message: "Los datos de la dirección no coinciden con la zona seleccionada."
+        });
+      }
+
+      shippingCostFinal = Number(coverage.costo || 0);
+      shippingZoneIdFinal = Number(coverage.zona_id);
+      shippingZoneNameFinal = coverage.zona || `Zona ${coverage.zona_numero}`;
+      deliveryTimeFinal = "1 a 3 días hábiles";
+
+      shippingDataFinal = {
+        ...shippingDataFinal,
+        cobertura_envio_id: coverageId,
+        zona_id: shippingZoneIdFinal,
+        zona: shippingZoneNameFinal,
+        costo_envio: shippingCostFinal,
+        tiempo_estimado: deliveryTimeFinal
+      };
+
+      customerNameFinal = shippingDataFinal.nombre_completo;
+      customerEmailFinal = shippingDataFinal.email;
+      customerPhoneFinal = shippingDataFinal.telefono;
+
+      shippingAddressFinal = [
+        `Nombre: ${shippingDataFinal.nombre_completo}`,
+        `Contacto: ${shippingDataFinal.telefono}`,
+        `Correo: ${shippingDataFinal.email}`,
+        `${shippingDataFinal.calle} ${shippingDataFinal.numero_exterior}${shippingDataFinal.numero_interior ? " Int. " + shippingDataFinal.numero_interior : ""}`,
+        `Col. ${shippingDataFinal.colonia}`,
+        `C.P. ${shippingDataFinal.codigo_postal}`,
+        `${shippingDataFinal.municipio}, ${shippingDataFinal.estado}, ${shippingDataFinal.pais}`,
+        `${shippingZoneNameFinal} · Envío $${shippingCostFinal.toFixed(2)}`,
+        `Horario para recibir: ${shippingDataFinal.horario_recepcion}`,
+        `Tiempo estimado: ${deliveryTimeFinal}`,
+        shippingDataFinal.referencias ? `Referencias: ${shippingDataFinal.referencias}` : ""
+      ].filter(Boolean).join("\n");
+    }
+
+    const totalFinal = Number(
+      Math.max(0, subtotalFinal + shippingCostFinal - descuentoFinal).toFixed(2)
+    );
 
     if (requiereFacturaFinal) {
       const {
@@ -1781,33 +2479,41 @@ app.post("/api/pedidos", async (req, res) => {
         estado_pago,
         mp_preference_id,
         mp_payment_id,
-        mp_status
+        mp_status,
+        zona_envio_id,
+        zona_envio,
+        datos_envio,
+        tiempo_entrega
       )
       VALUES (
         $1, $2, $3, $4, $5, $6, $7,
         $8, $9, $10, $11, $12, $13, 'pendiente',
-        $14, $15, $16, $17
+        $14, $15, $16, $17, $18, $19, $20, $21
       )
       RETURNING id
       `,
       [
         usuario_id || null,
-        nombre_cliente,
-        email_cliente,
-        telefono_cliente || "",
-        direccion_envio || "",
+        customerNameFinal,
+        customerEmailFinal,
+        customerPhoneFinal,
+        isDelivery ? shippingAddressFinal : "Recoger en papelería",
         tipo_entrega,
         metodo_pago,
         requiereFacturaFinal,
         datosFacturaFinal,
         descuentoFinal,
-        Number(subtotal),
-        Number(envio),
-        Number(total),
+        subtotalFinal,
+        shippingCostFinal,
+        totalFinal,
         estadoPagoFinal,
         mp_preference_id || "",
         mp_payment_id || "",
-        mp_status || ""
+        mp_status || "",
+        shippingZoneIdFinal,
+        shippingZoneNameFinal,
+        shippingDataFinal ? JSON.stringify(shippingDataFinal) : null,
+        deliveryTimeFinal || String(tiempo_entrega || "")
       ]
     );
 
@@ -1939,6 +2645,10 @@ app.get("/api/pedidos", async (req, res) => {
       mp_preference_id: order.mp_preference_id || "",
       mp_payment_id: order.mp_payment_id || "",
       mp_status: order.mp_status || "",
+      zona_envio_id: order.zona_envio_id ? Number(order.zona_envio_id) : null,
+      zona_envio: order.zona_envio || "",
+      datos_envio: order.datos_envio || null,
+      tiempo_entrega: order.tiempo_entrega || "",
       creado_en: order.creado_en,
       productos: Array.isArray(order.productos) ? order.productos : []
     }));
@@ -2121,9 +2831,8 @@ app.get("/api/listas-utiles", async (req, res) => {
   }
 });
 
-app.get("/api/admin/listas-utiles", async (req, res) => {
+app.get("/api/admin/listas-utiles", requireAdminSession, async (req, res) => {
   try {
-    if (!validateAdminCreationCode(req, res)) return;
 
     const result = await pool.query(
       `
@@ -2140,11 +2849,9 @@ app.get("/api/admin/listas-utiles", async (req, res) => {
   }
 });
 
-app.post("/api/admin/listas-utiles", function (req, res) {
-  uploadFile.single("archivo")(req, res, async function (error) {
+app.post("/api/admin/listas-utiles", requireAdminSession, function (req, res) {
+  uploadSchoolListPdf.single("archivo")(req, res, async function (error) {
     try {
-      if (!validateAdminCreationCode(req, res)) return;
-
       if (error) {
         return res.status(400).json({
           message: error.message || "No se pudo procesar el archivo."
@@ -2163,7 +2870,7 @@ app.post("/api/admin/listas-utiles", function (req, res) {
 
       if (!req.file) {
         return res.status(400).json({
-          message: "Selecciona un archivo PDF, imagen o Word."
+          message: "Selecciona un archivo PDF."
         });
       }
 
@@ -2180,11 +2887,9 @@ app.post("/api/admin/listas-utiles", function (req, res) {
         });
       }
 
-      const isPdfFile = req.file.mimetype === "application/pdf";
-
       const result = await uploadBufferToCloudinary(req.file.buffer, {
         folder: "papeleria-sulamita/listas-utiles",
-        resource_type: isPdfFile ? "image" : "auto"
+        resource_type: "image"
       });
 
       const insertResult = await pool.query(
@@ -2231,9 +2936,8 @@ app.post("/api/admin/listas-utiles", function (req, res) {
   });
 });
 
-app.delete("/api/admin/listas-utiles/:id", async (req, res) => {
+app.delete("/api/admin/listas-utiles/:id", requireAdminSession, async (req, res) => {
   try {
-    if (!validateAdminCreationCode(req, res)) return;
 
     const listId = Number(req.params.id);
 
@@ -2307,6 +3011,10 @@ app.get("/listas-admin", (req, res) => {
 
 app.get("/listas-utiles", (req, res) => {
   res.sendFile(path.join(publicDir, "listas-utiles.html"));
+});
+
+app.get("/zonas-envio-admin", (req, res) => {
+  res.sendFile(path.join(publicDir, "zonas-envio-admin.html"));
 });
 
 app.get("/admin", (req, res) => {
