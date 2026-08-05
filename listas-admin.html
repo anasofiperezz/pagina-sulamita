@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Administrar listas | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=32">
+  <link rel="stylesheet" href="styles.css?v=36">
 
   <style>
     .lists-admin-page {
@@ -16,7 +16,7 @@
 
     .lists-admin-layout {
       display: grid;
-      grid-template-columns: minmax(280px, 420px) 1fr;
+      grid-template-columns: minmax(300px, 430px) 1fr;
       gap: 26px;
       align-items: start;
     }
@@ -59,13 +59,100 @@
       margin-top: 14px;
     }
 
-    .admin-code-box {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      color: #0f2f5f;
+    .admin-session-box {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
       border-radius: 18px;
       padding: 14px;
       margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    .file-drop-zone {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 165px;
+      padding: 24px;
+      border: 2px dashed #93c5fd;
+      border-radius: 18px;
+      background: #f8fbff;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    }
+
+    .file-drop-zone:hover,
+    .file-drop-zone.is-dragging {
+      border-color: #0057b8;
+      background: #eff6ff;
+      transform: translateY(-1px);
+    }
+
+    .file-drop-zone strong {
+      color: #0f2f5f;
+      font-size: 1.02rem;
+    }
+
+    .file-drop-zone span {
+      margin-top: 6px;
+      color: #64748b;
+      font-size: 0.92rem;
+    }
+
+    .file-drop-zone input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .selected-file {
+      display: none;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #eef6ff;
+      color: #0f2f5f;
+      overflow-wrap: anywhere;
+    }
+
+    .selected-file.is-visible {
+      display: block;
+    }
+
+    .upload-progress {
+      display: none;
+      margin-top: 14px;
+    }
+
+    .upload-progress.is-visible {
+      display: block;
+    }
+
+    .progress-track {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #0057b8, #b0002f);
+      transition: width 0.2s ease;
+    }
+
+    .progress-text {
+      margin-top: 7px;
+      color: #475569;
+      font-size: 0.9rem;
     }
 
     @media (max-width: 900px) {
@@ -99,7 +186,7 @@
         <span class="page-badge">Administrador</span>
         <h1>Administrar listas de útiles</h1>
         <p>
-          Sube listas nuevas y elimina las listas publicadas desde este panel.
+          Sube archivos PDF completos y administra las listas publicadas desde este panel.
         </p>
       </div>
     </section>
@@ -108,24 +195,29 @@
       <div class="lists-admin-card">
         <h2>Subir nueva lista</h2>
 
-        <div class="admin-code-box">
-          Usa la misma clave privada de administrador que usas para administrar usuarios.
+        <div class="admin-session-box">
+          Ya iniciaste sesión como administrador. No necesitas volver a escribir una contraseña para subir, consultar o eliminar listas.
         </div>
 
         <form id="listForm">
           <div class="form-group">
-            <label for="adminCode">Clave de administrador</label>
-            <input type="password" id="adminCode" placeholder="Clave privada" required />
-          </div>
-
-          <div class="form-group">
             <label for="listName">Nombre de la lista</label>
-            <input type="text" id="listName" placeholder="Ej. 4° de Preparatoria" required />
+            <input
+              type="text"
+              id="listName"
+              placeholder="Ej. 4° de Preparatoria"
+              autocomplete="off"
+              required
+            />
           </div>
 
           <div class="form-group">
             <label for="listDescription">Descripción</label>
-            <textarea id="listDescription" rows="4" placeholder="Ej. Lista oficial IPAE ciclo escolar 2026-2027"></textarea>
+            <textarea
+              id="listDescription"
+              rows="3"
+              placeholder="Ej. Lista oficial IPAE, ciclo escolar 2026-2027"
+            ></textarea>
           </div>
 
           <div class="form-group">
@@ -158,28 +250,44 @@
 
           <div class="form-group">
             <label for="listGrade">Grado / Área</label>
-            <input type="text" id="listGrade" placeholder="Ej. 4°, 5°, Área III, 1° Secundaria" />
+            <input
+              type="text"
+              id="listGrade"
+              placeholder="Ej. 4°, 5°, Área III, 1° Secundaria"
+              autocomplete="off"
+            />
           </div>
 
           <div class="form-group">
-            <label for="listFile">Archivo</label>
-            <input
-              type="file"
-              id="listFile"
-              accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              required
-            />
-            <p class="subtext">
-              Puedes subir PDF, imagen o Word. Para que se vea dentro de la página, lo mejor es PDF o imagen.
-            </p>
+            <label for="listFile">Archivo PDF</label>
+
+            <label class="file-drop-zone" id="fileDropZone" for="listFile">
+              <strong>Arrastra aquí el PDF o haz clic para seleccionarlo</strong>
+              <span>Sube el documento completo; todas sus páginas se mostrarán en la página de listas.</span>
+              <input
+                type="file"
+                id="listFile"
+                accept="application/pdf,.pdf"
+                required
+              />
+            </label>
+
+            <div class="selected-file" id="selectedFile"></div>
           </div>
 
           <button type="submit" class="btn-primary full-width" id="saveListBtn">
             Subir lista
           </button>
+
+          <div class="upload-progress" id="uploadProgress" aria-live="polite">
+            <div class="progress-track">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">Preparando archivo...</div>
+          </div>
         </form>
 
-        <div class="note" id="listMessage"></div>
+        <div class="note" id="listMessage" aria-live="polite"></div>
       </div>
 
       <div class="lists-admin-card">
@@ -191,7 +299,7 @@
         </div>
 
         <div id="adminListsContainer">
-          <div class="note">Escribe tu clave y presiona Actualizar para ver las listas.</div>
+          <div class="note">Cargando listas...</div>
         </div>
       </div>
     </section>
@@ -201,14 +309,13 @@
     <p>© 2026 Papelería Sulamita - Administrar listas</p>
   </footer>
 
-  <script src="tienda.js?v=32"></script>
+  <script src="tienda.js?v=36"></script>
   <script>
     protectPage();
     protectAdminPage();
     setupHeader();
 
     const listForm = document.getElementById("listForm");
-    const adminCode = document.getElementById("adminCode");
     const listName = document.getElementById("listName");
     const listDescription = document.getElementById("listDescription");
     const listType = document.getElementById("listType");
@@ -216,116 +323,127 @@
     const listLevel = document.getElementById("listLevel");
     const listGrade = document.getElementById("listGrade");
     const listFile = document.getElementById("listFile");
+    const fileDropZone = document.getElementById("fileDropZone");
+    const selectedFile = document.getElementById("selectedFile");
     const saveListBtn = document.getElementById("saveListBtn");
     const listMessage = document.getElementById("listMessage");
     const reloadListsBtn = document.getElementById("reloadListsBtn");
     const adminListsContainer = document.getElementById("adminListsContainer");
-
-    const savedCode = localStorage.getItem("sulamitaAdminCode") || "";
-    adminCode.value = savedCode;
+    const uploadProgress = document.getElementById("uploadProgress");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
 
     reloadListsBtn.addEventListener("click", loadAdminLists);
+    listFile.addEventListener("change", updateSelectedFile);
 
-    adminCode.addEventListener("change", function () {
-      localStorage.setItem("sulamitaAdminCode", adminCode.value.trim());
+    ["dragenter", "dragover"].forEach((eventName) => {
+      fileDropZone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        fileDropZone.classList.add("is-dragging");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      fileDropZone.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        fileDropZone.classList.remove("is-dragging");
+      });
+    });
+
+    fileDropZone.addEventListener("drop", function (event) {
+      const files = event.dataTransfer && event.dataTransfer.files;
+
+      if (!files || !files.length) return;
+
+      const file = files[0];
+
+      if (!isPdfFile(file)) {
+        showListMessage("Selecciona un archivo PDF.", true);
+        return;
+      }
+
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      listFile.files = transfer.files;
+      updateSelectedFile();
     });
 
     listForm.addEventListener("submit", async function (event) {
       event.preventDefault();
+      clearListMessage();
 
-      const cleanCode = adminCode.value.trim();
+      const name = listName.value.trim();
+      const file = listFile.files && listFile.files[0];
 
-      if (!cleanCode) {
-        showListMessage("Escribe la clave de administrador.", true);
-        return;
-      }
-
-      if (!listName.value.trim()) {
+      if (!name) {
         showListMessage("Escribe el nombre de la lista.", true);
+        listName.focus();
         return;
       }
 
-      if (!listFile.files || !listFile.files[0]) {
-        showListMessage("Selecciona un archivo.", true);
+      if (!file) {
+        showListMessage("Selecciona un archivo PDF.", true);
+        return;
+      }
+
+      if (!isPdfFile(file)) {
+        showListMessage("El archivo debe estar en formato PDF.", true);
         return;
       }
 
       const formData = new FormData();
-      formData.append("admin_code", cleanCode);
-      formData.append("nombre", listName.value.trim());
+      formData.append("nombre", name);
       formData.append("descripcion", listDescription.value.trim());
       formData.append("tipo", listType.value);
       formData.append("escuela", listSchool.value);
       formData.append("nivel", listLevel.value);
       formData.append("grado", listGrade.value.trim());
-      formData.append("archivo", listFile.files[0]);
+      formData.append("archivo", file);
 
       try {
-        saveListBtn.disabled = true;
-        saveListBtn.textContent = "Subiendo...";
+        setUploadingState(true);
 
         const response = await fetch("/api/admin/listas-utiles", {
           method: "POST",
+          credentials: "include",
           body: formData
         });
 
-        const data = await response.json();
+        const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          showListMessage(data.message || "No se pudo subir la lista.", true);
-          return;
+          throw new Error(data.message || "No se pudo subir la lista.");
         }
-
-        localStorage.setItem("sulamitaAdminCode", cleanCode);
 
         showListMessage("Lista subida correctamente.");
         listForm.reset();
-        adminCode.value = cleanCode;
-
+        updateSelectedFile();
         await loadAdminLists();
       } catch (error) {
         console.error(error);
-        showListMessage("No se pudo conectar con el servidor.", true);
+        showListMessage(
+          error.message || "No se pudo conectar con el servidor.",
+          true
+        );
       } finally {
-        saveListBtn.disabled = false;
-        saveListBtn.textContent = "Subir lista";
+        setUploadingState(false);
       }
     });
 
     async function loadAdminLists() {
-      const cleanCode = adminCode.value.trim();
-
-      if (!cleanCode) {
-        adminListsContainer.innerHTML = `
-          <div class="note error">
-            Escribe la clave de administrador para cargar las listas.
-          </div>
-        `;
-        return;
-      }
-
       adminListsContainer.innerHTML = `
-        <div class="note">
-          Cargando listas...
-        </div>
+        <div class="note">Cargando listas...</div>
       `;
 
       try {
         const response = await fetch("/api/admin/listas-utiles", {
-          headers: {
-            "x-admin-code": cleanCode
-          }
+          credentials: "include"
         });
 
-        const data = await response.json();
+        const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          adminListsContainer.innerHTML = `
-            <div class="note error">
-              ${escapeHtml(data.message || "No se pudieron cargar las listas.")}
-            </div>
-          `;
-          return;
+          throw new Error(data.message || "No se pudieron cargar las listas.");
         }
 
         const lists = Array.isArray(data) ? data : [];
@@ -339,12 +457,14 @@
           return;
         }
 
-        adminListsContainer.innerHTML = lists.map(renderAdminListItem).join("");
+        adminListsContainer.innerHTML = lists
+          .map(renderAdminListItem)
+          .join("");
       } catch (error) {
         console.error(error);
         adminListsContainer.innerHTML = `
           <div class="note error">
-            No se pudo conectar con el servidor.
+            ${escapeHtml(error.message || "No se pudo conectar con el servidor.")}
           </div>
         `;
       }
@@ -356,19 +476,35 @@
         .filter(Boolean)
         .join(" · ");
 
+      const id = Number(item.id);
+      const safeName = String(item.nombre || "Lista").replaceAll("'", "\\'");
+
       return `
         <article class="admin-list-item">
           <h3>${escapeHtml(item.nombre || "Lista de útiles")}</h3>
           <p>${escapeHtml(item.descripcion || "Sin descripción")}</p>
           ${meta ? `<p><strong>${escapeHtml(meta)}</strong></p>` : ""}
-          <p><small>${escapeHtml(item.archivo_nombre || item.archivo_tipo || "Archivo")}</small></p>
+          <p>
+            <small>
+              ${escapeHtml(item.archivo_nombre || item.archivo_tipo || "Archivo PDF")}
+            </small>
+          </p>
 
           <div class="admin-list-actions">
-            <a class="btn-outline btn-sm" href="${escapeHtmlAttr(item.archivo_url)}" target="_blank" rel="noopener">
+            <a
+              class="btn-outline btn-sm"
+              href="${escapeHtmlAttr(item.archivo_url || "")}"
+              target="_blank"
+              rel="noopener"
+            >
               Ver archivo
             </a>
 
-            <button class="btn-danger btn-sm" type="button" onclick="deleteSchoolList(${Number(item.id)}, '${escapeHtmlAttr(item.nombre || "Lista")}')">
+            <button
+              class="btn-danger btn-sm"
+              type="button"
+              onclick="deleteSchoolList(${id}, '${escapeHtmlAttr(safeName)}')"
+            >
               Borrar lista
             </button>
           </div>
@@ -377,13 +513,6 @@
     }
 
     async function deleteSchoolList(listId, listNameText) {
-      const cleanCode = adminCode.value.trim();
-
-      if (!cleanCode) {
-        showListMessage("Escribe la clave de administrador.", true);
-        return;
-      }
-
       const confirmDelete = confirm(
         `¿Seguro que quieres borrar "${listNameText}"? Esta acción no se puede deshacer.`
       );
@@ -391,31 +520,98 @@
       if (!confirmDelete) return;
 
       try {
-        const response = await fetch(`/api/admin/listas-utiles/${Number(listId)}`, {
-          method: "DELETE",
-          headers: {
-            "x-admin-code": cleanCode
+        const response = await fetch(
+          `/api/admin/listas-utiles/${Number(listId)}`,
+          {
+            method: "DELETE",
+            credentials: "include"
           }
-        });
+        );
 
-        const data = await response.json();
+        const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          showListMessage(data.message || "No se pudo borrar la lista.", true);
-          return;
+          throw new Error(data.message || "No se pudo borrar la lista.");
         }
 
         showListMessage("Lista eliminada correctamente.");
         await loadAdminLists();
       } catch (error) {
         console.error(error);
-        showListMessage("No se pudo conectar con el servidor.", true);
+        showListMessage(
+          error.message || "No se pudo conectar con el servidor.",
+          true
+        );
       }
+    }
+
+    function updateSelectedFile() {
+      const file = listFile.files && listFile.files[0];
+
+      if (!file) {
+        selectedFile.textContent = "";
+        selectedFile.classList.remove("is-visible");
+        return;
+      }
+
+      selectedFile.textContent =
+        `Archivo seleccionado: ${file.name} (${formatFileSize(file.size)})`;
+      selectedFile.classList.add("is-visible");
+    }
+
+    function isPdfFile(file) {
+      if (!file) return false;
+
+      return (
+        file.type === "application/pdf" ||
+        String(file.name || "").toLowerCase().endsWith(".pdf")
+      );
+    }
+
+    function formatFileSize(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return "0 KB";
+
+      const megabytes = bytes / (1024 * 1024);
+
+      if (megabytes >= 1) {
+        return `${megabytes.toFixed(2)} MB`;
+      }
+
+      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+    }
+
+    function setUploadingState(isUploading) {
+      saveListBtn.disabled = isUploading;
+      saveListBtn.textContent = isUploading ? "Subiendo..." : "Subir lista";
+      uploadProgress.classList.toggle("is-visible", isUploading);
+
+      if (isUploading) {
+        progressBar.style.width = "65%";
+        progressText.textContent = "Subiendo el PDF...";
+      } else {
+        progressBar.style.width = "0";
+        progressText.textContent = "Preparando archivo...";
+      }
+    }
+
+    async function readJsonResponse(response) {
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!contentType.includes("application/json")) {
+        return {};
+      }
+
+      return response.json();
     }
 
     function showListMessage(message, isError = false) {
       listMessage.textContent = message;
       listMessage.className = isError ? "note error" : "note success";
+    }
+
+    function clearListMessage() {
+      listMessage.textContent = "";
+      listMessage.className = "note";
     }
 
     function escapeHtml(value) {
@@ -431,9 +627,7 @@
       return escapeHtml(value);
     }
 
-    if (adminCode.value.trim()) {
-      loadAdminLists();
-    }
+    loadAdminLists();
   </script>
 </body>
 </html>
