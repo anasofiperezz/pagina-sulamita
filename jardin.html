@@ -3,61 +3,225 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IAE Jardín de niños | Papelería Sulamita</title>
+
+  <title>Jardín de niños IAE | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=50">
+
+  <style>
+    /* =========================
+       PRESENTACIÓN DEL CATÁLOGO
+    ========================= */
+
+    .catalog-intro {
+      max-width: 820px;
+      margin: 0 auto 28px;
+      color: #64748b;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .catalog-filter-box {
+      max-width: 760px;
+      margin: 0 auto 30px;
+      padding: 18px;
+      border: 1px solid #dbe3f0;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .catalog-filter-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #0f2f5f;
+      font-weight: 800;
+    }
+
+    .catalog-filter-help {
+      margin: 0 0 12px;
+      color: #64748b;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .catalog-filter-select {
+      width: 100%;
+    }
+
+    .catalog-note {
+      max-width: 900px;
+      margin: 0 auto 26px;
+      padding: 15px 17px;
+      border: 1px solid #bfdbfe;
+      border-radius: 16px;
+      background: #eff6ff;
+      color: #0f2f5f;
+      line-height: 1.55;
+    }
+
+    .catalog-note strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .products-page {
+      padding: 42px 20px 64px;
+    }
+  </style>
 </head>
+
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
+
       <div class="nav-right">
-        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <div class="user-badge" id="userInfo">
+          Cargando sesión...
+        </div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="escuela2.html" class="nav-btn">IAE</a>
-        <button class="nav-btn" id="cartBtn">Carrito</button>
-        <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+        <a href="listas-utiles.html" class="nav-btn">Listas de útiles</a>
+        <a href="contacto.html" class="nav-btn">Contacto</a>
+
+        <button class="nav-btn" id="cartBtn" type="button">
+          Carrito
+        </button>
+
+        <button
+          class="nav-btn"
+          id="adminBtn"
+          type="button"
+          style="display: none;"
+        >
+          Panel administrativo
+        </button>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
   <main>
-    <section class="page-hero grade-hero-primary">
+    <!-- =========================
+         PORTADA
+    ========================== -->
+
+    <section class="page-hero products-hero">
       <div class="page-hero-content">
-        <span class="page-badge">IAE</span>
-        <h1 id="productsTitle">Jardín de niños</h1>
-        <p id="productsSubtitle">Selecciona una sección del catálogo.</p>
+        <span class="page-badge">IAE · Jardín de niños</span>
+
+        <h1 id="productsTitle">
+          Productos para jardín de niños
+        </h1>
+
+        <p id="productsSubtitle">
+          Consulta uniformes, batas, accesorios y materiales disponibles
+          para jardín de niños del Instituto Anglo Español.
+        </p>
+
+        <div class="actions">
+          <a href="escuela2.html#niveles" class="btn-outline">
+            Volver a los niveles del IAE
+          </a>
+        </div>
       </div>
     </section>
 
-    <section class="products-page">
-      <h2 class="section-title">Catálogo</h2>
+    <!-- =========================
+         CATÁLOGO
+    ========================== -->
 
-      <div class="catalog-filter-box">
-        <label for="categoryFilters" class="catalog-filter-label">Explora por sección</label>
-        <select id="categoryFilters" class="catalog-filter-select"></select>
+    <section
+      class="products-page"
+      aria-labelledby="catalogTitle"
+    >
+      <h2 class="section-title" id="catalogTitle">
+        Catálogo de jardín de niños
+      </h2>
+
+      <p class="catalog-intro">
+        Elige una sección para encontrar más rápido el producto que necesitas.
+        En cada artículo podrás revisar el precio, la presentación disponible
+        y las existencias antes de agregarlo al carrito.
+      </p>
+
+      <div class="catalog-note">
+        <strong>Antes de agregar un producto</strong>
+        Revisa la talla, presentación o unidad seleccionada. El carrito mostrará
+        únicamente las opciones que tengan existencias disponibles.
       </div>
 
-      <div id="productGrid"></div>
+      <div class="catalog-filter-box">
+        <label
+          for="categoryFilters"
+          class="catalog-filter-label"
+        >
+          Filtrar productos
+        </label>
+
+        <p class="catalog-filter-help">
+          Puedes ver todo el catálogo o elegir una categoría específica.
+        </p>
+
+        <select
+          id="categoryFilters"
+          class="catalog-filter-select"
+          aria-label="Filtrar catálogo por categoría"
+        >
+          <option value="todos">Cargando categorías...</option>
+        </select>
+      </div>
+
+      <div id="productGrid" aria-live="polite">
+        <article class="product-card">
+          <div class="product-content">
+            <h3>Cargando productos...</h3>
+            <p>
+              Estamos preparando el catálogo de jardín de niños.
+            </p>
+          </div>
+        </article>
+      </div>
     </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - IAE Jardín de niños</p>
+    <p>
+      © 2026 Papelería Sulamita · Jardín de niños IAE
+    </p>
   </footer>
 
-  <script src="tienda.js?v=22"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=50"></script>
+
   <script>
     protectPage();
     setupHeader();
 
-    const role = localStorage.getItem("userRole");
-    const adminBtn = document.getElementById("adminBtn");
+    const adminButton = document.getElementById("adminBtn");
+    const userRole = localStorage.getItem("userRole");
 
-    if (role === "admin" && adminBtn) {
-      adminBtn.style.display = "inline-block";
-      adminBtn.addEventListener("click", function () {
+    if (userRole === "admin" && adminButton) {
+      adminButton.style.display = "inline-block";
+
+      adminButton.addEventListener("click", function () {
         window.location.href = "admin.html";
       });
     }
@@ -65,8 +229,9 @@
     loadProductsPage({
       escuela: "IAE",
       nivel: "Jardín de niños",
-      title: "IAE Jardín de niños",
-      subtitle: "Selecciona una sección en el menú desplegable"
+      title: "Productos para jardín de niños",
+      subtitle:
+        "Consulta uniformes, batas, accesorios y materiales disponibles para jardín de niños del Instituto Anglo Español."
     });
   </script>
 </body>
