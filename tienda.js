@@ -1,6 +1,10 @@
+'use strict';
+
 const CART_TEMPORARILY_DISABLED = false;
 
 const API_URL = "";
+
+window.currentShippingCost = Number(window.currentShippingCost || 0);
 
 function isGitHubPages() {
   return window.location.hostname.includes("github.io");
@@ -8,6 +12,47 @@ function isGitHubPages() {
 
 function goTo(page) {
   window.location.href = page;
+}
+
+function clearLocalSession() {
+  [
+    "sessionActive",
+    "userId",
+    "userRole",
+    "userEmail",
+    "userName",
+    "cart",
+    "lastOrder",
+    "pendingMercadoPagoOrder"
+  ].forEach((key) => {
+    localStorage.removeItem(key);
+  });
+}
+
+function saveLocalSession(user) {
+  const sessionUser = user && typeof user === "object"
+    ? user
+    : {};
+
+  localStorage.setItem("sessionActive", "true");
+  localStorage.setItem(
+    "userId",
+    sessionUser.id != null
+      ? String(sessionUser.id)
+      : ""
+  );
+  localStorage.setItem(
+    "userRole",
+    String(sessionUser.rol || "cliente")
+  );
+  localStorage.setItem(
+    "userEmail",
+    String(sessionUser.email || "")
+  );
+  localStorage.setItem(
+    "userName",
+    String(sessionUser.nombre || "")
+  );
 }
 
 function protectPage() {
@@ -31,23 +76,26 @@ function setupHeader() {
   const name = localStorage.getItem("userName") || "";
 
   const userInfo = document.getElementById("userInfo");
+
   if (userInfo) {
-    userInfo.textContent = name ? `${name} | ${role}` : `${email} | ${role}`;
+    userInfo.textContent = name
+      ? `${name} | ${role}`
+      : `${email} | ${role}`;
   }
 
-  const cartBtn = document.getElementById("cartBtn");
+  const cartButton = document.getElementById("cartBtn");
 
-  if (cartBtn) {
+  if (cartButton) {
     if (CART_TEMPORARILY_DISABLED) {
-      cartBtn.textContent = "Carrito desactivado";
+      cartButton.textContent = "Carrito desactivado";
 
-      cartBtn.addEventListener("click", function () {
+      cartButton.addEventListener("click", function () {
         alert(
           "Por el momento las compras en línea están temporalmente desactivadas. Puedes contactar a Papelería Sulamita para realizar tu pedido."
         );
       });
     } else {
-      cartBtn.addEventListener("click", function () {
+      cartButton.addEventListener("click", function () {
         goTo("carrito.html");
       });
     }
@@ -55,21 +103,404 @@ function setupHeader() {
 
   updateCartCount();
 
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", function () {
-      localStorage.removeItem("sessionActive");
-      localStorage.removeItem("userId");
-      localStorage.removeItem("userRole");
-      localStorage.removeItem("userEmail");
-      localStorage.removeItem("userName");
-      localStorage.removeItem("cart");
-      localStorage.removeItem("lastOrder");
-      localStorage.removeItem("pendingMercadoPagoOrder");
-      updateCartCount();
-      goTo("login.html");
+  const logoutButton = document.getElementById("logoutBtn");
+
+  if (logoutButton) {
+    logoutButton.addEventListener("click", async function () {
+      logoutButton.disabled = true;
+      logoutButton.textContent = "Cerrando sesión...";
+
+      try {
+        if (!isGitHubPages()) {
+          await fetch(`${API_URL}/api/logout`, {
+            method: "POST",
+            credentials: "include"
+          });
+        }
+      } catch (error) {
+        console.error("No se pudo cerrar la sesión en el servidor:", error);
+      } finally {
+        clearLocalSession();
+        updateCartCount();
+        goTo("login.html");
+      }
     });
   }
+}
+
+/* =========================
+   ACCESO Y REGISTRO
+========================= */
+
+function setupAuthPage() {
+  const loginForm = document.getElementById("loginForm");
+  const registerForm = document.getElementById("registerForm");
+  const guestForm = document.getElementById("guestForm");
+
+  if (!loginForm && !registerForm && !guestForm) {
+    return;
+  }
+
+  if (loginForm) {
+    loginForm.addEventListener(
+      "submit",
+      async function (event) {
+        event.preventDefault();
+
+        const email = document
+          .getElementById("loginEmail")
+          ?.value
+          .trim()
+          .toLowerCase();
+
+        const password =
+          document.getElementById("loginPassword")
+            ?.value || "";
+
+        const role =
+          document.getElementById("loginRole")
+            ?.value || "cliente";
+
+        if (!isValidEmail(email) || !password) {
+          showAccessMessage(
+            "Escribe un correo válido y tu contraseña.",
+            true
+          );
+          return;
+        }
+
+        const submitButton = loginForm.querySelector(
+          'button[type="submit"]'
+        );
+
+        setAccessButtonState(
+          submitButton,
+          true,
+          "Entrando..."
+        );
+
+        try {
+          const response = await fetch(
+            `${API_URL}/api/login`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                email,
+                password,
+                role
+              })
+            }
+          );
+
+          const data = await readApiJson(response);
+
+          if (!response.ok) {
+            throw new Error(
+              data.message ||
+              "No fue posible iniciar sesión."
+            );
+          }
+
+          saveLocalSession(data.user || {
+            email,
+            rol: role
+          });
+
+          showAccessMessage(
+            "Sesión iniciada correctamente."
+          );
+
+          goTo("index.html");
+        } catch (error) {
+          console.error(
+            "No se pudo iniciar sesión:",
+            error
+          );
+
+          showAccessMessage(
+            error.message ||
+            "No fue posible conectar con el servidor.",
+            true
+          );
+        } finally {
+          setAccessButtonState(
+            submitButton,
+            false,
+            "Entrar"
+          );
+        }
+      }
+    );
+  }
+
+  if (registerForm) {
+    registerForm.addEventListener(
+      "submit",
+      async function (event) {
+        event.preventDefault();
+
+        const name =
+          document.getElementById("registerName")
+            ?.value
+            .trim() || "";
+
+        const email =
+          document.getElementById("registerEmail")
+            ?.value
+            .trim()
+            .toLowerCase() || "";
+
+        const password =
+          document.getElementById("registerPassword")
+            ?.value || "";
+
+        if (!name) {
+          showAccessMessage(
+            "Escribe tu nombre completo.",
+            true
+          );
+          return;
+        }
+
+        if (!isValidEmail(email)) {
+          showAccessMessage(
+            "Escribe un correo electrónico válido.",
+            true
+          );
+          return;
+        }
+
+        if (password.length < 6) {
+          showAccessMessage(
+            "La contraseña debe tener al menos seis caracteres.",
+            true
+          );
+          return;
+        }
+
+        const submitButton = registerForm.querySelector(
+          'button[type="submit"]'
+        );
+
+        setAccessButtonState(
+          submitButton,
+          true,
+          "Creando cuenta..."
+        );
+
+        try {
+          const registerResponse = await fetch(
+            `${API_URL}/api/register`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                nombre: name,
+                email,
+                password
+              })
+            }
+          );
+
+          const registerData = await readApiJson(
+            registerResponse
+          );
+
+          if (!registerResponse.ok) {
+            throw new Error(
+              registerData.message ||
+              "No fue posible crear la cuenta."
+            );
+          }
+
+          const loginResponse = await fetch(
+            `${API_URL}/api/login`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                email,
+                password,
+                role: "cliente"
+              })
+            }
+          );
+
+          const loginData = await readApiJson(
+            loginResponse
+          );
+
+          if (!loginResponse.ok) {
+            throw new Error(
+              loginData.message ||
+              "La cuenta se creó, pero no fue posible iniciar sesión."
+            );
+          }
+
+          saveLocalSession(loginData.user || {
+            id: registerData.userId,
+            nombre: name,
+            email,
+            rol: "cliente"
+          });
+
+          showAccessMessage(
+            "Tu cuenta se creó correctamente."
+          );
+
+          goTo("index.html");
+        } catch (error) {
+          console.error(
+            "No se pudo registrar la cuenta:",
+            error
+          );
+
+          showAccessMessage(
+            error.message ||
+            "No fue posible conectar con el servidor.",
+            true
+          );
+        } finally {
+          setAccessButtonState(
+            submitButton,
+            false,
+            "Crear cuenta"
+          );
+        }
+      }
+    );
+  }
+
+  if (guestForm) {
+    guestForm.addEventListener(
+      "submit",
+      function (event) {
+        event.preventDefault();
+
+        const name =
+          document.getElementById("guestName")
+            ?.value
+            .trim() || "";
+
+        const email =
+          document.getElementById("guestEmail")
+            ?.value
+            .trim()
+            .toLowerCase() || "";
+
+        if (!name) {
+          showAccessMessage(
+            "Escribe tu nombre completo.",
+            true
+          );
+          return;
+        }
+
+        if (!isValidEmail(email)) {
+          showAccessMessage(
+            "Escribe un correo electrónico válido.",
+            true
+          );
+          return;
+        }
+
+        saveLocalSession({
+          id: "",
+          nombre: name,
+          email,
+          rol: "invitado"
+        });
+
+        goTo("index.html");
+      }
+    );
+  }
+}
+
+function showAccessMessage(message, isError = false) {
+  const messageBox = document.getElementById(
+    "messageBox"
+  );
+
+  if (!messageBox) return;
+
+  messageBox.textContent = message;
+  messageBox.className = isError
+    ? "note error"
+    : "note success";
+}
+
+function setAccessButtonState(
+  button,
+  isLoading,
+  loadingText
+) {
+  if (!button) return;
+
+  if (!button.dataset.defaultText) {
+    button.dataset.defaultText =
+      button.textContent.trim();
+  }
+
+  button.disabled = isLoading;
+  button.textContent = isLoading
+    ? loadingText
+    : button.dataset.defaultText;
+}
+
+async function readApiJson(response) {
+  const contentType =
+    response.headers.get("content-type") || "";
+
+  if (!contentType.includes("application/json")) {
+    return {};
+  }
+
+  return response.json();
+}
+
+/* =========================
+   INFORMACIÓN DE ESCUELAS
+========================= */
+
+function showSchoolInfo(schoolKey) {
+  const schools = {
+    ipae: {
+      name: "Instituto Pedagógico Anglo Español",
+      levels: "Secundaria y preparatoria"
+    },
+    iae: {
+      name: "Instituto Anglo Español",
+      levels: "Jardín de niños, primaria y secundaria"
+    }
+  };
+
+  const school = schools[
+    String(schoolKey || "").toLowerCase()
+  ];
+
+  if (!school) {
+    alert(
+      "No se encontró información de esta escuela."
+    );
+    return;
+  }
+
+  alert(
+    `${school.name}\n\n` +
+    `Niveles disponibles: ${school.levels}.\n\n` +
+    "Consulta el catálogo para revisar uniformes, útiles y materiales disponibles."
+  );
 }
 
 /* =========================
@@ -435,20 +866,32 @@ function getCartQuantityForProductOption(productId, talla) {
 function calculateCartAmounts(deliveryValue = null) {
   const cart = getCart();
 
-  const subtotal = cart.reduce((acc, item) => {
+  const subtotal = cart.reduce((accumulator, item) => {
     if (item.type === "paquete") {
-      return acc + Number(item.originalTotal || 0) * Number(item.quantity || 1);
+      return (
+        accumulator +
+        Number(item.originalTotal || 0) *
+          Number(item.quantity || 1)
+      );
     }
 
-    return acc + Number(item.price || 0) * Number(item.quantity || 0);
+    return (
+      accumulator +
+      Number(item.price || 0) *
+        Number(item.quantity || 0)
+    );
   }, 0);
 
-  const descuento = cart.reduce((acc, item) => {
+  const discount = cart.reduce((accumulator, item) => {
     if (item.type === "paquete") {
-      return acc + Number(item.discountAmount || 0) * Number(item.quantity || 1);
+      return (
+        accumulator +
+        Number(item.discountAmount || 0) *
+          Number(item.quantity || 1)
+      );
     }
 
-    return acc;
+    return accumulator;
   }, 0);
 
   const deliveryMethod =
@@ -456,14 +899,18 @@ function calculateCartAmounts(deliveryValue = null) {
     document.getElementById("deliveryMethod")?.value ||
     "pickup";
 
-  const envio = deliveryMethod === "delivery" && cart.length > 0 ? 80 : 0;
-  const total = subtotal + envio - descuento;
+  const shippingCost =
+    deliveryMethod === "delivery" && cart.length
+      ? Math.max(0, Number(window.currentShippingCost || 0))
+      : 0;
 
   return {
     subtotal: roundMoney(subtotal),
-    descuento: roundMoney(descuento),
-    envio: roundMoney(envio),
-    total: roundMoney(total)
+    descuento: roundMoney(discount),
+    envio: roundMoney(shippingCost),
+    total: roundMoney(
+      subtotal + shippingCost - discount
+    )
   };
 }
 
@@ -547,30 +994,45 @@ function setupCartPage() {
       const requiresInvoice =
         document.getElementById("requiresInvoice")?.value === "si";
 
-      let invoiceData = null;
-
-      if (requiresInvoice) {
-        try {
-          invoiceData = await getInvoiceDataForOrder(paymentMethod);
-        } catch (error) {
-          alert(error.message || "Completa los datos de facturación.");
-          return;
-        }
-      }
-
       if (cart.length === 0) {
         alert("Tu carrito está vacío.");
         return;
       }
 
-      if (deliveryValue === "delivery" && !isValidShippingAddress(shippingAddressData)) {
-        alert("Completa calle, número exterior, colonia, código postal, municipio/alcaldía y estado.");
+      if (!deliveryValue) {
+        alert("Selecciona una forma de entrega.");
+        return;
+      }
+
+      if (
+        deliveryValue === "delivery" &&
+        !isValidShippingAddress(shippingAddressData)
+      ) {
+        alert(
+          getShippingValidationMessage(shippingAddressData)
+        );
         return;
       }
 
       if (!paymentMethod) {
         alert("Selecciona un método de pago.");
         return;
+      }
+
+      let invoiceData = null;
+
+      if (requiresInvoice) {
+        try {
+          invoiceData = await getInvoiceDataForOrder(
+            paymentMethod
+          );
+        } catch (error) {
+          alert(
+            error.message ||
+            "Completa los datos de facturación."
+          );
+          return;
+        }
       }
 
       const totals = calculateCartAmounts(deliveryValue);
@@ -581,13 +1043,22 @@ function setupCartPage() {
         return;
       }
 
+      const isDelivery = deliveryValue === "delivery";
+
       const payload = {
         usuario_id: localStorage.getItem("userId") || null,
-        nombre_cliente: localStorage.getItem("userName") || "Invitado",
-        email_cliente: localStorage.getItem("userEmail") || "",
-        telefono_cliente: "",
-        direccion_envio:
-          deliveryValue === "delivery" ? shippingAddress : "Recoger en papelería",
+        nombre_cliente: isDelivery
+          ? shippingAddressData.nombre_completo
+          : localStorage.getItem("userName") || "Invitado",
+        email_cliente: isDelivery
+          ? shippingAddressData.email
+          : localStorage.getItem("userEmail") || "",
+        telefono_cliente: isDelivery
+          ? shippingAddressData.telefono
+          : "",
+        direccion_envio: isDelivery
+          ? shippingAddress
+          : "Recoger en papelería",
         tipo_entrega: deliveryValue,
         metodo_pago: paymentMethod,
         requiere_factura: requiresInvoice,
@@ -596,7 +1067,13 @@ function setupCartPage() {
         subtotal: totals.subtotal,
         envio: totals.envio,
         total: totals.total,
-        productos
+        productos,
+        datos_envio: isDelivery
+          ? shippingAddressData
+          : null,
+        tiempo_entrega: isDelivery
+          ? "1 a 3 días hábiles"
+          : ""
       };
 
       if (isGitHubPages()) {
@@ -628,15 +1105,19 @@ function setupCartPage() {
             JSON.stringify(payload)
           );
 
-          const response = await fetch(`${API_URL}/api/mercadopago/crear-preferencia`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              pedido: payload
-            })
-          });
+          const response = await fetch(
+            `${API_URL}/api/mercadopago/crear-preferencia`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                pedido: payload
+              })
+            }
+          );
 
           const data = await response.json();
 
@@ -669,13 +1150,17 @@ function setupCartPage() {
         checkoutBtn.disabled = true;
         checkoutBtn.textContent = "Confirmando...";
 
-        const response = await fetch(`${API_URL}/api/pedidos`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
+        const response = await fetch(
+          `${API_URL}/api/pedidos`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          }
+        );
 
         const data = await response.json();
 
@@ -863,18 +1348,40 @@ function renderCart() {
 
 function changeQuantity(index, change) {
   const cart = getCart();
+  const item = cart[index];
 
-  if (!cart[index]) return;
+  if (!item) return;
 
-  if (cart[index].type === "paquete") {
-    alert("Para modificar un paquete, elimínalo y vuelve a agregarlo con las opciones correctas.");
+  if (item.type === "paquete") {
+    alert(
+      "Para modificar un paquete, elimínalo y vuelve a agregarlo con las opciones correctas."
+    );
     return;
   }
 
-  cart[index].quantity = Number(cart[index].quantity) + Number(change);
+  const nextQuantity =
+    Number(item.quantity || 0) +
+    Number(change || 0);
 
-  if (cart[index].quantity <= 0) {
+  const availableStock = Number(
+    item.stock_disponible || 0
+  );
+
+  if (
+    Number(change) > 0 &&
+    availableStock > 0 &&
+    nextQuantity > availableStock
+  ) {
+    alert(
+      "No hay suficiente stock para agregar otra pieza."
+    );
+    return;
+  }
+
+  if (nextQuantity <= 0) {
     cart.splice(index, 1);
+  } else {
+    item.quantity = nextQuantity;
   }
 
   saveCart(cart);
@@ -963,7 +1470,10 @@ function addProductToCart(product) {
 
   if (existingProduct) {
     existingProduct.quantity += 1;
-    existingProduct.price = selectedPrice;
+    existingProduct.price = roundMoney(selectedPrice);
+    existingProduct.stock_disponible = Number(
+      tallaData.stock || 0
+    );
   } else {
     cart.push({
       type: "producto",
@@ -972,7 +1482,8 @@ function addProductToCart(product) {
       price: roundMoney(selectedPrice),
       grade: buildGradeLabel(product),
       talla: String(talla),
-      quantity: 1
+      quantity: 1,
+      stock_disponible: Number(tallaData.stock || 0)
     });
   }
 
@@ -1820,36 +2331,133 @@ async function getInvoiceDataForOrder(paymentMethod) {
 
 function getShippingAddressData() {
   return {
-    calle: document.getElementById("shippingStreet")?.value.trim() || "",
-    numero_exterior: document.getElementById("shippingExtNumber")?.value.trim() || "",
-    numero_interior: document.getElementById("shippingIntNumber")?.value.trim() || "",
-    colonia: document.getElementById("shippingNeighborhood")?.value.trim() || "",
-    codigo_postal: document.getElementById("shippingZip")?.value.trim() || "",
-    municipio: document.getElementById("shippingCity")?.value.trim() || "",
-    estado: document.getElementById("shippingState")?.value.trim() || "",
-    referencias: document.getElementById("shippingReferences")?.value.trim() || ""
+    nombre_completo:
+      document.getElementById("shippingFullName")?.value.trim() ||
+      localStorage.getItem("userName") ||
+      "",
+    telefono:
+      document.getElementById("shippingPhone")?.value.trim() ||
+      "",
+    email:
+      document.getElementById("shippingEmail")?.value.trim().toLowerCase() ||
+      localStorage.getItem("userEmail") ||
+      "",
+    calle:
+      document.getElementById("shippingStreet")?.value.trim() ||
+      "",
+    numero_exterior:
+      document.getElementById("shippingExtNumber")?.value.trim() ||
+      "",
+    numero_interior:
+      document.getElementById("shippingIntNumber")?.value.trim() ||
+      "",
+    colonia:
+      document.getElementById("shippingNeighborhood")?.value.trim() ||
+      "",
+    codigo_postal:
+      document.getElementById("shippingZip")?.value.trim() ||
+      "",
+    municipio:
+      document.getElementById("shippingCity")?.value.trim() ||
+      "",
+    estado:
+      document.getElementById("shippingState")?.value.trim() ||
+      "",
+    pais:
+      document.getElementById("shippingCountry")?.value.trim() ||
+      "México",
+    horario_recepcion:
+      document.getElementById("shippingReceiveTime")?.value.trim() ||
+      "",
+    referencias:
+      document.getElementById("shippingReferences")?.value.trim() ||
+      "",
+    tiempo_estimado: "1 a 3 días hábiles"
   };
 }
 
 function isValidShippingAddress(address) {
   return Boolean(
+    address &&
+    address.nombre_completo &&
+    address.telefono &&
+    isValidEmail(address.email) &&
     address.calle &&
     address.numero_exterior &&
     address.colonia &&
-    address.codigo_postal &&
+    /^\d{5}$/.test(String(address.codigo_postal || "")) &&
     address.municipio &&
-    address.estado
+    address.estado &&
+    address.pais &&
+    isValidReceiveTime(address.horario_recepcion)
   );
+}
+
+function getShippingValidationMessage(address) {
+  if (!address.nombre_completo) {
+    return "Escribe el nombre completo de quien recibirá el pedido.";
+  }
+
+  if (!address.telefono) {
+    return "Escribe un número de contacto.";
+  }
+
+  if (!isValidEmail(address.email)) {
+    return "Escribe un correo electrónico válido.";
+  }
+
+  if (!address.calle) {
+    return "Escribe la calle de la dirección de entrega.";
+  }
+
+  if (!address.numero_exterior) {
+    return "Escribe el número exterior.";
+  }
+
+  if (!address.colonia) {
+    return "Selecciona o escribe la colonia.";
+  }
+
+  if (!/^\d{5}$/.test(String(address.codigo_postal || ""))) {
+    return "Escribe un código postal de cinco dígitos.";
+  }
+
+  if (!address.municipio) {
+    return "Escribe la alcaldía o el municipio.";
+  }
+
+  if (!address.estado) {
+    return "Escribe el estado.";
+  }
+
+  if (!address.pais) {
+    return "Selecciona el país.";
+  }
+
+  if (!isValidReceiveTime(address.horario_recepcion)) {
+    return "Selecciona un horario de recepción a partir de las 3:00 p. m.";
+  }
+
+  return "Completa correctamente los datos de envío.";
 }
 
 function formatShippingAddress(address) {
   if (!address) return "";
 
   const lines = [
-    `${address.calle} ${address.numero_exterior}${address.numero_interior ? " Int. " + address.numero_interior : ""}`,
+    `Nombre: ${address.nombre_completo}`,
+    `Contacto: ${address.telefono}`,
+    `Correo: ${address.email}`,
+    `${address.calle} ${address.numero_exterior}${
+      address.numero_interior
+        ? ` Int. ${address.numero_interior}`
+        : ""
+    }`,
     `Col. ${address.colonia}`,
-    `C.P. ${address.codigo_postal}`,
-    `${address.municipio}, ${address.estado}`
+    `C. P. ${address.codigo_postal}`,
+    `${address.municipio}, ${address.estado}, ${address.pais}`,
+    `Horario para recibir: ${formatReceiveTime(address.horario_recepcion)}`,
+    "Tiempo estimado: 1 a 3 días hábiles"
   ];
 
   if (address.referencias) {
@@ -1859,8 +2467,49 @@ function formatShippingAddress(address) {
   return lines.join("\n");
 }
 
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    String(value || "").trim()
+  );
+}
+
+function isValidReceiveTime(value) {
+  const match = String(value || "").match(
+    /^(\d{2}):(\d{2})$/
+  );
+
+  if (!match) return false;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+
+  return (
+    Number.isInteger(hour) &&
+    Number.isInteger(minute) &&
+    hour >= 15 &&
+    hour <= 23 &&
+    minute >= 0 &&
+    minute <= 59
+  );
+}
+
+function formatReceiveTime(value) {
+  const match = String(value || "").match(
+    /^(\d{2}):(\d{2})$/
+  );
+
+  if (!match) return value || "";
+
+  const hour = Number(match[1]);
+  const minute = match[2];
+  const suffix = hour >= 12 ? "p. m." : "a. m.";
+  const displayHour = hour % 12 || 12;
+
+  return `${displayHour}:${minute} ${suffix}`;
+}
+
 /* =========================
-   ESCAPE
+   SEGURIDAD DEL CONTENIDO
 ========================= */
 
 function escapeHtml(value) {

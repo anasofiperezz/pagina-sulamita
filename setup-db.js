@@ -1,30 +1,66 @@
-const fs = require("fs");
+'use strict';
+
+const fs = require("fs/promises");
 const path = require("path");
+
 const pool = require("./db");
+
+/* =========================
+   CONFIGURACIÓN INICIAL
+========================= */
+
+const schemaPath = path.join(__dirname, "schema.sql");
+
+/* =========================
+   PREPARAR BASE DE DATOS
+========================= */
 
 async function setupDatabase() {
   try {
-    const schemaPath = path.join(__dirname, "schema.sql");
-    const schema = fs.readFileSync(schemaPath, "utf8");
+    console.log("Leyendo el archivo schema.sql...");
 
-    console.log("Creando tablas en PostgreSQL...");
+    const schema = await fs.readFile(
+      schemaPath,
+      "utf8"
+    );
+
+    if (!schema.trim()) {
+      throw new Error(
+        "El archivo schema.sql está vacío."
+      );
+    }
+
+    console.log(
+      "Creando las tablas en PostgreSQL..."
+    );
+
     await pool.query(schema);
 
-    console.log("Verificando columnas nuevas...");
+    console.log(
+      "Verificando las columnas adicionales..."
+    );
 
     await pool.query(`
       ALTER TABLE productos
-      ADD COLUMN IF NOT EXISTS genero_uniforme TEXT DEFAULT '';
+      ADD COLUMN IF NOT EXISTS genero_uniforme
+      TEXT DEFAULT '';
     `);
 
     await pool.query(`
       ALTER TABLE producto_tallas
-      ADD COLUMN IF NOT EXISTS precio NUMERIC(10, 2) DEFAULT 0;
+      ADD COLUMN IF NOT EXISTS precio
+      NUMERIC(10, 2) DEFAULT 0;
     `);
 
-    console.log("Tablas creadas correctamente.");
+    console.log(
+      "La base de datos quedó preparada correctamente."
+    );
   } catch (error) {
-    console.error("Error creando tablas:", error);
+    console.error(
+      "No fue posible preparar la base de datos:",
+      error
+    );
+
     process.exitCode = 1;
   } finally {
     await pool.end();

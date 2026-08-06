@@ -1,3 +1,5 @@
+'use strict';
+
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -175,7 +177,7 @@ function requireAdminSession(req, res, next) {
 }
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 app.use(express.static(publicDir));
 
 /* =========================
@@ -221,7 +223,11 @@ const uploadFile = multer({
     ];
 
     if (!allowedTypes.includes(file.mimetype)) {
-      return cb(new Error("Solo se permiten archivos JPG, PNG, WEBP o PDF."));
+      return cb(
+        new Error(
+          "Solo se permiten archivos JPG, PNG, WEBP, PDF, DOC o DOCX."
+        )
+      );
     }
 
     cb(null, true);
@@ -582,6 +588,16 @@ async function ensureDatabaseUpdates() {
     `);
 
     await pool.query(`
+      ALTER TABLE productos
+      ADD COLUMN IF NOT EXISTS genero_uniforme TEXT DEFAULT '';
+    `);
+
+    await pool.query(`
+      ALTER TABLE producto_tallas
+      ADD COLUMN IF NOT EXISTS precio NUMERIC(10, 2) DEFAULT 0;
+    `);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS zonas_envio (
         id SERIAL PRIMARY KEY,
         numero INTEGER NOT NULL UNIQUE,
@@ -772,9 +788,9 @@ async function ensureDatabaseUpdates() {
     console.log("Base de datos actualizada correctamente.");
   } catch (error) {
     console.error("Error actualizando base de datos:", error);
+    throw error;
   }
 }
-
 
 async function ensureShippingRulesSetup() {
   try {
@@ -1049,7 +1065,7 @@ function cleanUserRole(role) {
   return role === "admin" ? "admin" : "cliente";
 }
 
-app.get("/api/admin/usuarios", async (req, res) => {
+app.get("/api/admin/usuarios", requireAdminSession, async (req, res) => {
   try {
     if (!validateAdminCreationCode(req, res)) return;
 
@@ -1068,7 +1084,7 @@ app.get("/api/admin/usuarios", async (req, res) => {
   }
 });
 
-app.post("/api/admin/usuarios", async (req, res) => {
+app.post("/api/admin/usuarios", requireAdminSession, async (req, res) => {
   try {
     if (!validateAdminCreationCode(req, res)) return;
 
@@ -1111,7 +1127,7 @@ app.post("/api/admin/usuarios", async (req, res) => {
   }
 });
 
-app.put("/api/admin/usuarios/:id", async (req, res) => {
+app.put("/api/admin/usuarios/:id", requireAdminSession, async (req, res) => {
   try {
     if (!validateAdminCreationCode(req, res)) return;
 
@@ -1181,7 +1197,7 @@ app.put("/api/admin/usuarios/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/admin/usuarios/:id", async (req, res) => {
+app.delete("/api/admin/usuarios/:id", requireAdminSession, async (req, res) => {
   try {
     if (!validateAdminCreationCode(req, res)) return;
 
@@ -1320,7 +1336,7 @@ app.get("/api/paquetes", async (req, res) => {
    ADMIN - PAQUETES
 ========================= */
 
-app.get("/api/admin/paquetes", async (req, res) => {
+app.get("/api/admin/paquetes", requireAdminSession, async (req, res) => {
   try {
     const paquetes = await getPackagesWithProducts(false);
     res.json(paquetes);
@@ -1330,7 +1346,7 @@ app.get("/api/admin/paquetes", async (req, res) => {
   }
 });
 
-app.post("/api/admin/paquetes", async (req, res) => {
+app.post("/api/admin/paquetes", requireAdminSession, async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -1416,7 +1432,7 @@ app.post("/api/admin/paquetes", async (req, res) => {
   }
 });
 
-app.put("/api/admin/paquetes/:id", async (req, res) => {
+app.put("/api/admin/paquetes/:id", requireAdminSession, async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -1533,7 +1549,7 @@ app.put("/api/admin/paquetes/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/admin/paquetes/:id", async (req, res) => {
+app.delete("/api/admin/paquetes/:id", requireAdminSession, async (req, res) => {
   try {
     const paqueteId = Number(req.params.id);
 
@@ -1561,7 +1577,7 @@ app.delete("/api/admin/paquetes/:id", async (req, res) => {
    ADMIN - SUBIR IMAGEN PRODUCTO
 ========================= */
 
-app.post("/api/admin/subir-imagen", function (req, res) {
+app.post("/api/admin/subir-imagen", requireAdminSession, function (req, res) {
   uploadImage.single("imagen")(req, res, async function (error) {
     try {
       if (error) {
@@ -1751,7 +1767,7 @@ app.post("/api/mercadopago/crear-preferencia", async (req, res) => {
    ADMIN - VER PRODUCTOS
 ========================= */
 
-app.get("/api/admin/productos", async (req, res) => {
+app.get("/api/admin/productos", requireAdminSession, async (req, res) => {
   try {
     const productos = await getProductsWithSizes();
     res.json(productos);
@@ -1765,7 +1781,7 @@ app.get("/api/admin/productos", async (req, res) => {
    ADMIN - AGREGAR PRODUCTO
 ========================= */
 
-app.post("/api/admin/productos", async (req, res) => {
+app.post("/api/admin/productos", requireAdminSession, async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -1900,7 +1916,7 @@ app.post("/api/admin/productos", async (req, res) => {
    ADMIN - ACTUALIZAR PRODUCTO
 ========================= */
 
-app.put("/api/admin/productos/:id", async (req, res) => {
+app.put("/api/admin/productos/:id", requireAdminSession, async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -2065,7 +2081,7 @@ app.put("/api/admin/productos/:id", async (req, res) => {
    ADMIN - ELIMINAR PRODUCTO
 ========================= */
 
-app.delete("/api/admin/productos/:id", async (req, res) => {
+app.delete("/api/admin/productos/:id", requireAdminSession, async (req, res) => {
   try {
     const productId = Number(req.params.id);
 
@@ -3307,7 +3323,7 @@ app.post("/api/pedidos", async (req, res) => {
    VER PEDIDOS
 ========================= */
 
-app.get("/api/pedidos", async (req, res) => {
+app.get("/api/pedidos", requireAdminSession, async (req, res) => {
   try {
     const result = await pool.query(
       `
@@ -3374,7 +3390,7 @@ app.get("/api/pedidos", async (req, res) => {
    ACTUALIZAR ESTADO PEDIDO
 ========================= */
 
-app.patch("/api/pedidos/:id/estado", async (req, res) => {
+app.patch("/api/pedidos/:id/estado", requireAdminSession, async (req, res) => {
   try {
     const pedidoId = Number(req.params.id);
     const { estado } = req.body;
@@ -3419,7 +3435,7 @@ app.patch("/api/pedidos/:id/estado", async (req, res) => {
    ELIMINAR PEDIDO
 ========================= */
 
-app.delete("/api/pedidos/:id", async (req, res) => {
+app.delete("/api/pedidos/:id", requireAdminSession, async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -3753,6 +3769,28 @@ app.get("/pago-cancelado", (req, res) => {
 
 app.get("/pago-pendiente", (req, res) => {
   res.sendFile(path.join(publicDir, "pago-pendiente.html"));
+});
+
+/* =========================
+   RESPUESTAS DE ERROR
+========================= */
+
+app.use("/api", function (req, res) {
+  res.status(404).json({
+    message: "La ruta solicitada no existe."
+  });
+});
+
+app.use(function (error, req, res, next) {
+  console.error("Error no controlado:", error);
+
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  res.status(500).json({
+    message: "Ocurrió un error inesperado en el servidor."
+  });
 });
 
 /* =========================

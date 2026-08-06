@@ -1,13 +1,24 @@
 {
   "name": "pagina-sulamita",
   "version": "1.0.0",
-  "description": "",
-  "main": "db.js",
+  "private": true,
+  "description": "Sitio web y API de Papelería Sulamita.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "setup-db": "node setup-db.js",
+    "migrate-json": "node migrate-json-to-db.js",
+    "check": "node --check server.js && node --check db.js && node --check setup-db.js && node --check migrate-json-to-db.js"
   },
-  "keywords": [],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "papeleria",
+    "tienda",
+    "express",
+    "postgresql"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -16,7 +27,6 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "multer": "^2.1.1",
-    "mysql2": "^3.20.0",
     "pg": "^8.20.0"
   }
 }

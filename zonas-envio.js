@@ -1,114 +1,219 @@
 /* =========================================================
-   REGLAS DE ENVÍO - PAPELERÍA SULAMITA
-   Se carga después de tienda.js y antes de setupCartPage().
+   ZONAS DE ENVÍO · PAPELERÍA SULAMITA
+
+   Este archivo debe cargarse:
+   1. Después de tienda.js.
+   2. Antes de ejecutar setupCartPage().
 ========================================================= */
 
 (function () {
   "use strict";
 
-  const originalSetupCartPage = window.setupCartPage;
-  const nativeFetch = window.fetch.bind(window);
+  /*
+    Evita instalar dos veces los mismos eventos si el archivo
+    se carga accidentalmente más de una vez.
+  */
+  if (window.__sulamitaShippingModuleLoaded) {
+    return;
+  }
+
+  window.__sulamitaShippingModuleLoaded = true;
+
+  /* =========================
+     CONFIGURACIÓN
+  ========================= */
+
+  const SHIPPING_CALCULATION_URL =
+    "/api/zonas-envio/calcular";
+
+  const SHIPPING_CALCULATION_DELAY_MS = 450;
+  const DELIVERY_TIME_TEXT = "1 a 3 días hábiles";
+
+  const originalSetupCartPage =
+    window.setupCartPage;
+
+  const nativeFetch =
+    window.fetch.bind(window);
+
+  /* =========================
+     ESTADO INTERNO
+  ========================= */
 
   let matchedShippingRule = null;
   let lastShippingResolution = null;
+
   let calculationRequestId = 0;
   let calculationTimer = null;
   let calculationInProgress = false;
+
   let fetchInterceptorInstalled = false;
+  let shippingCalculatorInitialized = false;
+  let checkoutValidationInstalled = false;
 
   window.currentShippingCost = 0;
 
-  window.calculateCartAmounts = function (deliveryValue = null) {
+  /* =========================
+     TOTALES DEL CARRITO
+  ========================= */
+
+  window.calculateCartAmounts = function (
+    deliveryValue = null
+  ) {
     const cart = getCart();
 
-    const subtotal = cart.reduce((acc, item) => {
-      if (item.type === "paquete") {
-        return acc + Number(item.originalTotal || 0) * Number(item.quantity || 1);
-      }
+    const subtotal = cart.reduce(
+      function (total, item) {
+        if (item.type === "paquete") {
+          return (
+            total +
+            Number(item.originalTotal || 0) *
+              Number(item.quantity || 1)
+          );
+        }
 
-      return acc + Number(item.price || 0) * Number(item.quantity || 0);
-    }, 0);
+        return (
+          total +
+          Number(item.price || 0) *
+            Number(item.quantity || 0)
+        );
+      },
+      0
+    );
 
-    const descuento = cart.reduce((acc, item) => {
-      if (item.type === "paquete") {
-        return acc + Number(item.discountAmount || 0) * Number(item.quantity || 1);
-      }
+    const descuento = cart.reduce(
+      function (total, item) {
+        if (item.type === "paquete") {
+          return (
+            total +
+            Number(item.discountAmount || 0) *
+              Number(item.quantity || 1)
+          );
+        }
 
-      return acc;
-    }, 0);
+        return total;
+      },
+      0
+    );
 
     const deliveryMethod =
       deliveryValue ||
       document.getElementById("deliveryMethod")?.value ||
       "pickup";
 
-    const envio =
-      deliveryMethod === "delivery" && getCart().length > 0 && matchedShippingRule
+    const shippingCost =
+      deliveryMethod === "delivery" &&
+      cart.length > 0 &&
+      matchedShippingRule
         ? Number(matchedShippingRule.costo || 0)
         : 0;
+
+    const total = Math.max(
+      0,
+      subtotal + shippingCost - descuento
+    );
 
     return {
       subtotal: roundMoney(subtotal),
       descuento: roundMoney(descuento),
-      envio: roundMoney(envio),
-      total: roundMoney(subtotal + envio - descuento)
+      envio: roundMoney(shippingCost),
+      total: roundMoney(total)
     };
   };
+
+  /* =========================
+     DATOS DE LA DIRECCIÓN
+  ========================= */
 
   window.getShippingAddressData = function () {
     return {
       regla_envio_id: matchedShippingRule
         ? Number(matchedShippingRule.regla_id)
         : null,
+
       regla_tipo: matchedShippingRule
-        ? String(matchedShippingRule.regla_tipo || "")
+        ? String(
+            matchedShippingRule.regla_tipo ||
+            ""
+          )
         : "",
+
       regla_tipo_etiqueta: matchedShippingRule
-        ? String(matchedShippingRule.regla_tipo_etiqueta || "")
+        ? String(
+            matchedShippingRule.regla_tipo_etiqueta ||
+            ""
+          )
         : "",
+
       regla_valor: matchedShippingRule
-        ? String(matchedShippingRule.regla_valor || "")
+        ? String(
+            matchedShippingRule.regla_valor ||
+            ""
+          )
         : "",
+
       zona_id: matchedShippingRule
         ? Number(matchedShippingRule.zona_id)
         : null,
+
       zona: matchedShippingRule
         ? String(matchedShippingRule.zona || "")
         : "",
+
       costo_envio: matchedShippingRule
         ? Number(matchedShippingRule.costo || 0)
         : 0,
+
       nombre_completo:
-        document.getElementById("shippingFullName")?.value.trim() || "",
+        getInputValue("shippingFullName"),
+
       telefono:
-        document.getElementById("shippingPhone")?.value.trim() || "",
+        getInputValue("shippingPhone"),
+
       email:
-        document.getElementById("shippingEmail")?.value.trim() || "",
+        getInputValue("shippingEmail")
+          .toLowerCase(),
+
       calle:
-        document.getElementById("shippingStreet")?.value.trim() || "",
+        getInputValue("shippingStreet"),
+
       numero_exterior:
-        document.getElementById("shippingExtNumber")?.value.trim() || "",
+        getInputValue("shippingExtNumber"),
+
       numero_interior:
-        document.getElementById("shippingIntNumber")?.value.trim() || "",
+        getInputValue("shippingIntNumber"),
+
       colonia:
-        document.getElementById("shippingNeighborhood")?.value.trim() || "",
+        getInputValue("shippingNeighborhood"),
+
       codigo_postal:
-        document.getElementById("shippingZip")?.value.trim() || "",
+        cleanPostalCode(
+          getInputValue("shippingZip")
+        ),
+
       municipio:
-        document.getElementById("shippingCity")?.value.trim() || "",
+        getInputValue("shippingCity"),
+
       estado:
-        document.getElementById("shippingState")?.value.trim() || "",
+        getInputValue("shippingState"),
+
       pais:
-        document.getElementById("shippingCountry")?.value.trim() || "",
+        getInputValue("shippingCountry") ||
+        "México",
+
       horario_recepcion:
-        document.getElementById("shippingReceiveTime")?.value.trim() || "",
+        getInputValue("shippingReceiveTime"),
+
       referencias:
-        document.getElementById("shippingReferences")?.value.trim() || "",
-      tiempo_estimado: "1 a 3 días hábiles"
+        getInputValue("shippingReferences"),
+
+      tiempo_estimado:
+        DELIVERY_TIME_TEXT
     };
   };
 
-  window.isValidShippingAddress = function (address) {
+  window.isValidShippingAddress = function (
+    address
+  ) {
     return Boolean(
       address &&
       address.regla_envio_id &&
@@ -122,40 +227,56 @@
       address.municipio &&
       address.estado &&
       address.pais &&
-      isReceiveTimeValid(address.horario_recepcion)
+      isReceiveTimeValid(
+        address.horario_recepcion
+      )
     );
   };
 
-  window.formatShippingAddress = function (address) {
+  window.formatShippingAddress = function (
+    address
+  ) {
     if (!address) return "";
+
+    const interiorText =
+      address.numero_interior
+        ? ` Int. ${address.numero_interior}`
+        : "";
 
     const lines = [
       `Nombre: ${address.nombre_completo}`,
       `Contacto: ${address.telefono}`,
       `Correo: ${address.email}`,
-      `${address.calle} ${address.numero_exterior}${
-        address.numero_interior ? " Int. " + address.numero_interior : ""
-      }`,
+      `${address.calle} ${address.numero_exterior}${interiorText}`,
       `Col. ${address.colonia}`,
-      `C.P. ${address.codigo_postal}`,
+      `C. P. ${address.codigo_postal}`,
       `${address.municipio}, ${address.estado}, ${address.pais}`,
       `${address.zona} · Envío ${formatMoney(address.costo_envio)}`,
       `Tarifa final determinada por colonia: ${address.regla_valor}`,
       `Horario para recibir: ${formatTimeForDisplay(address.horario_recepcion)}`,
-      "Tiempo estimado de entrega: 1 a 3 días hábiles"
+      `Tiempo estimado de entrega: ${DELIVERY_TIME_TEXT}`
     ];
 
     if (address.referencias) {
-      lines.push(`Referencias: ${address.referencias}`);
+      lines.push(
+        `Referencias: ${address.referencias}`
+      );
     }
 
     return lines.join("\n");
   };
 
+  /* =========================
+     INICIALIZAR CARRITO
+  ========================= */
+
   window.setupCartPage = function () {
     installFetchInterceptor();
 
-    if (typeof originalSetupCartPage === "function") {
+    if (
+      typeof originalSetupCartPage ===
+      "function"
+    ) {
       originalSetupCartPage();
     }
 
@@ -164,23 +285,29 @@
   };
 
   function setupShippingRuleCalculator() {
-    const deliveryMethod = document.getElementById("deliveryMethod");
-    const fullName = document.getElementById("shippingFullName");
-    const email = document.getElementById("shippingEmail");
-    const zip = document.getElementById("shippingZip");
-
-    if (fullName && !fullName.value) {
-      fullName.value = localStorage.getItem("userName") || "";
+    if (shippingCalculatorInitialized) {
+      return;
     }
 
-    if (email && !email.value) {
-      email.value = localStorage.getItem("userEmail") || "";
-    }
+    shippingCalculatorInitialized = true;
 
-    if (zip) {
-      zip.addEventListener("input", function () {
-        zip.value = zip.value.replace(/\D/g, "").slice(0, 5);
-      });
+    const deliveryMethod =
+      document.getElementById("deliveryMethod");
+
+    const zipInput =
+      document.getElementById("shippingZip");
+
+    fillStoredCustomerData();
+
+    if (zipInput) {
+      zipInput.addEventListener(
+        "input",
+        function () {
+          zipInput.value = cleanPostalCode(
+            zipInput.value
+          );
+        }
+      );
     }
 
     [
@@ -189,38 +316,116 @@
       "shippingCity",
       "shippingState",
       "shippingCountry"
-    ].forEach((id) => {
-      const input = document.getElementById(id);
+    ].forEach(function (id) {
+      const input =
+        document.getElementById(id);
+
       if (!input) return;
 
-      input.addEventListener("input", scheduleShippingCalculation);
-      input.addEventListener("change", scheduleShippingCalculation);
-      input.addEventListener("blur", scheduleShippingCalculation);
+      input.addEventListener(
+        "input",
+        scheduleShippingCalculation
+      );
+
+      input.addEventListener(
+        "change",
+        scheduleShippingCalculation
+      );
+
+      input.addEventListener(
+        "blur",
+        scheduleShippingCalculation
+      );
     });
 
     if (deliveryMethod) {
-      deliveryMethod.addEventListener("change", function () {
-        if (deliveryMethod.value === "delivery") {
-          scheduleShippingCalculation();
-        } else {
-          clearMatchedRule();
-          updateShippingStatus();
-        }
+      deliveryMethod.addEventListener(
+        "change",
+        function () {
+          clearTimeout(calculationTimer);
 
-        updateCartTotals();
-      });
+          if (
+            deliveryMethod.value ===
+            "delivery"
+          ) {
+            scheduleShippingCalculation();
+          } else {
+            clearMatchedRule();
+            updateShippingStatus();
+          }
+
+          updateCartTotals();
+        }
+      );
     }
 
     updateShippingStatus();
+
+    if (
+      deliveryMethod?.value === "delivery"
+    ) {
+      scheduleShippingCalculation();
+    }
   }
+
+  function fillStoredCustomerData() {
+    const fullName =
+      document.getElementById(
+        "shippingFullName"
+      );
+
+    const email =
+      document.getElementById(
+        "shippingEmail"
+      );
+
+    const country =
+      document.getElementById(
+        "shippingCountry"
+      );
+
+    if (fullName && !fullName.value) {
+      fullName.value =
+        localStorage.getItem("userName") ||
+        "";
+    }
+
+    if (email && !email.value) {
+      email.value =
+        localStorage.getItem("userEmail") ||
+        "";
+    }
+
+    if (country && !country.value) {
+      country.value = "México";
+    }
+  }
+
+  /* =========================
+     CALCULAR ZONA
+  ========================= */
 
   function scheduleShippingCalculation() {
     clearTimeout(calculationTimer);
     clearMatchedRule();
 
-    const deliveryMethod = document.getElementById("deliveryMethod")?.value;
+    const deliveryMethod =
+      document.getElementById(
+        "deliveryMethod"
+      )?.value;
+
     if (deliveryMethod !== "delivery") {
       updateShippingStatus();
+      updateCartTotals();
+      return;
+    }
+
+    const address =
+      getMatchableAddressData();
+
+    if (!hasEnoughDataToSearch(address)) {
+      updateShippingStatus();
+      updateCartTotals();
       return;
     }
 
@@ -228,12 +433,18 @@
     updateShippingStatus("loading");
     updateCartTotals();
 
-    calculationTimer = setTimeout(calculateShippingRule, 450);
+    calculationTimer = setTimeout(
+      calculateShippingRule,
+      SHIPPING_CALCULATION_DELAY_MS
+    );
   }
 
   async function calculateShippingRule() {
-    const requestId = ++calculationRequestId;
-    const address = getMatchableAddressData();
+    const requestId =
+      ++calculationRequestId;
+
+    const address =
+      getMatchableAddressData();
 
     if (!hasEnoughDataToSearch(address)) {
       calculationInProgress = false;
@@ -244,26 +455,52 @@
     }
 
     try {
-      const response = await nativeFetch("/api/zonas-envio/calcular", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(address)
-      });
-      const data = await readJsonSafely(response);
+      const response = await nativeFetch(
+        SHIPPING_CALCULATION_URL,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify(address)
+        }
+      );
 
-      if (requestId !== calculationRequestId) return;
+      const data =
+        await readJsonSafely(response);
+
+      if (
+        requestId !== calculationRequestId
+      ) {
+        return;
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || "No se pudo calcular el envío.");
+        throw new Error(
+          data.message ||
+          "No fue posible calcular el costo de envío."
+        );
       }
 
       lastShippingResolution = data;
-      matchedShippingRule = data.encontrada ? data : null;
-      window.currentShippingCost = matchedShippingRule
-        ? Number(matchedShippingRule.costo || 0)
-        : 0;
+
+      matchedShippingRule =
+        data.encontrada
+          ? data
+          : null;
+
+      window.currentShippingCost =
+        matchedShippingRule
+          ? Number(
+              matchedShippingRule.costo ||
+              0
+            )
+          : 0;
+
       calculationInProgress = false;
+
       updateShippingStatus(
         matchedShippingRule
           ? "success"
@@ -271,44 +508,72 @@
             ? "ambiguous"
             : "not-found"
       );
+
       updateCartTotals();
     } catch (error) {
-      if (requestId !== calculationRequestId) return;
+      if (
+        requestId !== calculationRequestId
+      ) {
+        return;
+      }
 
-      console.error("Error calculando el envío:", error);
+      console.error(
+        "Error calculando el envío:",
+        error
+      );
+
       matchedShippingRule = null;
       lastShippingResolution = null;
       window.currentShippingCost = 0;
       calculationInProgress = false;
-      updateShippingStatus("error", error.message);
+
+      updateShippingStatus(
+        "error",
+        error.message
+      );
+
       updateCartTotals();
     }
   }
 
   function getMatchableAddressData() {
     return {
-      codigo_postal:
-        document.getElementById("shippingZip")?.value.trim() || "",
+      codigo_postal: cleanPostalCode(
+        getInputValue("shippingZip")
+      ),
+
       colonia:
-        document.getElementById("shippingNeighborhood")?.value.trim() || "",
+        getInputValue(
+          "shippingNeighborhood"
+        ),
+
       municipio:
-        document.getElementById("shippingCity")?.value.trim() || "",
+        getInputValue("shippingCity"),
+
       estado:
-        document.getElementById("shippingState")?.value.trim() || "",
+        getInputValue("shippingState"),
+
       pais:
-        document.getElementById("shippingCountry")?.value.trim() || ""
+        getInputValue("shippingCountry") ||
+        "México"
     };
   }
 
-  function hasEnoughDataToSearch(address) {
+  function hasEnoughDataToSearch(
+    address
+  ) {
     return Boolean(
-      /^\d{5}$/.test(address.codigo_postal) &&
+      /^\d{5}$/.test(
+        address.codigo_postal
+      ) &&
       address.municipio.length >= 2 &&
       address.colonia.length >= 2
     );
   }
 
-  function clearMatchedRule(cancelRequest = true) {
+  function clearMatchedRule(
+    cancelRequest = true
+  ) {
     if (cancelRequest) {
       calculationRequestId += 1;
     }
@@ -316,165 +581,339 @@
     matchedShippingRule = null;
     lastShippingResolution = null;
     window.currentShippingCost = 0;
+    calculationInProgress = false;
   }
 
-  function updateShippingStatus(state = "idle", detail = "") {
-    const status = document.getElementById("shippingCoverageStatus");
-    const deliveryMethod = document.getElementById("deliveryMethod")?.value;
+  /* =========================
+     MENSAJE DE COBERTURA
+  ========================= */
+
+  function updateShippingStatus(
+    state = "idle",
+    detail = ""
+  ) {
+    const status =
+      document.getElementById(
+        "shippingCoverageStatus"
+      );
+
+    const deliveryMethod =
+      document.getElementById(
+        "deliveryMethod"
+      )?.value;
 
     if (!status) return;
 
-    if (deliveryMethod !== "delivery") {
-      status.className = "shipping-zone-status";
+    if (
+      deliveryMethod !== "delivery"
+    ) {
+      status.className =
+        "shipping-zone-status";
+
       status.textContent =
         "Selecciona Envío a domicilio para calcular el costo por zona.";
+
       return;
     }
 
-    if (state === "loading" || calculationInProgress) {
-      status.className = "shipping-zone-status is-loading";
-      status.textContent = "Calculando el costo de envío...";
+    if (
+      state === "loading" ||
+      calculationInProgress
+    ) {
+      status.className =
+        "shipping-zone-status is-loading";
+
+      status.textContent =
+        "Calculando el costo de envío...";
+
       return;
     }
 
-    if (state === "success" && matchedShippingRule) {
-      const matches = Array.isArray(matchedShippingRule.coincidencias)
-        ? matchedShippingRule.coincidencias
-        : [];
+    if (
+      state === "success" &&
+      matchedShippingRule
+    ) {
+      renderSuccessfulShippingStatus(
+        status
+      );
 
-      const matchText = matches.length
-        ? matches
-            .map(
-              (match) =>
-                `${escapeHtml(match.tipo_etiqueta)}: <strong>${escapeHtml(match.valor)}</strong>`
-            )
-            .join(" + ")
-        : `${escapeHtml(matchedShippingRule.regla_tipo_etiqueta)}: <strong>${escapeHtml(matchedShippingRule.regla_valor)}</strong>`;
-
-      status.className = "shipping-zone-status is-success";
-      status.innerHTML = `
-        <strong>${escapeHtml(matchedShippingRule.zona)}</strong>
-        · Costo: <strong>${formatMoney(matchedShippingRule.costo)}</strong>
-        <br>
-        Ruta usada: ${matchText}
-        <br>
-        <strong>La colonia confirmó la zona final.</strong>
-        <br>
-        Entrega estimada de 1 a 3 días hábiles, después de las 3:00 p. m.
-      `;
       return;
     }
 
     if (state === "ambiguous") {
-      status.className = "shipping-zone-status is-error";
+      status.className =
+        "shipping-zone-status is-error";
+
       status.textContent =
         lastShippingResolution?.message ||
-        "Estos datos coinciden con varias zonas. Revisa la alcaldía o municipio.";
+        "Los datos coinciden con varias zonas. Revisa la alcaldía o municipio.";
+
       return;
     }
 
     if (state === "not-found") {
-      status.className = "shipping-zone-status is-error";
+      status.className =
+        "shipping-zone-status is-error";
+
       status.textContent =
         lastShippingResolution?.message ||
-        "No hay una tarifa configurada para estos datos. Contacta a la papelería para confirmar el envío.";
+        "No hay una tarifa configurada para esta dirección. Contacta a la papelería para confirmar el envío.";
+
       return;
     }
 
     if (state === "error") {
-      status.className = "shipping-zone-status is-error";
-      status.textContent = detail || "No se pudo calcular el costo de envío.";
+      status.className =
+        "shipping-zone-status is-error";
+
+      status.textContent =
+        detail ||
+        "No fue posible calcular el costo de envío.";
+
       return;
     }
 
-    status.className = "shipping-zone-status";
+    status.className =
+      "shipping-zone-status";
+
     status.textContent =
       "Escribe el código postal, la alcaldía o municipio y la colonia. La colonia confirmará la zona final.";
   }
 
-  function addCheckoutValidationCapture() {
-    const checkoutBtn = document.getElementById("checkoutBtn");
-    if (!checkoutBtn) return;
+  function renderSuccessfulShippingStatus(
+    status
+  ) {
+    const matches = Array.isArray(
+      matchedShippingRule.coincidencias
+    )
+      ? matchedShippingRule.coincidencias
+      : [];
 
-    checkoutBtn.addEventListener(
+    const matchText = matches.length
+      ? matches
+          .map(function (match) {
+            return (
+              `${escapeText(match.tipo_etiqueta)}: ` +
+              `<strong>${escapeText(match.valor)}</strong>`
+            );
+          })
+          .join(" + ")
+      : (
+        `${escapeText(
+          matchedShippingRule.regla_tipo_etiqueta
+        )}: ` +
+        `<strong>${escapeText(
+          matchedShippingRule.regla_valor
+        )}</strong>`
+      );
+
+    status.className =
+      "shipping-zone-status is-success";
+
+    status.innerHTML = `
+      <strong>${escapeText(
+        matchedShippingRule.zona
+      )}</strong>
+      · Costo:
+      <strong>${formatMoney(
+        matchedShippingRule.costo
+      )}</strong>
+      <br>
+      Coincidencias: ${matchText}
+      <br>
+      <strong>
+        La colonia confirmó la zona final.
+      </strong>
+      <br>
+      Entrega estimada de ${DELIVERY_TIME_TEXT},
+      con recepción a partir de las 3:00 p. m.
+    `;
+  }
+
+  /* =========================
+     VALIDAR ANTES DE COMPRAR
+  ========================= */
+
+  function addCheckoutValidationCapture() {
+    if (checkoutValidationInstalled) {
+      return;
+    }
+
+    const checkoutButton =
+      document.getElementById(
+        "checkoutBtn"
+      );
+
+    if (!checkoutButton) return;
+
+    checkoutValidationInstalled = true;
+
+    checkoutButton.addEventListener(
       "click",
       function (event) {
         const deliveryMethod =
-          document.getElementById("deliveryMethod")?.value || "pickup";
+          document.getElementById(
+            "deliveryMethod"
+          )?.value ||
+          "pickup";
 
-        if (deliveryMethod !== "delivery") return;
+        if (
+          deliveryMethod !== "delivery"
+        ) {
+          return;
+        }
 
-        const address = window.getShippingAddressData();
-        const error = getShippingValidationError(address);
+        const address =
+          window.getShippingAddressData();
 
-        if (!error) return;
+        const errorMessage =
+          getShippingValidationError(
+            address
+          );
+
+        if (!errorMessage) return;
 
         event.preventDefault();
         event.stopImmediatePropagation();
-        alert(error);
+
+        alert(errorMessage);
       },
       true
     );
   }
 
-  function getShippingValidationError(address) {
+  function getShippingValidationError(
+    address
+  ) {
     if (!address.nombre_completo) {
       return "Escribe el nombre completo de quien recibirá el pedido.";
     }
-    if (!address.telefono) return "Escribe un número de contacto.";
-    if (!isValidEmail(address.email)) return "Escribe un correo electrónico válido.";
-    if (!/^\d{5}$/.test(address.codigo_postal)) {
-      return "Escribe un código postal de 5 dígitos.";
-    }
-    if (!address.colonia) return "Escribe la colonia.";
-    if (!address.municipio) return "Escribe la alcaldía o municipio.";
-    if (!address.estado) return "Escribe el estado o entidad federativa.";
-    if (!address.pais) return "Escribe el país.";
-    if (calculationInProgress) return "Espera un momento mientras se calcula el costo de envío.";
-    if (!address.regla_envio_id) {
-      if (lastShippingResolution?.ambigua) {
-        return (
-          lastShippingResolution.message ||
-          "La dirección coincide con varias zonas. Revisa la alcaldía o municipio."
-        );
-      }
 
-      return "No se encontró una tarifa para esta dirección. Contacta a la papelería.";
+    if (!address.telefono) {
+      return "Escribe un número de contacto.";
     }
-    if (!address.calle) return "Escribe la calle de la dirección de entrega.";
-    if (!address.numero_exterior) return "Escribe el número exterior.";
+
+    if (!isValidEmail(address.email)) {
+      return "Escribe un correo electrónico válido.";
+    }
+
+    if (
+      !/^\d{5}$/.test(
+        address.codigo_postal
+      )
+    ) {
+      return "Escribe un código postal de cinco dígitos.";
+    }
+
+    if (!address.colonia) {
+      return "Escribe la colonia.";
+    }
+
+    if (!address.municipio) {
+      return "Escribe la alcaldía o municipio.";
+    }
+
+    if (!address.estado) {
+      return "Escribe el estado o entidad federativa.";
+    }
+
+    if (!address.pais) {
+      return "Escribe el país.";
+    }
+
+    if (calculationInProgress) {
+      return "Espera un momento mientras se calcula el costo de envío.";
+    }
+
+    if (!address.regla_envio_id) {
+      return (
+        lastShippingResolution?.message ||
+        "No se encontró una tarifa para esta dirección. Contacta a la papelería."
+      );
+    }
+
+    if (!address.calle) {
+      return "Escribe la calle de la dirección de entrega.";
+    }
+
+    if (!address.numero_exterior) {
+      return "Escribe el número exterior.";
+    }
+
     if (!address.horario_recepcion) {
-      return "Selecciona la hora en la que puedes recibir la mercancía.";
+      return "Selecciona la hora en la que puedes recibir el pedido.";
     }
-    if (!isReceiveTimeValid(address.horario_recepcion)) {
+
+    if (
+      !isReceiveTimeValid(
+        address.horario_recepcion
+      )
+    ) {
       return "La hora de recepción debe ser a partir de las 3:00 p. m.";
     }
 
     return "";
   }
 
+  /* =========================
+     COMPLETAR EL PEDIDO
+  ========================= */
+
   function installFetchInterceptor() {
-    if (fetchInterceptorInstalled) return;
+    if (fetchInterceptorInstalled) {
+      return;
+    }
+
     fetchInterceptorInstalled = true;
 
-    window.fetch = async function (input, init = {}) {
-      const url = typeof input === "string" ? input : input?.url || "";
-      const method = String(init.method || "GET").toUpperCase();
+    window.fetch = async function (
+      input,
+      init = {}
+    ) {
+      const url =
+        typeof input === "string"
+          ? input
+          : input?.url ||
+            "";
 
-      if (method === "POST" && init.body && typeof init.body === "string") {
-        if (url.includes("/api/pedidos")) {
+      const method = String(
+        init.method ||
+        "GET"
+      ).toUpperCase();
+
+      if (
+        method === "POST" &&
+        typeof init.body === "string"
+      ) {
+        if (
+          url.includes("/api/pedidos")
+        ) {
           init = {
             ...init,
-            body: enhanceOrderBody(init.body, false),
-            credentials: init.credentials || "include"
+            body: enhanceOrderBody(
+              init.body,
+              false
+            ),
+            credentials:
+              init.credentials ||
+              "include"
           };
         }
 
-        if (url.includes("/api/mercadopago/crear-preferencia")) {
+        if (
+          url.includes(
+            "/api/mercadopago/crear-preferencia"
+          )
+        ) {
           init = {
             ...init,
-            body: enhanceOrderBody(init.body, true),
-            credentials: init.credentials || "include"
+            body: enhanceOrderBody(
+              init.body,
+              true
+            ),
+            credentials:
+              init.credentials ||
+              "include"
           };
         }
       }
@@ -483,74 +922,191 @@
     };
   }
 
-  function enhanceOrderBody(rawBody, isMercadoPago) {
+  function enhanceOrderBody(
+    rawBody,
+    isMercadoPago
+  ) {
     try {
-      const parsed = JSON.parse(rawBody);
-      const order = isMercadoPago ? parsed.pedido : parsed;
+      const parsed =
+        JSON.parse(rawBody);
 
-      if (!order || order.tipo_entrega !== "delivery") {
+      const order = isMercadoPago
+        ? parsed.pedido
+        : parsed;
+
+      if (
+        !order ||
+        order.tipo_entrega !==
+          "delivery"
+      ) {
         return rawBody;
       }
 
-      const address = window.getShippingAddressData();
-      const totals = window.calculateCartAmounts("delivery");
+      const address =
+        window.getShippingAddressData();
+
+      const totals =
+        window.calculateCartAmounts(
+          "delivery"
+        );
 
       const enhancedOrder = {
         ...order,
-        nombre_cliente: address.nombre_completo,
-        email_cliente: address.email,
-        telefono_cliente: address.telefono,
-        direccion_envio: window.formatShippingAddress(address),
-        regla_envio_id: address.regla_envio_id,
-        zona_envio_id: address.zona_id,
-        zona_envio: address.zona,
-        datos_envio: address,
-        tiempo_entrega: "1 a 3 días hábiles",
-        envio: totals.envio,
-        total: totals.total
+
+        nombre_cliente:
+          address.nombre_completo,
+
+        email_cliente:
+          address.email,
+
+        telefono_cliente:
+          address.telefono,
+
+        direccion_envio:
+          window.formatShippingAddress(
+            address
+          ),
+
+        regla_envio_id:
+          address.regla_envio_id,
+
+        zona_envio_id:
+          address.zona_id,
+
+        zona_envio:
+          address.zona,
+
+        datos_envio:
+          address,
+
+        tiempo_entrega:
+          DELIVERY_TIME_TEXT,
+
+        envio:
+          totals.envio,
+
+        total:
+          totals.total
       };
 
       return JSON.stringify(
         isMercadoPago
-          ? { ...parsed, pedido: enhancedOrder }
+          ? {
+              ...parsed,
+              pedido: enhancedOrder
+            }
           : enhancedOrder
       );
     } catch (error) {
-      console.error("No se pudo completar la información de envío:", error);
+      console.error(
+        "No fue posible completar la información de envío:",
+        error
+      );
+
       return rawBody;
     }
   }
 
+  /* =========================
+     UTILIDADES
+  ========================= */
+
+  function getInputValue(id) {
+    return (
+      document.getElementById(id)
+        ?.value
+        ?.trim() ||
+      ""
+    );
+  }
+
+  function cleanPostalCode(value) {
+    return String(value || "")
+      .replace(/\D/g, "")
+      .slice(0, 5);
+  }
+
   function isReceiveTimeValid(value) {
-    const match = String(value || "").match(/^(\d{2}):(\d{2})$/);
+    const match = String(value || "")
+      .match(/^(\d{2}):(\d{2})$/);
+
     if (!match) return false;
 
     const hour = Number(match[1]);
     const minute = Number(match[2]);
 
-    if (!Number.isFinite(hour) || !Number.isFinite(minute)) return false;
-    return hour > 15 || (hour === 15 && minute >= 0);
+    if (
+      !Number.isInteger(hour) ||
+      !Number.isInteger(minute) ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      return false;
+    }
+
+    return hour >= 15;
   }
 
   function isValidEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      .test(
+        String(value || "").trim()
+      );
   }
 
   function formatTimeForDisplay(value) {
-    const match = String(value || "").match(/^(\d{2}):(\d{2})$/);
-    if (!match) return value || "";
+    const match = String(value || "")
+      .match(/^(\d{2}):(\d{2})$/);
+
+    if (!match) {
+      return value || "";
+    }
 
     const hour = Number(match[1]);
     const minute = match[2];
-    const suffix = hour >= 12 ? "p. m." : "a. m.";
-    const displayHour = hour % 12 || 12;
+    const suffix =
+      hour >= 12
+        ? "p. m."
+        : "a. m.";
 
-    return `${displayHour}:${minute} ${suffix}`;
+    const displayHour =
+      hour % 12 ||
+      12;
+
+    return (
+      `${displayHour}:${minute} ` +
+      suffix
+    );
   }
 
-  async function readJsonSafely(response) {
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) return {};
+  function escapeText(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  async function readJsonSafely(
+    response
+  ) {
+    const contentType =
+      response.headers.get(
+        "content-type"
+      ) ||
+      "";
+
+    if (
+      !contentType.includes(
+        "application/json"
+      )
+    ) {
+      return {};
+    }
+
     return response.json();
   }
 })();
