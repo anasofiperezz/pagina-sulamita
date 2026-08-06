@@ -3,61 +3,239 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IAE Secundaria | Papelería Sulamita</title>
+
+  <title>Secundaria IAE | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=60">
+
+  <style>
+    /* =========================
+       PRESENTACIÓN DEL CATÁLOGO
+    ========================= */
+
+    .products-page {
+      padding: 42px 20px 64px;
+    }
+
+    .catalog-intro {
+      max-width: 820px;
+      margin: 0 auto 28px;
+      color: #64748b;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .catalog-note {
+      max-width: 900px;
+      margin: 0 auto 26px;
+      padding: 15px 17px;
+      border: 1px solid #bfdbfe;
+      border-radius: 16px;
+      background: #eff6ff;
+      color: #0f2f5f;
+      line-height: 1.55;
+    }
+
+    .catalog-note strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* =========================
+       FILTRO DEL CATÁLOGO
+    ========================= */
+
+    .catalog-filter-box {
+      max-width: 760px;
+      margin: 0 auto 30px;
+      padding: 18px;
+      border: 1px solid #dbe3f0;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .catalog-filter-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #0f2f5f;
+      font-weight: 800;
+    }
+
+    .catalog-filter-help {
+      margin: 0 0 12px;
+      color: #64748b;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .catalog-filter-select {
+      width: 100%;
+    }
+  </style>
 </head>
+
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
+
       <div class="nav-right">
-        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <div class="user-badge" id="userInfo">
+          Cargando sesión...
+        </div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
-        <a href="escuela1.html" class="nav-btn">IAE</a>
-        <button class="nav-btn" id="cartBtn">Carrito</button>
-        <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+        <a href="escuela2.html" class="nav-btn">IAE</a>
+        <a href="listas-utiles.html" class="nav-btn">Listas de útiles</a>
+        <a href="contacto.html" class="nav-btn">Contacto</a>
+
+        <button class="nav-btn" id="cartBtn" type="button">
+          Carrito
+        </button>
+
+        <button
+          class="nav-btn"
+          id="adminBtn"
+          type="button"
+          style="display: none;"
+        >
+          Panel administrativo
+        </button>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
   <main>
-    <section class="page-hero grade-hero-secondary">
+    <!-- =========================
+         PORTADA
+    ========================== -->
+
+    <section class="page-hero products-hero">
       <div class="page-hero-content">
-        <span class="page-badge">IAE</span>
-        <h1 id="productsTitle">Secundaria</h1>
-        <p id="productsSubtitle">Selecciona una sección del catálogo.</p>
+        <span class="page-badge">IAE · Secundaria</span>
+
+        <h1 id="productsTitle">
+          Productos para secundaria
+        </h1>
+
+        <p id="productsSubtitle">
+          Consulta uniformes, accesorios, cuadernos y materiales disponibles
+          para secundaria del Instituto Anglo Español.
+        </p>
+
+        <div class="actions">
+          <a href="escuela2.html#niveles" class="btn-outline">
+            Volver a los niveles del IAE
+          </a>
+        </div>
       </div>
     </section>
 
-    <section class="products-page">
-      <h2 class="section-title">Catálogo</h2>
+    <!-- =========================
+         CATÁLOGO
+    ========================== -->
 
-      <div class="catalog-filter-box">
-        <label for="categoryFilters" class="catalog-filter-label">Explora por sección</label>
-        <select id="categoryFilters" class="catalog-filter-select"></select>
+    <section
+      class="products-page"
+      aria-labelledby="catalogTitle"
+    >
+      <h2 class="section-title" id="catalogTitle">
+        Catálogo de secundaria
+      </h2>
+
+      <p class="catalog-intro">
+        Explora los productos disponibles para secundaria. Revisa el grado,
+        la talla o presentación, el precio y las existencias antes de agregar
+        un artículo al carrito.
+      </p>
+
+      <div class="catalog-note">
+        <strong>Verifica el grado escolar</strong>
+
+        Algunos materiales y productos pueden cambiar entre primero, segundo
+        y tercero de secundaria. Confirma que el artículo corresponda al grado
+        del alumno antes de realizar la compra.
       </div>
 
-      <div id="productGrid"></div>
+      <div class="catalog-filter-box">
+        <label
+          for="categoryFilters"
+          class="catalog-filter-label"
+        >
+          Filtrar productos
+        </label>
+
+        <p class="catalog-filter-help">
+          Puedes ver todo el catálogo o seleccionar una categoría específica.
+        </p>
+
+        <select
+          id="categoryFilters"
+          class="catalog-filter-select"
+          aria-label="Filtrar catálogo por categoría"
+        >
+          <option value="todos">Cargando categorías...</option>
+        </select>
+      </div>
+
+      <div id="productGrid" aria-live="polite">
+        <article class="product-card">
+          <div class="product-content">
+            <h3>Cargando productos...</h3>
+
+            <p>
+              Estamos preparando el catálogo de secundaria.
+            </p>
+          </div>
+        </article>
+      </div>
     </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - IAE Secundaria</p>
+    <p>
+      © 2026 Papelería Sulamita · Secundaria IAE
+    </p>
   </footer>
 
-  <script src="tienda.js?v=22"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=60"></script>
+
   <script>
     protectPage();
     setupHeader();
 
-    const role = localStorage.getItem("userRole");
-    const adminBtn = document.getElementById("adminBtn");
+    const cartButton = document.getElementById("cartBtn");
+    const adminButton = document.getElementById("adminBtn");
+    const userRole = localStorage.getItem("userRole");
 
-    if (role === "admin" && adminBtn) {
-      adminBtn.style.display = "inline-block";
-      adminBtn.addEventListener("click", function () {
+    if (cartButton) {
+      cartButton.addEventListener("click", function () {
+        window.location.href = "carrito.html";
+      });
+    }
+
+    if (userRole === "admin" && adminButton) {
+      adminButton.style.display = "inline-block";
+
+      adminButton.addEventListener("click", function () {
         window.location.href = "admin.html";
       });
     }
@@ -65,8 +243,9 @@
     loadProductsPage({
       escuela: "IAE",
       nivel: "Secundaria",
-      title: "IAE Secundaria",
-      subtitle: "Selecciona una sección en el menú desplegable"
+      title: "Productos para secundaria",
+      subtitle:
+        "Consulta uniformes, accesorios, cuadernos y materiales disponibles para secundaria del Instituto Anglo Español."
     });
   </script>
 </body>
