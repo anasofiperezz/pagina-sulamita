@@ -174,7 +174,7 @@ function requireAdminSession(req, res, next) {
   });
 }
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.static(publicDir));
 
@@ -616,15 +616,48 @@ async function ensureDatabaseUpdates() {
         codigo_postal TEXT NOT NULL,
         municipio TEXT NOT NULL,
         estado TEXT NOT NULL,
+        pais TEXT NOT NULL DEFAULT 'México',
         activo BOOLEAN DEFAULT TRUE,
         creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE (codigo_postal, colonia, municipio, estado)
+        UNIQUE (codigo_postal, colonia, municipio, estado, pais)
       );
     `);
 
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_cobertura_envio_cp
       ON cobertura_envio(codigo_postal);
+    `);
+
+    await pool.query(`
+      ALTER TABLE cobertura_envio
+      ADD COLUMN IF NOT EXISTS pais TEXT DEFAULT 'México';
+    `);
+
+    await pool.query(`
+      UPDATE cobertura_envio
+      SET pais = 'México'
+      WHERE pais IS NULL OR TRIM(pais) = '';
+    `);
+
+    await pool.query(`
+      ALTER TABLE cobertura_envio
+      ALTER COLUMN pais SET NOT NULL;
+    `);
+
+    await pool.query(`
+      ALTER TABLE cobertura_envio
+      DROP CONSTRAINT IF EXISTS cobertura_envio_codigo_postal_colonia_municipio_estado_key;
+    `);
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_cobertura_envio_ubicacion_completa
+      ON cobertura_envio (
+        codigo_postal,
+        colonia,
+        municipio,
+        estado,
+        pais
+      );
     `);
 
     await pool.query(`
@@ -1909,6 +1942,7 @@ function normalizeShippingCoverage(row) {
     codigo_postal: row.codigo_postal || "",
     municipio: row.municipio || "",
     estado: row.estado || "",
+    pais: row.pais || "",
     activo: row.activo !== false,
     creado_en: row.creado_en
   };
@@ -1954,7 +1988,7 @@ function cleanShippingData(value) {
     codigo_postal: cleanPostalCode(data.codigo_postal),
     municipio: String(data.municipio || "").trim(),
     estado: String(data.estado || "").trim(),
-    pais: String(data.pais || "México").trim() || "México",
+    pais: String(data.pais || "").trim(),
     horario_recepcion: String(data.horario_recepcion || "").trim(),
     referencias: String(data.referencias || "").trim(),
     tiempo_estimado: "1 a 3 días hábiles"
@@ -1980,6 +2014,7 @@ app.get("/api/zonas-envio/cobertura", async (req, res) => {
         ce.codigo_postal,
         ce.municipio,
         ce.estado,
+        ce.pais,
         ce.activo,
         ce.creado_en,
         z.numero AS zona_numero,
@@ -2022,6 +2057,7 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
         ce.codigo_postal,
         ce.municipio,
         ce.estado,
+        ce.pais,
         ce.activo,
         ce.creado_en,
         z.numero AS zona_numero,
@@ -2056,10 +2092,18 @@ app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, r
     const codigoPostal = cleanPostalCode(req.body.codigo_postal);
     const municipio = String(req.body.municipio || "").trim();
     const estado = String(req.body.estado || "").trim();
+    const pais = String(req.body.pais || "").trim();
 
-    if (!zonaId || !colonia || !/^\d{5}$/.test(codigoPostal) || !municipio || !estado) {
+    if (
+      !zonaId ||
+      !colonia ||
+      !/^\d{5}$/.test(codigoPostal) ||
+      !municipio ||
+      !estado ||
+      !pais
+    ) {
       return res.status(400).json({
-        message: "Completa zona, colonia, C.P., municipio y estado."
+        message: "Completa zona, colonia, C.P., alcaldía o municipio, estado y país."
       });
     }
 
@@ -2080,12 +2124,13 @@ app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, r
         codigo_postal,
         municipio,
         estado,
+        pais,
         activo
       )
-      VALUES ($1, $2, $3, $4, $5, TRUE)
+      VALUES ($1, $2, $3, $4, $5, $6, TRUE)
       RETURNING id
       `,
-      [zonaId, colonia, codigoPostal, municipio, estado]
+      [zonaId, colonia, codigoPostal, municipio, estado, pais]
     );
 
     res.status(201).json({
@@ -2095,7 +2140,7 @@ app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, r
   } catch (error) {
     if (error.code === "23505") {
       return res.status(400).json({
-        message: "Esa colonia y código postal ya están registrados."
+        message: "Esa ubicación completa ya está registrada en una zona."
       });
     }
 
@@ -2112,11 +2157,20 @@ app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req
     const codigoPostal = cleanPostalCode(req.body.codigo_postal);
     const municipio = String(req.body.municipio || "").trim();
     const estado = String(req.body.estado || "").trim();
+    const pais = String(req.body.pais || "").trim();
     const activo = req.body.activo !== false;
 
-    if (!coverageId || !zonaId || !colonia || !/^\d{5}$/.test(codigoPostal) || !municipio || !estado) {
+    if (
+      !coverageId ||
+      !zonaId ||
+      !colonia ||
+      !/^\d{5}$/.test(codigoPostal) ||
+      !municipio ||
+      !estado ||
+      !pais
+    ) {
       return res.status(400).json({
-        message: "Completa zona, colonia, C.P., municipio y estado."
+        message: "Completa zona, colonia, C.P., alcaldía o municipio, estado y país."
       });
     }
 
@@ -2129,11 +2183,12 @@ app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req
         codigo_postal = $3,
         municipio = $4,
         estado = $5,
-        activo = $6
-      WHERE id = $7
+        pais = $6,
+        activo = $7
+      WHERE id = $8
       RETURNING id
       `,
-      [zonaId, colonia, codigoPostal, municipio, estado, activo, coverageId]
+      [zonaId, colonia, codigoPostal, municipio, estado, pais, activo, coverageId]
     );
 
     if (!result.rows.length) {
@@ -2144,7 +2199,7 @@ app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req
   } catch (error) {
     if (error.code === "23505") {
       return res.status(400).json({
-        message: "Esa colonia y código postal ya están registrados."
+        message: "Esa ubicación completa ya está registrada en una zona."
       });
     }
 
@@ -2276,6 +2331,7 @@ app.post("/api/pedidos", async (req, res) => {
           ce.codigo_postal,
           ce.municipio,
           ce.estado,
+          ce.pais,
           z.numero AS zona_numero,
           z.nombre AS zona,
           z.costo
@@ -2302,7 +2358,8 @@ app.post("/api/pedidos", async (req, res) => {
         coverage.codigo_postal === shippingDataFinal.codigo_postal &&
         normalizeComparableText(coverage.colonia) === normalizeComparableText(shippingDataFinal.colonia) &&
         normalizeComparableText(coverage.municipio) === normalizeComparableText(shippingDataFinal.municipio) &&
-        normalizeComparableText(coverage.estado) === normalizeComparableText(shippingDataFinal.estado);
+        normalizeComparableText(coverage.estado) === normalizeComparableText(shippingDataFinal.estado) &&
+        normalizeComparableText(coverage.pais) === normalizeComparableText(shippingDataFinal.pais);
 
       if (!coverageMatches) {
         return res.status(400).json({

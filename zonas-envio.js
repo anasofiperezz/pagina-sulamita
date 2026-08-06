@@ -82,7 +82,7 @@
       estado:
         document.getElementById("shippingState")?.value.trim() || "",
       pais:
-        document.getElementById("shippingCountry")?.value.trim() || "México",
+        document.getElementById("shippingCountry")?.value.trim() || "",
       horario_recepcion:
         document.getElementById("shippingReceiveTime")?.value.trim() || "",
       referencias:
@@ -248,7 +248,7 @@
         if (status) {
           status.className = "shipping-zone-status is-error";
           status.textContent =
-            "Este código postal todavía no está registrado. Contacta a la papelería para confirmar si hay cobertura.";
+            "Este código postal todavía no está registrado en una zona de entrega. Contacta a la papelería para confirmarlo.";
         }
 
         return;
@@ -264,7 +264,7 @@
               value="${escapeHtmlAttr(coverage.colonia)}"
               data-coverage="${serialized}"
             >
-              ${escapeHtml(coverage.colonia)} — ${escapeHtml(coverage.zona)} (${formatMoney(coverage.costo)})
+              ${escapeHtml(coverage.colonia)} — ${escapeHtml(coverage.municipio)}, ${escapeHtml(coverage.estado)} — ${escapeHtml(coverage.zona)} (${formatMoney(coverage.costo)})
             </option>
           `;
         })
@@ -298,9 +298,11 @@
 
     const city = document.getElementById("shippingCity");
     const state = document.getElementById("shippingState");
+    const country = document.getElementById("shippingCountry");
 
     if (city) city.value = selectedCoverage.municipio || "";
     if (state) state.value = selectedCoverage.estado || "";
+    if (country) country.value = selectedCoverage.pais || "";
 
     window.currentShippingCost = Number(selectedCoverage.costo || 0);
     updateShippingZoneMessage();
@@ -314,6 +316,7 @@
     const neighborhoodSelect = document.getElementById("shippingNeighborhood");
     const city = document.getElementById("shippingCity");
     const state = document.getElementById("shippingState");
+    const country = document.getElementById("shippingCountry");
 
     if (clearNeighborhood && neighborhoodSelect) {
       neighborhoodSelect.innerHTML = `
@@ -324,6 +327,7 @@
 
     if (city) city.value = "";
     if (state) state.value = "";
+    if (country) country.value = "";
 
     updateShippingZoneMessage();
     updateCartTotals();
@@ -345,7 +349,7 @@
     if (!selectedCoverage) {
       status.className = "shipping-zone-status";
       status.textContent =
-        "Escribe tu código postal y selecciona tu colonia.";
+        "Escribe tu código postal y selecciona la ubicación registrada.";
       return;
     }
 
@@ -389,7 +393,9 @@
     if (!address.telefono) return "Escribe un número de contacto.";
     if (!isValidEmail(address.email)) return "Escribe un correo electrónico válido.";
     if (!/^\d{5}$/.test(address.codigo_postal)) return "Escribe un código postal de 5 dígitos.";
-    if (!address.cobertura_envio_id) return "Selecciona una colonia registrada para calcular la zona y el costo de envío.";
+    if (!address.cobertura_envio_id) {
+      return "Selecciona una ubicación registrada para calcular la zona y el costo de envío.";
+    }
     if (!address.calle) return "Escribe la calle de la dirección de entrega.";
     if (!address.numero_exterior) return "Escribe el número exterior.";
     if (!address.pais) return "Selecciona el país.";
