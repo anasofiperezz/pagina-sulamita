@@ -10,6 +10,7 @@
   const nativeFetch = window.fetch.bind(window);
 
   let matchedShippingRule = null;
+  let lastShippingResolution = null;
   let calculationRequestId = 0;
   let calculationTimer = null;
   let calculationInProgress = false;
@@ -257,18 +258,26 @@
         throw new Error(data.message || "No se pudo calcular el envío.");
       }
 
+      lastShippingResolution = data;
       matchedShippingRule = data.encontrada ? data : null;
       window.currentShippingCost = matchedShippingRule
         ? Number(matchedShippingRule.costo || 0)
         : 0;
       calculationInProgress = false;
-      updateShippingStatus(matchedShippingRule ? "success" : "not-found");
+      updateShippingStatus(
+        matchedShippingRule
+          ? "success"
+          : data.ambigua
+            ? "ambiguous"
+            : "not-found"
+      );
       updateCartTotals();
     } catch (error) {
       if (requestId !== calculationRequestId) return;
 
       console.error("Error calculando el envío:", error);
       matchedShippingRule = null;
+      lastShippingResolution = null;
       window.currentShippingCost = 0;
       calculationInProgress = false;
       updateShippingStatus("error", error.message);
@@ -307,6 +316,7 @@
     }
 
     matchedShippingRule = null;
+    lastShippingResolution = null;
     window.currentShippingCost = 0;
   }
 
@@ -330,16 +340,36 @@
     }
 
     if (state === "success" && matchedShippingRule) {
+      const matches = Array.isArray(matchedShippingRule.coincidencias)
+        ? matchedShippingRule.coincidencias
+        : [];
+
+      const matchText = matches.length
+        ? matches
+            .map(
+              (match) =>
+                `${escapeHtml(match.tipo_etiqueta)}: <strong>${escapeHtml(match.valor)}</strong>`
+            )
+            .join(" + ")
+        : `${escapeHtml(matchedShippingRule.regla_tipo_etiqueta)}: <strong>${escapeHtml(matchedShippingRule.regla_valor)}</strong>`;
+
       status.className = "shipping-zone-status is-success";
       status.innerHTML = `
         <strong>${escapeHtml(matchedShippingRule.zona)}</strong>
         · Costo: <strong>${formatMoney(matchedShippingRule.costo)}</strong>
         <br>
-        Coincidencia por ${escapeHtml(matchedShippingRule.regla_tipo_etiqueta)}:
-        <strong>${escapeHtml(matchedShippingRule.regla_valor)}</strong>
+        Coincidencias usadas: ${matchText}
         <br>
         Entrega estimada de 1 a 3 días hábiles, después de las 3:00 p. m.
       `;
+      return;
+    }
+
+    if (state === "ambiguous") {
+      status.className = "shipping-zone-status is-error";
+      status.textContent =
+        lastShippingResolution?.message ||
+        "Estos datos coinciden con varias zonas. Revisa la alcaldía o municipio.";
       return;
     }
 
@@ -401,6 +431,13 @@
     if (!address.pais) return "Escribe el país.";
     if (calculationInProgress) return "Espera un momento mientras se calcula el costo de envío.";
     if (!address.regla_envio_id) {
+      if (lastShippingResolution?.ambigua) {
+        return (
+          lastShippingResolution.message ||
+          "La dirección coincide con varias zonas. Revisa la alcaldía o municipio."
+        );
+      }
+
       return "No se encontró una tarifa para esta dirección. Contacta a la papelería.";
     }
     if (!address.calle) return "Escribe la calle de la dirección de entrega.";

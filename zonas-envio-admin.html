@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Catálogos de zonas | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=44">
+  <link rel="stylesheet" href="styles.css?v=45">
 
   <style>
     .shipping-admin-page {
@@ -310,10 +310,11 @@
         </div>
 
         <div class="explanation-note">
-          <strong>Ejemplo:</strong><br>
-          C.P. 12222 → Zona 1<br>
-          C.P. 45667 → Zona 2<br>
-          Colonia Roma Norte → Zona 3
+          <strong>El mismo dato puede estar en varias zonas.</strong><br>
+          Ejemplo: C.P. 12222 → Zona 1 y también C.P. 12222 → Zona 2.<br>
+          Si el cliente escribe ese C.P., el sistema usa primero la alcaldía o municipio
+          para dejar una sola zona posible. Si todavía hay empate, revisa colonia,
+          estado y país.
         </div>
 
         <p class="step-title">1. Elige qué datos vas a agregar</p>
@@ -388,7 +389,7 @@
     <p>© 2026 Papelería Sulamita - Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=44"></script>
+  <script src="tienda.js?v=45"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -616,7 +617,7 @@
           throw new Error(data.message || "No se pudieron cargar los datos.");
         }
 
-        serverSupportsRules = Number(data.version_reglas_envio) >= 2;
+        serverSupportsRules = Number(data.version_reglas_envio) >= 3;
 
         if (!serverSupportsRules) {
           serverStatus.className = "server-status error";
@@ -625,7 +626,7 @@
         } else {
           serverStatus.className = "server-status ok";
           serverStatus.textContent =
-            "Servidor conectado correctamente. Los datos que guardes aparecerán en la lista de la derecha.";
+            "Servidor conectado correctamente. Puedes registrar el mismo dato en varias zonas; la dirección completa resolverá una sola zona.";
         }
 
         zones =

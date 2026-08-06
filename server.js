@@ -672,7 +672,7 @@ async function ensureDatabaseUpdates() {
         valor_normalizado TEXT NOT NULL,
         activo BOOLEAN DEFAULT TRUE,
         creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE (tipo, valor_normalizado)
+        UNIQUE (zona_id, tipo, valor_normalizado)
       );
     `);
 
@@ -680,6 +680,20 @@ async function ensureDatabaseUpdates() {
       CREATE INDEX IF NOT EXISTS idx_reglas_envio_busqueda
       ON reglas_envio(tipo, valor_normalizado)
       WHERE activo IS NOT FALSE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE reglas_envio
+      DROP CONSTRAINT IF EXISTS reglas_envio_tipo_valor_normalizado_key;
+    `);
+
+    await pool.query(`
+      DROP INDEX IF EXISTS reglas_envio_tipo_valor_normalizado_key;
+    `);
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_reglas_envio_zona_tipo_valor
+      ON reglas_envio(zona_id, tipo, valor_normalizado);
     `);
 
     await pool.query(`
@@ -789,7 +803,7 @@ async function ensureShippingRulesSetup() {
         valor_normalizado TEXT NOT NULL,
         activo BOOLEAN DEFAULT TRUE,
         creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE (tipo, valor_normalizado)
+        UNIQUE (zona_id, tipo, valor_normalizado)
       );
     `);
 
@@ -797,6 +811,20 @@ async function ensureShippingRulesSetup() {
       CREATE INDEX IF NOT EXISTS idx_reglas_envio_busqueda
       ON reglas_envio(tipo, valor_normalizado)
       WHERE activo IS NOT FALSE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE reglas_envio
+      DROP CONSTRAINT IF EXISTS reglas_envio_tipo_valor_normalizado_key;
+    `);
+
+    await pool.query(`
+      DROP INDEX IF EXISTS reglas_envio_tipo_valor_normalizado_key;
+    `);
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_reglas_envio_zona_tipo_valor
+      ON reglas_envio(zona_id, tipo, valor_normalizado);
     `);
 
     console.log("Catálogos de zonas de envío listos.");
@@ -2146,6 +2174,7 @@ function buildShippingRuleCandidates(address) {
 
 async function resolveShippingRule(address) {
   const candidates = buildShippingRuleCandidates(address);
+  const matchesByType = new Map();
 
   for (const candidate of candidates) {
     const result = await pool.query(
@@ -2167,17 +2196,132 @@ async function resolveShippingRule(address) {
         AND r.valor_normalizado = $2
         AND r.activo IS NOT FALSE
         AND z.activo IS NOT FALSE
-      LIMIT 1
+      ORDER BY z.numero ASC, r.id ASC
       `,
       [candidate.tipo, candidate.valor_normalizado]
     );
 
     if (result.rows.length) {
-      return normalizeShippingRule(result.rows[0]);
+      matchesByType.set(
+        candidate.tipo,
+        result.rows.map((row) => normalizeShippingRule(row))
+      );
     }
   }
 
-  return null;
+  if (!matchesByType.size) {
+    return null;
+  }
+
+  const firstType = SHIPPING_RULE_PRIORITY.find((type) =>
+    matchesByType.has(type)
+  );
+
+  if (!firstType) {
+    return null;
+  }
+
+  let candidateZoneIds = new Set(
+    matchesByType.get(firstType).map((rule) => Number(rule.zona_id))
+  );
+
+  const usedTypes = [firstType];
+
+  /*
+    Cuando el C.P. existe en varias zonas, la alcaldía o municipio
+    se utiliza primero para desambiguar, tal como lo necesita la papelería.
+    Si aún quedan varias zonas, se revisan colonia, estado y país.
+  */
+  const narrowingOrder =
+    firstType === "codigo_postal"
+      ? ["municipio", "colonia", "estado", "pais"]
+      : SHIPPING_RULE_PRIORITY.slice(
+          SHIPPING_RULE_PRIORITY.indexOf(firstType) + 1
+        );
+
+  for (const type of narrowingOrder) {
+    const typeRules = matchesByType.get(type);
+
+    if (!typeRules || !typeRules.length || candidateZoneIds.size <= 1) {
+      continue;
+    }
+
+    const typeZoneIds = new Set(
+      typeRules.map((rule) => Number(rule.zona_id))
+    );
+
+    const intersection = new Set(
+      [...candidateZoneIds].filter((zoneId) => typeZoneIds.has(zoneId))
+    );
+
+    /*
+      Solo reducimos las opciones cuando hay una coincidencia real.
+      Si la alcaldía no coincide con ninguna de las zonas del C.P.,
+      conservamos las candidatas y seguimos buscando otro dato útil.
+    */
+    if (intersection.size > 0) {
+      candidateZoneIds = intersection;
+      usedTypes.push(type);
+    }
+  }
+
+  if (candidateZoneIds.size !== 1) {
+    const candidateZonesMap = new Map();
+
+    for (const rules of matchesByType.values()) {
+      for (const rule of rules) {
+        if (!candidateZoneIds.has(Number(rule.zona_id))) continue;
+
+        candidateZonesMap.set(Number(rule.zona_id), {
+          zona_id: Number(rule.zona_id),
+          zona_numero: Number(rule.zona_numero),
+          zona: rule.zona,
+          costo: Number(rule.costo || 0)
+        });
+      }
+    }
+
+    return {
+      ambigua: true,
+      zonas_candidatas: Array.from(candidateZonesMap.values()).sort(
+        (a, b) => a.zona_numero - b.zona_numero
+      ),
+      tipos_coincidentes: Array.from(matchesByType.keys())
+    };
+  }
+
+  const selectedZoneId = Number([...candidateZoneIds][0]);
+  const coincidencias = [];
+
+  for (const type of usedTypes) {
+    const rule = (matchesByType.get(type) || []).find(
+      (item) => Number(item.zona_id) === selectedZoneId
+    );
+
+    if (rule) {
+      coincidencias.push({
+        regla_id: Number(rule.id),
+        tipo: rule.tipo,
+        tipo_etiqueta: rule.tipo_etiqueta,
+        valor: rule.valor
+      });
+    }
+  }
+
+  const selectedRule =
+    coincidencias.length
+      ? (matchesByType.get(coincidencias[0].tipo) || []).find(
+          (item) => Number(item.zona_id) === selectedZoneId
+        )
+      : Array.from(matchesByType.values())
+          .flat()
+          .find((item) => Number(item.zona_id) === selectedZoneId);
+
+  return {
+    ...selectedRule,
+    ambigua: false,
+    coincidencias
+  };
 }
 
 app.post("/api/zonas-envio/calcular", async (req, res) => {
@@ -2187,16 +2331,34 @@ app.post("/api/zonas-envio/calcular", async (req, res) => {
     if (!matchedRule) {
       return res.json({
         encontrada: false,
+        ambigua: false,
         message: "No hay una tarifa configurada para estos datos de envío."
+      });
+    }
+
+    if (matchedRule.ambigua) {
+      const zoneNames = matchedRule.zonas_candidatas
+        .map((zone) => zone.zona)
+        .join(", ");
+
+      return res.json({
+        encontrada: false,
+        ambigua: true,
+        zonas_candidatas: matchedRule.zonas_candidatas,
+        message:
+          `Estos datos coinciden con varias zonas (${zoneNames}). ` +
+          "Revisa que la alcaldía o municipio esté registrada en una sola de esas zonas."
       });
     }
 
     res.json({
       encontrada: true,
+      ambigua: false,
       regla_id: matchedRule.id,
       regla_tipo: matchedRule.tipo,
       regla_tipo_etiqueta: matchedRule.tipo_etiqueta,
       regla_valor: matchedRule.valor,
+      coincidencias: matchedRule.coincidencias || [],
       zona_id: matchedRule.zona_id,
       zona_numero: matchedRule.zona_numero,
       zona: matchedRule.zona,
@@ -2248,7 +2410,7 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
     );
 
     res.json({
-      version_reglas_envio: 2,
+      version_reglas_envio: 3,
       zonas: zonesResult.rows.map((zone) => ({
         id: Number(zone.id),
         numero: Number(zone.numero),
@@ -2335,9 +2497,8 @@ app.post("/api/admin/zonas-envio/reglas/lote", requireAdminSession, async (req, 
           activo
         )
         VALUES ($1, $2, $3, $4, TRUE)
-        ON CONFLICT (tipo, valor_normalizado)
+        ON CONFLICT (zona_id, tipo, valor_normalizado)
         DO UPDATE SET
-          zona_id = EXCLUDED.zona_id,
           valor = EXCLUDED.valor,
           activo = TRUE
         RETURNING id
@@ -2424,7 +2585,7 @@ app.post("/api/admin/zonas-envio/reglas", requireAdminSession, async (req, res) 
   } catch (error) {
     if (error.code === "23505") {
       return res.status(400).json({
-        message: "Ese dato ya está registrado en una zona. Edítalo si deseas cambiarlo."
+        message: "Ese dato ya está registrado dentro de esa misma zona."
       });
     }
 
@@ -2492,7 +2653,7 @@ app.put("/api/admin/zonas-envio/reglas/:id", requireAdminSession, async (req, re
   } catch (error) {
     if (error.code === "23505") {
       return res.status(400).json({
-        message: "Ese dato ya está registrado en otra regla."
+        message: "Ese dato ya está registrado dentro de esa misma zona."
       });
     }
 
@@ -2616,6 +2777,13 @@ app.post("/api/pedidos", async (req, res) => {
         });
       }
 
+      if (matchedRule.ambigua) {
+        return res.status(400).json({
+          message:
+            "Esta dirección coincide con varias zonas. Revisa la alcaldía o municipio, o configura una regla que deje una sola zona posible."
+        });
+      }
+
       shippingCostFinal = Number(matchedRule.costo || 0);
       shippingZoneIdFinal = Number(matchedRule.zona_id);
       shippingZoneNameFinal = matchedRule.zona || `Zona ${matchedRule.zona_numero}`;
@@ -2627,6 +2795,7 @@ app.post("/api/pedidos", async (req, res) => {
         regla_tipo: matchedRule.tipo,
         regla_tipo_etiqueta: matchedRule.tipo_etiqueta,
         regla_valor: matchedRule.valor,
+        coincidencias_reglas: matchedRule.coincidencias || [],
         zona_id: shippingZoneIdFinal,
         zona: shippingZoneNameFinal,
         costo_envio: shippingCostFinal,
@@ -2646,7 +2815,11 @@ app.post("/api/pedidos", async (req, res) => {
         `C.P. ${shippingDataFinal.codigo_postal}`,
         `${shippingDataFinal.municipio}, ${shippingDataFinal.estado}, ${shippingDataFinal.pais}`,
         `${shippingZoneNameFinal} · Envío $${shippingCostFinal.toFixed(2)}`,
-        `Tarifa determinada por ${matchedRule.tipo_etiqueta}: ${matchedRule.valor}`,
+        `Tarifa determinada por: ${
+          (matchedRule.coincidencias || [])
+            .map((match) => `${match.tipo_etiqueta}: ${match.valor}`)
+            .join(" + ") || `${matchedRule.tipo_etiqueta}: ${matchedRule.valor}`
+        }`,
         `Horario para recibir: ${shippingDataFinal.horario_recepcion}`,
         `Tiempo estimado: ${deliveryTimeFinal}`,
         shippingDataFinal.referencias ? `Referencias: ${shippingDataFinal.referencias}` : ""
