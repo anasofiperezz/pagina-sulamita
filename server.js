@@ -2410,7 +2410,7 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
     );
 
     res.json({
-      version_reglas_envio: 3,
+      version_reglas_envio: 4,
       zonas: zonesResult.rows.map((zone) => ({
         id: Number(zone.id),
         numero: Number(zone.numero),
@@ -2431,33 +2431,47 @@ app.post("/api/admin/zonas-envio/reglas/lote", requireAdminSession, async (req, 
   const client = await pool.connect();
 
   try {
-    const zonaNumero = Number(req.body.zona_numero);
-    const tipo = normalizeShippingRuleType(req.body.tipo);
-    const valoresEntrada = Array.isArray(req.body.valores) ? req.body.valores : [];
+    const requestedZoneNumbers = Array.isArray(req.body.zona_numeros)
+      ? req.body.zona_numeros
+      : [req.body.zona_numero];
 
-    if (!zonaNumero || !tipo || !valoresEntrada.length) {
-      return res.status(400).json({
-        message: "Selecciona una zona, un tipo de dato y escribe al menos un valor."
-      });
-    }
-
-    const zoneResult = await client.query(
-      `
-      SELECT id
-      FROM zonas_envio
-      WHERE numero = $1 AND activo IS NOT FALSE
-      LIMIT 1
-      `,
-      [zonaNumero]
+    const zoneNumbers = Array.from(
+      new Set(
+        requestedZoneNumbers
+          .map((value) => Number(value))
+          .filter((value) => Number.isInteger(value) && value > 0)
+      )
     );
 
-    if (!zoneResult.rows.length) {
+    const tipo = normalizeShippingRuleType(req.body.tipo);
+    const valoresEntrada = Array.isArray(req.body.valores)
+      ? req.body.valores
+      : [];
+
+    if (!zoneNumbers.length || !tipo || !valoresEntrada.length) {
       return res.status(400).json({
-        message: "La zona seleccionada no existe."
+        message:
+          "Selecciona una o varias zonas, un tipo de dato y escribe al menos un valor."
       });
     }
 
-    const zonaId = Number(zoneResult.rows[0].id);
+    const zonesResult = await client.query(
+      `
+      SELECT id, numero, nombre, costo
+      FROM zonas_envio
+      WHERE numero = ANY($1::int[])
+        AND activo IS NOT FALSE
+      ORDER BY numero ASC
+      `,
+      [zoneNumbers]
+    );
+
+    if (zonesResult.rows.length !== zoneNumbers.length) {
+      return res.status(400).json({
+        message: "Una o más zonas seleccionadas no existen."
+      });
+    }
+
     const validValues = [];
     const seen = new Set();
 
@@ -2486,45 +2500,68 @@ app.post("/api/admin/zonas-envio/reglas/lote", requireAdminSession, async (req, 
 
     const saved = [];
 
-    for (const item of validValues) {
-      const result = await client.query(
-        `
-        INSERT INTO reglas_envio (
-          zona_id,
-          tipo,
-          valor,
-          valor_normalizado,
-          activo
-        )
-        VALUES ($1, $2, $3, $4, TRUE)
-        ON CONFLICT (zona_id, tipo, valor_normalizado)
-        DO UPDATE SET
-          valor = EXCLUDED.valor,
-          activo = TRUE
-        RETURNING id
-        `,
-        [zonaId, tipo, item.valor, item.valorNormalizado]
-      );
+    for (const zone of zonesResult.rows) {
+      for (const item of validValues) {
+        const result = await client.query(
+          `
+          INSERT INTO reglas_envio (
+            zona_id,
+            tipo,
+            valor,
+            valor_normalizado,
+            activo
+          )
+          VALUES ($1, $2, $3, $4, TRUE)
+          ON CONFLICT (zona_id, tipo, valor_normalizado)
+          DO UPDATE SET
+            valor = EXCLUDED.valor,
+            activo = TRUE
+          RETURNING id
+          `,
+          [
+            Number(zone.id),
+            tipo,
+            item.valor,
+            item.valorNormalizado
+          ]
+        );
 
-      saved.push({
-        id: Number(result.rows[0].id),
-        valor: item.valor
-      });
+        saved.push({
+          id: Number(result.rows[0].id),
+          valor: item.valor,
+          zona_numero: Number(zone.numero),
+          zona: zone.nombre,
+          costo: Number(zone.costo || 0)
+        });
+      }
     }
 
     await client.query("COMMIT");
 
+    const totalValues = validValues.length;
+    const totalZones = zonesResult.rows.length;
+    const totalSaved = saved.length;
+
     res.status(201).json({
       message:
-        saved.length === 1
-          ? "1 dato guardado correctamente."
-          : `${saved.length} datos guardados correctamente.`,
-      total_guardados: saved.length,
+        `${totalValues} ${
+          totalValues === 1 ? "dato guardado" : "datos guardados"
+        } en ${totalZones} ${
+          totalZones === 1 ? "zona" : "zonas"
+        } (${totalSaved} ${
+          totalSaved === 1 ? "registro" : "registros"
+        } en total).`,
+      total_valores: totalValues,
+      total_zonas: totalZones,
+      total_guardados: totalSaved,
       guardados: saved
     });
   } catch (error) {
     await client.query("ROLLBACK");
-    console.error("Error en POST /api/admin/zonas-envio/reglas/lote:", error);
+    console.error(
+      "Error en POST /api/admin/zonas-envio/reglas/lote:",
+      error
+    );
 
     res.status(500).json({
       message: error.message || "Error al guardar los datos de envío."

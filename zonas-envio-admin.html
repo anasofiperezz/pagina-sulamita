@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Catálogos de zonas | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=45">
+  <link rel="stylesheet" href="styles.css?v=46">
 
   <style>
     .shipping-admin-page {
@@ -96,6 +96,15 @@
       background: #0057b8;
       color: #ffffff;
       box-shadow: 0 8px 18px rgba(0, 87, 184, 0.2);
+    }
+
+    .zone-selector {
+      user-select: none;
+    }
+
+    .zone-button.is-selected {
+      outline: 3px solid rgba(0, 87, 184, 0.16);
+      outline-offset: 2px;
     }
 
     .type-button:last-child:nth-child(odd) {
@@ -299,7 +308,7 @@
 
     <section class="shipping-layout">
       <div class="shipping-card">
-        <h2 id="formTitle">Agregar datos a una zona</h2>
+        <h2 id="formTitle">Agregar datos a una o varias zonas</h2>
 
         <div class="session-note">
           Ya iniciaste sesión como administrador. No necesitas volver a escribir una contraseña.
@@ -310,17 +319,16 @@
         </div>
 
         <div class="explanation-note">
-          <strong>El mismo dato puede estar en varias zonas.</strong><br>
-          Ejemplo: C.P. 12222 → Zona 1 y también C.P. 12222 → Zona 2.<br>
-          Si el cliente escribe ese C.P., el sistema usa primero la alcaldía o municipio
-          para dejar una sola zona posible. Si todavía hay empate, revisa colonia,
-          estado y país.
+          <strong>Puedes seleccionar varias zonas al mismo tiempo.</strong><br>
+          Ejemplo: marca Zona 1 y Zona 5, escribe el C.P. 12222 una sola vez
+          y presiona guardar. El C.P. quedará registrado en las dos zonas.<br>
+          Para desmarcar una zona, vuelve a hacer clic sobre ella.
         </div>
 
         <p class="step-title">1. Elige qué datos vas a agregar</p>
         <div class="type-selector" id="typeSelector"></div>
 
-        <p class="step-title">2. Elige la zona correspondiente</p>
+        <p class="step-title">2. Elige una o varias zonas</p>
         <div class="zone-selector" id="zoneSelector"></div>
 
         <div class="current-selection" id="currentSelection">
@@ -389,7 +397,7 @@
     <p>© 2026 Papelería Sulamita - Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=45"></script>
+  <script src="tienda.js?v=46"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -482,7 +490,7 @@
     let zones = [...fixedZones];
     let rules = [];
     let selectedType = "codigo_postal";
-    let selectedZoneNumber = 0;
+    let selectedZoneNumbers = new Set();
     let serverSupportsRules = false;
 
     typeSelector.addEventListener("click", function (event) {
@@ -499,8 +507,20 @@
       const button = event.target.closest("[data-zone-number]");
       if (!button) return;
 
-      selectedZoneNumber = Number(button.dataset.zoneNumber || 0);
+      const zoneNumber = Number(button.dataset.zoneNumber || 0);
+
+      if (!zoneNumber) return;
+
+      if (editingRuleId.value) {
+        selectedZoneNumbers = new Set([zoneNumber]);
+      } else if (selectedZoneNumbers.has(zoneNumber)) {
+        selectedZoneNumbers.delete(zoneNumber);
+      } else {
+        selectedZoneNumbers.add(zoneNumber);
+      }
+
       renderSelectors();
+      updateFormForType();
     });
 
     catalogForm.addEventListener("submit", saveCatalogValues);
@@ -527,20 +547,20 @@
         </button>
       `).join("");
 
-      zoneSelector.innerHTML = zones.map((zone) => `
-        <button
-          class="zone-button ${
-            Number(zone.numero) === selectedZoneNumber ? "is-selected" : ""
-          }"
-          type="button"
-          data-zone-number="${Number(zone.numero)}"
-          aria-pressed="${
-            Number(zone.numero) === selectedZoneNumber ? "true" : "false"
-          }"
-        >
-          ${escapeHtml(zone.nombre)} · ${formatMoney(zone.costo)}
-        </button>
-      `).join("");
+      zoneSelector.innerHTML = zones.map((zone) => {
+        const isSelected = selectedZoneNumbers.has(Number(zone.numero));
+
+        return `
+          <button
+            class="zone-button ${isSelected ? "is-selected" : ""}"
+            type="button"
+            data-zone-number="${Number(zone.numero)}"
+            aria-pressed="${isSelected ? "true" : "false"}"
+          >
+            ${isSelected ? "✓ " : ""}${escapeHtml(zone.nombre)} · ${formatMoney(zone.costo)}
+          </button>
+        `;
+      }).join("");
 
       zoneFilter.innerHTML = `
         <option value="">Todas las zonas</option>
@@ -551,13 +571,15 @@
         `).join("")}
       `;
 
-      const zone = zones.find(
-        (item) => Number(item.numero) === selectedZoneNumber
+      const selectedZones = zones.filter((zone) =>
+        selectedZoneNumbers.has(Number(zone.numero))
       );
 
-      currentSelection.textContent = zone
-        ? `${typeConfig[selectedType].plural} → ${zone.nombre} (${formatMoney(zone.costo)})`
-        : `${typeConfig[selectedType].plural} → todavía no has seleccionado una zona.`;
+      currentSelection.textContent = selectedZones.length
+        ? `${typeConfig[selectedType].plural} → ${selectedZones
+            .map((zone) => `${zone.nombre} (${formatMoney(zone.costo)})`)
+            .join(", ")}`
+        : `${typeConfig[selectedType].plural} → todavía no has seleccionado ninguna zona.`;
     }
 
     function updateFormForType() {
@@ -568,7 +590,12 @@
       valuesHelp.textContent = config.help;
 
       if (!editingRuleId.value) {
-        saveButton.textContent = `Agregar ${config.plural.toLowerCase()}`;
+        const zoneCount = selectedZoneNumbers.size;
+        saveButton.textContent = zoneCount
+          ? `Agregar ${config.plural.toLowerCase()} a ${zoneCount} ${
+              zoneCount === 1 ? "zona" : "zonas"
+            }`
+          : `Agregar ${config.plural.toLowerCase()}`;
       }
     }
 
@@ -617,7 +644,7 @@
           throw new Error(data.message || "No se pudieron cargar los datos.");
         }
 
-        serverSupportsRules = Number(data.version_reglas_envio) >= 3;
+        serverSupportsRules = Number(data.version_reglas_envio) >= 4;
 
         if (!serverSupportsRules) {
           serverStatus.className = "server-status error";
@@ -626,7 +653,7 @@
         } else {
           serverStatus.className = "server-status ok";
           serverStatus.textContent =
-            "Servidor conectado correctamente. Puedes registrar el mismo dato en varias zonas; la dirección completa resolverá una sola zona.";
+            "Servidor conectado correctamente. Puedes marcar varias zonas y guardar el mismo dato en todas de una sola vez.";
         }
 
         zones =
@@ -661,8 +688,11 @@
       event.preventDefault();
       clearMessage();
 
-      if (!selectedZoneNumber) {
-        showMessage("Selecciona la zona a la que pertenecen estos datos.", true);
+      if (!selectedZoneNumbers.size) {
+        showMessage(
+          "Selecciona al menos una zona a la que pertenecen estos datos.",
+          true
+        );
         return;
       }
 
@@ -699,7 +729,7 @@
               credentials: "include",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                zona_numero: selectedZoneNumber,
+                zona_numero: Number([...selectedZoneNumbers][0]),
                 tipo: selectedType,
                 valor: values[0],
                 activo: true
@@ -732,7 +762,7 @@
             credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              zona_numero: selectedZoneNumber,
+              zona_numeros: Array.from(selectedZoneNumbers),
               tipo: selectedType,
               valores: values
             })
@@ -844,10 +874,10 @@
 
       editingRuleId.value = String(rule.id);
       selectedType = rule.tipo;
-      selectedZoneNumber = Number(rule.zona_numero);
+      selectedZoneNumbers = new Set([Number(rule.zona_numero)]);
       catalogValues.value = rule.valor;
 
-      formTitle.textContent = `Editar ${typeConfig[selectedType].singular.toLowerCase()}`;
+      formTitle.textContent = `Editar ${typeConfig[selectedType].singular.toLowerCase()} en una zona`;
       saveButton.textContent = "Guardar cambio";
       cancelEditButton.style.display = "inline-block";
 
@@ -891,18 +921,18 @@
 
       editingRuleId.value = "";
       catalogValues.value = "";
-      formTitle.textContent = "Agregar datos a una zona";
+      formTitle.textContent = "Agregar datos a una o varias zonas";
       cancelEditButton.style.display = "none";
     }
 
     function resetForm(clearZone = true) {
       editingRuleId.value = "";
       catalogValues.value = "";
-      formTitle.textContent = "Agregar datos a una zona";
+      formTitle.textContent = "Agregar datos a una o varias zonas";
       cancelEditButton.style.display = "none";
 
       if (clearZone) {
-        selectedZoneNumber = 0;
+        selectedZoneNumbers = new Set();
       }
 
       renderSelectors();
