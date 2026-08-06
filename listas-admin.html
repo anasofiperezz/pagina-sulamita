@@ -3,11 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Administrar listas | Papelería Sulamita</title>
+
+  <title>Administrar listas de útiles | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=36">
+  <link rel="stylesheet" href="styles.css?v=51">
 
   <style>
+    /* =========================
+       ESTRUCTURA GENERAL
+    ========================= */
+
     .lists-admin-page {
       max-width: 1180px;
       margin: 0 auto;
@@ -16,76 +22,84 @@
 
     .lists-admin-layout {
       display: grid;
-      grid-template-columns: minmax(300px, 430px) 1fr;
+      grid-template-columns: minmax(310px, 430px) minmax(0, 1fr);
       gap: 26px;
       align-items: start;
     }
 
     .lists-admin-card {
-      background: #ffffff;
+      padding: 24px;
       border: 1px solid #e5e7eb;
       border-radius: 24px;
-      padding: 24px;
+      background: #ffffff;
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
     }
 
     .lists-admin-card h2 {
-      margin-top: 0;
-    }
-
-    .admin-list-item {
-      border: 1px solid #e5e7eb;
-      border-radius: 18px;
-      padding: 18px;
-      margin-bottom: 14px;
-      background: #ffffff;
-    }
-
-    .admin-list-item h3 {
       margin: 0 0 8px;
-      color: #111827;
     }
 
-    .admin-list-item p {
-      margin: 4px 0;
-      color: #4b5563;
-      line-height: 1.45;
+    .section-description {
+      margin: 0 0 20px;
+      color: #64748b;
+      line-height: 1.55;
     }
 
-    .admin-list-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 14px;
+    .required-mark {
+      color: #b0002f;
+      font-weight: 800;
     }
+
+    .required-note {
+      margin: 0 0 18px;
+      color: #64748b;
+      font-size: 0.88rem;
+    }
+
+    /* =========================
+       SESIÓN DEL ADMINISTRADOR
+    ========================= */
 
     .admin-session-box {
-      background: #ecfdf5;
-      border: 1px solid #a7f3d0;
-      color: #065f46;
-      border-radius: 18px;
-      padding: 14px;
       margin-bottom: 18px;
+      padding: 14px 15px;
+      border: 1px solid #a7f3d0;
+      border-radius: 18px;
+      background: #ecfdf5;
+      color: #065f46;
       line-height: 1.5;
     }
+
+    .admin-session-box strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* =========================
+       CARGA DEL ARCHIVO
+    ========================= */
 
     .file-drop-zone {
       position: relative;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 165px;
+      min-height: 170px;
       padding: 24px;
       border: 2px dashed #93c5fd;
       border-radius: 18px;
       background: #f8fbff;
-      text-align: center;
       cursor: pointer;
-      transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+      text-align: center;
+      transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        transform 0.2s ease;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
     }
 
     .file-drop-zone:hover,
+    .file-drop-zone:focus-within,
     .file-drop-zone.is-dragging {
       border-color: #0057b8;
       background: #eff6ff;
@@ -98,9 +112,10 @@
     }
 
     .file-drop-zone span {
-      margin-top: 6px;
+      margin-top: 7px;
       color: #64748b;
       font-size: 0.92rem;
+      line-height: 1.45;
     }
 
     .file-drop-zone input {
@@ -115,15 +130,21 @@
       display: none;
       margin-top: 12px;
       padding: 12px 14px;
+      border: 1px solid #bfdbfe;
       border-radius: 14px;
       background: #eef6ff;
       color: #0f2f5f;
       overflow-wrap: anywhere;
+      line-height: 1.45;
     }
 
     .selected-file.is-visible {
       display: block;
     }
+
+    /* =========================
+       PROGRESO DE LA CARGA
+    ========================= */
 
     .upload-progress {
       display: none;
@@ -155,6 +176,57 @@
       font-size: 0.9rem;
     }
 
+    /* =========================
+       LISTAS PUBLICADAS
+    ========================= */
+
+    .admin-list-item {
+      margin-bottom: 14px;
+      padding: 18px;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      background: #ffffff;
+    }
+
+    .admin-list-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .admin-list-item h3 {
+      margin: 0 0 8px;
+      color: #111827;
+    }
+
+    .admin-list-item p {
+      margin: 5px 0;
+      color: #4b5563;
+      line-height: 1.5;
+    }
+
+    .list-meta {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .list-meta-badge {
+      display: inline-flex;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #004aad;
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .admin-list-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
     @media (max-width: 900px) {
       .lists-admin-layout {
         grid-template-columns: 1fr;
@@ -164,44 +236,83 @@
 </head>
 
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
-      <div class="logo">Papelería Sulamita - Admin</div>
+      <div class="logo">Papelería Sulamita · Administración</div>
 
       <div class="nav-right">
-        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <div class="user-badge" id="userInfo">
+          Cargando sesión...
+        </div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="admin.html" class="nav-btn">Inventario</a>
         <a href="pedidos-admin.html" class="nav-btn">Pedidos</a>
         <a href="usuarios-admin.html" class="nav-btn">Usuarios</a>
         <a href="listas-utiles.html" class="nav-btn">Ver listas</a>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
   <main class="lists-admin-page">
+    <!-- =========================
+         PRESENTACIÓN
+    ========================== -->
+
     <section class="page-hero admin-hero">
       <div class="page-hero-content">
-        <span class="page-badge">Administrador</span>
+        <span class="page-badge">Panel administrativo</span>
+
         <h1>Administrar listas de útiles</h1>
+
         <p>
-          Sube archivos PDF completos y administra las listas publicadas desde este panel.
+          Publica las listas escolares en formato PDF y consulta los documentos
+          que ya se encuentran disponibles para las familias.
         </p>
       </div>
     </section>
 
+    <!-- =========================
+         PANEL DE LISTAS
+    ========================== -->
+
     <section class="lists-admin-layout">
+      <!-- Formulario -->
       <div class="lists-admin-card">
-        <h2>Subir nueva lista</h2>
+        <h2>Publicar una nueva lista</h2>
+
+        <p class="section-description">
+          Agrega la información que ayudará a las familias a identificar
+          correctamente el documento.
+        </p>
 
         <div class="admin-session-box">
-          Ya iniciaste sesión como administrador. No necesitas volver a escribir una contraseña para subir, consultar o eliminar listas.
+          <strong>Sesión de administrador activa</strong>
+          Puedes subir, consultar y eliminar listas sin volver a escribir
+          una contraseña.
         </div>
+
+        <p class="required-note">
+          Los campos marcados con
+          <span class="required-mark">*</span>
+          son obligatorios.
+        </p>
 
         <form id="listForm">
           <div class="form-group">
-            <label for="listName">Nombre de la lista</label>
+            <label for="listName">
+              Nombre de la lista
+              <span class="required-mark">*</span>
+            </label>
+
             <input
               type="text"
               id="listName"
@@ -209,27 +320,40 @@
               autocomplete="off"
               required
             />
+
+            <p class="subtext">
+              Utiliza un nombre que permita reconocer fácilmente el grado
+              o grupo.
+            </p>
           </div>
 
           <div class="form-group">
             <label for="listDescription">Descripción</label>
+
             <textarea
               id="listDescription"
               rows="3"
-              placeholder="Ej. Lista oficial IPAE, ciclo escolar 2026-2027"
+              placeholder="Ej. Lista oficial IPAE para el ciclo escolar 2026-2027"
             ></textarea>
           </div>
 
           <div class="form-group">
-            <label for="listType">Tipo de lista</label>
+            <label for="listType">Origen de la lista</label>
+
             <select id="listType">
-              <option value="Escuela">Lista oficial de la escuela</option>
-              <option value="Papelería">Lista de Papelería Sulamita</option>
+              <option value="Escuela">
+                Lista oficial proporcionada por la escuela
+              </option>
+
+              <option value="Papelería">
+                Lista preparada por Papelería Sulamita
+              </option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="listSchool">Escuela</label>
+
             <select id="listSchool">
               <option value="">Sin escuela específica</option>
               <option value="IAE">IAE</option>
@@ -238,7 +362,8 @@
           </div>
 
           <div class="form-group">
-            <label for="listLevel">Nivel</label>
+            <label for="listLevel">Nivel escolar</label>
+
             <select id="listLevel">
               <option value="">Sin nivel específico</option>
               <option value="Jardín de niños">Jardín de niños</option>
@@ -249,21 +374,36 @@
           </div>
 
           <div class="form-group">
-            <label for="listGrade">Grado / Área</label>
+            <label for="listGrade">Grado o área</label>
+
             <input
               type="text"
               id="listGrade"
-              placeholder="Ej. 4°, 5°, Área III, 1° Secundaria"
+              placeholder="Ej. 1° Secundaria, 5° o Área III"
               autocomplete="off"
             />
           </div>
 
           <div class="form-group">
-            <label for="listFile">Archivo PDF</label>
+            <label for="listFile">
+              Archivo PDF
+              <span class="required-mark">*</span>
+            </label>
 
-            <label class="file-drop-zone" id="fileDropZone" for="listFile">
-              <strong>Arrastra aquí el PDF o haz clic para seleccionarlo</strong>
-              <span>Sube el documento completo; todas sus páginas se mostrarán en la página de listas.</span>
+            <label
+              class="file-drop-zone"
+              id="fileDropZone"
+              for="listFile"
+            >
+              <strong>
+                Arrastra aquí el PDF o haz clic para seleccionarlo
+              </strong>
+
+              <span>
+                Sube el documento completo. Todas sus páginas se mostrarán
+                en la sección de listas.
+              </span>
+
               <input
                 type="file"
                 id="listFile"
@@ -272,48 +412,93 @@
               />
             </label>
 
-            <div class="selected-file" id="selectedFile"></div>
+            <div
+              class="selected-file"
+              id="selectedFile"
+              aria-live="polite"
+            ></div>
           </div>
 
-          <button type="submit" class="btn-primary full-width" id="saveListBtn">
-            Subir lista
+          <button
+            type="submit"
+            class="btn-primary full-width"
+            id="saveListBtn"
+          >
+            Publicar lista
           </button>
 
-          <div class="upload-progress" id="uploadProgress" aria-live="polite">
+          <div
+            class="upload-progress"
+            id="uploadProgress"
+            aria-live="polite"
+          >
             <div class="progress-track">
               <div class="progress-bar" id="progressBar"></div>
             </div>
-            <div class="progress-text" id="progressText">Preparando archivo...</div>
+
+            <div class="progress-text" id="progressText">
+              Preparando archivo...
+            </div>
           </div>
         </form>
 
-        <div class="note" id="listMessage" aria-live="polite"></div>
+        <div
+          class="note"
+          id="listMessage"
+          aria-live="polite"
+        ></div>
       </div>
 
+      <!-- Listas actuales -->
       <div class="lists-admin-card">
         <div class="admin-table-header">
-          <h2>Listas actuales</h2>
-          <button class="btn-outline" id="reloadListsBtn" type="button">
-            Actualizar
+          <div>
+            <h2>Listas publicadas</h2>
+
+            <p class="section-description">
+              Revisa los documentos disponibles o elimina los que ya no
+              deben mostrarse.
+            </p>
+          </div>
+
+          <button
+            class="btn-outline"
+            id="reloadListsBtn"
+            type="button"
+          >
+            Actualizar lista
           </button>
         </div>
 
-        <div id="adminListsContainer">
-          <div class="note">Cargando listas...</div>
+        <div id="adminListsContainer" aria-live="polite">
+          <div class="note">Cargando listas publicadas...</div>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - Administrar listas</p>
+    <p>© 2026 Papelería Sulamita · Administración de listas</p>
   </footer>
 
-  <script src="tienda.js?v=36"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=51"></script>
+
   <script>
     protectPage();
     protectAdminPage();
     setupHeader();
+
+    /* =========================
+       ELEMENTOS DE LA PÁGINA
+    ========================= */
 
     const listForm = document.getElementById("listForm");
     const listName = document.getElementById("listName");
@@ -323,27 +508,36 @@
     const listLevel = document.getElementById("listLevel");
     const listGrade = document.getElementById("listGrade");
     const listFile = document.getElementById("listFile");
+
     const fileDropZone = document.getElementById("fileDropZone");
     const selectedFile = document.getElementById("selectedFile");
-    const saveListBtn = document.getElementById("saveListBtn");
+
+    const saveListButton = document.getElementById("saveListBtn");
     const listMessage = document.getElementById("listMessage");
-    const reloadListsBtn = document.getElementById("reloadListsBtn");
-    const adminListsContainer = document.getElementById("adminListsContainer");
+    const reloadListsButton = document.getElementById("reloadListsBtn");
+    const adminListsContainer = document.getElementById(
+      "adminListsContainer"
+    );
+
     const uploadProgress = document.getElementById("uploadProgress");
     const progressBar = document.getElementById("progressBar");
     const progressText = document.getElementById("progressText");
 
-    reloadListsBtn.addEventListener("click", loadAdminLists);
+    /* =========================
+       EVENTOS
+    ========================= */
+
+    reloadListsButton.addEventListener("click", loadAdminLists);
     listFile.addEventListener("change", updateSelectedFile);
 
-    ["dragenter", "dragover"].forEach((eventName) => {
+    ["dragenter", "dragover"].forEach(function (eventName) {
       fileDropZone.addEventListener(eventName, function (event) {
         event.preventDefault();
         fileDropZone.classList.add("is-dragging");
       });
     });
 
-    ["dragleave", "drop"].forEach((eventName) => {
+    ["dragleave", "drop"].forEach(function (eventName) {
       fileDropZone.addEventListener(eventName, function (event) {
         event.preventDefault();
         fileDropZone.classList.remove("is-dragging");
@@ -351,22 +545,45 @@
     });
 
     fileDropZone.addEventListener("drop", function (event) {
-      const files = event.dataTransfer && event.dataTransfer.files;
+      const files =
+        event.dataTransfer &&
+        event.dataTransfer.files;
 
       if (!files || !files.length) return;
 
       const file = files[0];
 
       if (!isPdfFile(file)) {
-        showListMessage("Selecciona un archivo PDF.", true);
+        showListMessage(
+          "Selecciona un archivo en formato PDF.",
+          true
+        );
         return;
       }
 
       const transfer = new DataTransfer();
       transfer.items.add(file);
       listFile.files = transfer.files;
+
       updateSelectedFile();
     });
+
+    adminListsContainer.addEventListener("click", function (event) {
+      const deleteButton = event.target.closest(
+        "[data-delete-list-id]"
+      );
+
+      if (!deleteButton) return;
+
+      deleteSchoolList(
+        Number(deleteButton.dataset.deleteListId),
+        deleteButton.dataset.deleteListName || "Lista de útiles"
+      );
+    });
+
+    /* =========================
+       PUBLICAR UNA LISTA
+    ========================= */
 
     listForm.addEventListener("submit", async function (event) {
       event.preventDefault();
@@ -376,24 +593,38 @@
       const file = listFile.files && listFile.files[0];
 
       if (!name) {
-        showListMessage("Escribe el nombre de la lista.", true);
+        showListMessage(
+          "Escribe un nombre para identificar la lista.",
+          true
+        );
+
         listName.focus();
         return;
       }
 
       if (!file) {
-        showListMessage("Selecciona un archivo PDF.", true);
+        showListMessage(
+          "Selecciona el archivo PDF que deseas publicar.",
+          true
+        );
         return;
       }
 
       if (!isPdfFile(file)) {
-        showListMessage("El archivo debe estar en formato PDF.", true);
+        showListMessage(
+          "El archivo seleccionado debe estar en formato PDF.",
+          true
+        );
         return;
       }
 
       const formData = new FormData();
+
       formData.append("nombre", name);
-      formData.append("descripcion", listDescription.value.trim());
+      formData.append(
+        "descripcion",
+        listDescription.value.trim()
+      );
       formData.append("tipo", listType.value);
       formData.append("escuela", listSchool.value);
       formData.append("nivel", listLevel.value);
@@ -403,26 +634,38 @@
       try {
         setUploadingState(true);
 
-        const response = await fetch("/api/admin/listas-utiles", {
-          method: "POST",
-          credentials: "include",
-          body: formData
-        });
+        const response = await fetch(
+          "/api/admin/listas-utiles",
+          {
+            method: "POST",
+            credentials: "include",
+            body: formData
+          }
+        );
 
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudo subir la lista.");
+          throw new Error(
+            data.message ||
+            "No fue posible publicar la lista."
+          );
         }
 
-        showListMessage("Lista subida correctamente.");
+        showListMessage(
+          "La lista se publicó correctamente."
+        );
+
         listForm.reset();
         updateSelectedFile();
+
         await loadAdminLists();
       } catch (error) {
         console.error(error);
+
         showListMessage(
-          error.message || "No se pudo conectar con el servidor.",
+          error.message ||
+          "No fue posible conectar con el servidor.",
           true
         );
       } finally {
@@ -430,20 +673,32 @@
       }
     });
 
+    /* =========================
+       CONSULTAR LISTAS
+    ========================= */
+
     async function loadAdminLists() {
       adminListsContainer.innerHTML = `
-        <div class="note">Cargando listas...</div>
+        <div class="note">
+          Cargando listas publicadas...
+        </div>
       `;
 
       try {
-        const response = await fetch("/api/admin/listas-utiles", {
-          credentials: "include"
-        });
+        const response = await fetch(
+          "/api/admin/listas-utiles",
+          {
+            credentials: "include"
+          }
+        );
 
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudieron cargar las listas.");
+          throw new Error(
+            data.message ||
+            "No fue posible cargar las listas."
+          );
         }
 
         const lists = Array.isArray(data) ? data : [];
@@ -451,7 +706,7 @@
         if (!lists.length) {
           adminListsContainer.innerHTML = `
             <div class="note">
-              Aún no hay listas subidas desde el panel.
+              Todavía no hay listas publicadas.
             </div>
           `;
           return;
@@ -462,62 +717,123 @@
           .join("");
       } catch (error) {
         console.error(error);
+
         adminListsContainer.innerHTML = `
           <div class="note error">
-            ${escapeHtml(error.message || "No se pudo conectar con el servidor.")}
+            ${escapeHtml(
+              error.message ||
+              "No fue posible conectar con el servidor."
+            )}
           </div>
         `;
       }
     }
 
     function renderAdminListItem(item) {
-      const meta = [item.tipo, item.escuela, item.nivel, item.grado]
-        .map((value) => String(value || "").trim())
-        .filter(Boolean)
-        .join(" · ");
+      const metadata = [
+        item.tipo,
+        item.escuela,
+        item.nivel,
+        item.grado
+      ]
+        .map(function (value) {
+          return String(value || "").trim();
+        })
+        .filter(Boolean);
 
-      const id = Number(item.id);
-      const safeName = String(item.nombre || "Lista").replaceAll("'", "\\'");
+      const listId = Number(item.id);
+      const listNameText =
+        item.nombre ||
+        "Lista de útiles";
+
+      const fileUrl = String(
+        item.archivo_url ||
+        ""
+      ).trim();
+
+      const fileName =
+        item.archivo_nombre ||
+        item.archivo_tipo ||
+        "Archivo PDF";
+
+      const metadataHtml = metadata.length
+        ? `
+          <div class="list-meta">
+            ${metadata
+              .map(function (value) {
+                return `
+                  <span class="list-meta-badge">
+                    ${escapeHtml(value)}
+                  </span>
+                `;
+              })
+              .join("")}
+          </div>
+        `
+        : "";
+
+      const viewFileButton = fileUrl
+        ? `
+          <a
+            class="btn-outline btn-sm"
+            href="${escapeHtmlAttr(fileUrl)}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Abrir PDF
+          </a>
+        `
+        : "";
 
       return `
         <article class="admin-list-item">
-          <h3>${escapeHtml(item.nombre || "Lista de útiles")}</h3>
-          <p>${escapeHtml(item.descripcion || "Sin descripción")}</p>
-          ${meta ? `<p><strong>${escapeHtml(meta)}</strong></p>` : ""}
+          <h3>${escapeHtml(listNameText)}</h3>
+
+          <p>
+            ${escapeHtml(
+              item.descripcion ||
+              "Sin descripción adicional."
+            )}
+          </p>
+
+          ${metadataHtml}
+
           <p>
             <small>
-              ${escapeHtml(item.archivo_nombre || item.archivo_tipo || "Archivo PDF")}
+              Archivo: ${escapeHtml(fileName)}
             </small>
           </p>
 
           <div class="admin-list-actions">
-            <a
-              class="btn-outline btn-sm"
-              href="${escapeHtmlAttr(item.archivo_url || "")}"
-              target="_blank"
-              rel="noopener"
-            >
-              Ver archivo
-            </a>
+            ${viewFileButton}
 
             <button
               class="btn-danger btn-sm"
               type="button"
-              onclick="deleteSchoolList(${id}, '${escapeHtmlAttr(safeName)}')"
+              data-delete-list-id="${listId}"
+              data-delete-list-name="${escapeHtmlAttr(listNameText)}"
             >
-              Borrar lista
+              Eliminar lista
             </button>
           </div>
         </article>
       `;
     }
 
-    async function deleteSchoolList(listId, listNameText) {
-      const confirmDelete = confirm(
-        `¿Seguro que quieres borrar "${listNameText}"? Esta acción no se puede deshacer.`
+    /* =========================
+       ELIMINAR UNA LISTA
+    ========================= */
+
+    async function deleteSchoolList(
+      listId,
+      listNameText
+    ) {
+      const confirmed = confirm(
+        `¿Seguro que deseas eliminar "${listNameText}"? ` +
+        "Esta acción no se puede deshacer."
       );
 
-      if (!confirmDelete) return;
+      if (!confirmed) return;
 
       try {
         const response = await fetch(
@@ -531,22 +847,36 @@
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudo borrar la lista.");
+          throw new Error(
+            data.message ||
+            "No fue posible eliminar la lista."
+          );
         }
 
-        showListMessage("Lista eliminada correctamente.");
+        showListMessage(
+          "La lista se eliminó correctamente."
+        );
+
         await loadAdminLists();
       } catch (error) {
         console.error(error);
+
         showListMessage(
-          error.message || "No se pudo conectar con el servidor.",
+          error.message ||
+          "No fue posible conectar con el servidor.",
           true
         );
       }
     }
 
+    /* =========================
+       ARCHIVO SELECCIONADO
+    ========================= */
+
     function updateSelectedFile() {
-      const file = listFile.files && listFile.files[0];
+      const file =
+        listFile.files &&
+        listFile.files[0];
 
       if (!file) {
         selectedFile.textContent = "";
@@ -555,7 +885,9 @@
       }
 
       selectedFile.textContent =
-        `Archivo seleccionado: ${file.name} (${formatFileSize(file.size)})`;
+        `PDF seleccionado: ${file.name} ` +
+        `(${formatFileSize(file.size)})`;
+
       selectedFile.classList.add("is-visible");
     }
 
@@ -564,12 +896,16 @@
 
       return (
         file.type === "application/pdf" ||
-        String(file.name || "").toLowerCase().endsWith(".pdf")
+        String(file.name || "")
+          .toLowerCase()
+          .endsWith(".pdf")
       );
     }
 
     function formatFileSize(bytes) {
-      if (!Number.isFinite(bytes) || bytes <= 0) return "0 KB";
+      if (!Number.isFinite(bytes) || bytes <= 0) {
+        return "0 KB";
+      }
 
       const megabytes = bytes / (1024 * 1024);
 
@@ -577,25 +913,42 @@
         return `${megabytes.toFixed(2)} MB`;
       }
 
-      return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+      return `${Math.max(
+        1,
+        Math.round(bytes / 1024)
+      )} KB`;
     }
 
+    /* =========================
+       ESTADO Y MENSAJES
+    ========================= */
+
     function setUploadingState(isUploading) {
-      saveListBtn.disabled = isUploading;
-      saveListBtn.textContent = isUploading ? "Subiendo..." : "Subir lista";
-      uploadProgress.classList.toggle("is-visible", isUploading);
+      saveListButton.disabled = isUploading;
+      saveListButton.textContent = isUploading
+        ? "Publicando lista..."
+        : "Publicar lista";
+
+      uploadProgress.classList.toggle(
+        "is-visible",
+        isUploading
+      );
 
       if (isUploading) {
         progressBar.style.width = "65%";
-        progressText.textContent = "Subiendo el PDF...";
+        progressText.textContent =
+          "Subiendo el archivo PDF...";
       } else {
         progressBar.style.width = "0";
-        progressText.textContent = "Preparando archivo...";
+        progressText.textContent =
+          "Preparando archivo...";
       }
     }
 
     async function readJsonResponse(response) {
-      const contentType = response.headers.get("content-type") || "";
+      const contentType =
+        response.headers.get("content-type") ||
+        "";
 
       if (!contentType.includes("application/json")) {
         return {};
@@ -604,15 +957,24 @@
       return response.json();
     }
 
-    function showListMessage(message, isError = false) {
+    function showListMessage(
+      message,
+      isError = false
+    ) {
       listMessage.textContent = message;
-      listMessage.className = isError ? "note error" : "note success";
+      listMessage.className = isError
+        ? "note error"
+        : "note success";
     }
 
     function clearListMessage() {
       listMessage.textContent = "";
       listMessage.className = "note";
     }
+
+    /* =========================
+       SEGURIDAD DEL CONTENIDO
+    ========================= */
 
     function escapeHtml(value) {
       return String(value ?? "")
