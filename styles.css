@@ -551,6 +551,20 @@ textarea {
   font-size: 1.06rem;
 }
 
+
+/* ---------- FONDOS DE ENCABEZADOS ---------- */
+.school-hero,
+.products-hero {
+  background-color: var(--blue-dark);
+  background-image: linear-gradient(
+    135deg,
+    var(--blue-dark),
+    var(--blue) 48%,
+    var(--red-dark)
+  );
+  color: var(--white);
+}
+
 .school-hero-1 {
   background: linear-gradient(135deg, var(--blue), var(--gold));
 }
