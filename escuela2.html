@@ -3,62 +3,314 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>IAE | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=50">
+
+  <style>
+    /* =========================
+       INFORMACIÓN DE LA ESCUELA
+    ========================= */
+
+    .school-detail {
+      padding: 36px 20px 10px;
+    }
+
+    .detail-card {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 26px;
+      border: 1px solid #dbe3f0;
+      border-radius: 20px;
+      background: #ffffff;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .detail-card h2 {
+      margin: 0 0 8px;
+      color: #111827;
+    }
+
+    .detail-card > p {
+      margin: 0 0 22px;
+      color: #64748b;
+      line-height: 1.55;
+    }
+
+    .campus-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .campus-card {
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #f8fafc;
+    }
+
+    .campus-card h3 {
+      margin: 0 0 14px;
+      color: #0f2f5f;
+    }
+
+    .campus-card p {
+      margin: 8px 0;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    .campus-address {
+      margin: 0 0 14px;
+      color: #334155;
+      font-style: normal;
+      line-height: 1.65;
+    }
+
+    .phone-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .phone-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 10px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #004aad;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .phone-link:hover {
+      text-decoration: underline;
+    }
+
+    /* =========================
+       NIVELES DISPONIBLES
+    ========================= */
+
+    .grades-page {
+      padding: 42px 20px 64px;
+    }
+
+    .section-title {
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .section-intro {
+      max-width: 720px;
+      margin: 0 auto 28px;
+      color: #64748b;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    .grade-list {
+      margin: 14px 0 18px;
+      padding-left: 20px;
+      color: #475569;
+      line-height: 1.65;
+    }
+
+    @media (max-width: 900px) {
+      .campus-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
+
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
 
       <div class="nav-right">
         <div class="user-badge" id="userInfo">Cargando sesión...</div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="#niveles" class="nav-btn">Niveles</a>
-        <button class="nav-btn" id="cartBtn">Carrito</button>
-        <button class="nav-btn" id="adminBtn" style="display:none;">Panel admin</button>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+
+        <button class="nav-btn" id="cartBtn" type="button">
+          Carrito
+        </button>
+
+        <button
+          class="nav-btn"
+          id="adminBtn"
+          type="button"
+          style="display: none;"
+        >
+          Panel administrativo
+        </button>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
   <main>
-    <section class="page-hero school-hero-2">
+    <!-- =========================
+         PRESENTACIÓN DEL IAE
+    ========================== -->
+
+    <section class="page-hero school-hero">
       <div class="page-hero-content">
         <span class="page-badge">IAE</span>
-        <h1>Instituto Anglo Español (IAE)</h1>
+
+        <h1>Instituto Anglo Español</h1>
+
         <p>
-          Aquí encontrarás los niveles disponibles de esta escuela:
-          Jardín de niños, Primaria y Secundaria.
+          Consulta la información de jardín de niños, primaria y secundaria,
+          o entra al catálogo correspondiente para encontrar uniformes,
+          accesorios y materiales escolares.
         </p>
       </div>
     </section>
 
-    <section class="school-detail">
+    <!-- =========================
+         DATOS DE LA ESCUELA
+    ========================== -->
+
+    <section class="school-detail" aria-labelledby="schoolInfoTitle">
       <div class="detail-card">
-        <h3>Información de la escuela</h3>
+        <h2 id="schoolInfoTitle">Información de la escuela</h2>
 
-        <p><strong>Jardín de niños:</strong> Sadi Carnot #23, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
-        <p><strong>Teléfono Jardín de niños:</strong> 55-55-5-37-57</p>
-        <p><strong>Tel. y Fax Jardín de niños:</strong> 55-55-66-36-10</p>
+        <p>
+          Selecciona el nivel correspondiente para consultar su dirección
+          y teléfonos de contacto.
+        </p>
 
-        <br/>
+        <div class="campus-grid">
+          <!-- Jardín de niños -->
+          <article class="campus-card">
+            <h3>Jardín de niños</h3>
 
-        <p><strong>Primaria:</strong> Sadi Carnot #44, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
-        <p><strong>Teléfonos Primaria:</strong> 55-55-66-82-53, 55-57-05-01-81, 55-57-05-03-06</p>
-        <p><strong>Tel. y Fax Primaria:</strong> 55-55-35-86-75</p>
+            <address class="campus-address">
+              Sadi Carnot 23, colonia San Rafael,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06470
+            </address>
 
-        <br/>
+            <p><strong>Teléfono:</strong></p>
 
-        <p><strong>Secundaria:</strong> Sadi Carnot #13, Col. an Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470</p>
-        <p><strong>Teléfonos Secundaria:</strong> 55-25-57-90, 55-25-76-36, 55-25-76-37, 55-35-76.38 </p>
-        <p><strong>Tel. y Fax Secundaria:</strong> 55-25-58-48 </p>
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+52555553757">
+                55 5553 757
+              </a>
+            </div>
+
+            <p><strong>Teléfono y fax:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+525555663610">
+                55 5566 3610
+              </a>
+            </div>
+          </article>
+
+          <!-- Primaria -->
+          <article class="campus-card">
+            <h3>Primaria</h3>
+
+            <address class="campus-address">
+              Sadi Carnot 44, colonia San Rafael,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06470
+            </address>
+
+            <p><strong>Teléfonos:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+525555668253">
+                55 5566 8253
+              </a>
+
+              <a class="phone-link" href="tel:+525557050181">
+                55 5705 0181
+              </a>
+
+              <a class="phone-link" href="tel:+525557050306">
+                55 5705 0306
+              </a>
+            </div>
+
+            <p><strong>Teléfono y fax:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+525555358675">
+                55 5535 8675
+              </a>
+            </div>
+          </article>
+
+          <!-- Secundaria -->
+          <article class="campus-card">
+            <h3>Secundaria</h3>
+
+            <address class="campus-address">
+              Sadi Carnot 13, colonia San Rafael,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06470
+            </address>
+
+            <p><strong>Teléfonos:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+5255255790">
+                55 2557 90
+              </a>
+
+              <a class="phone-link" href="tel:+5255257636">
+                55 2576 36
+              </a>
+
+              <a class="phone-link" href="tel:+5255257637">
+                55 2576 37
+              </a>
+
+              <a class="phone-link" href="tel:+5255357638">
+                55 3576 38
+              </a>
+            </div>
+
+            <p><strong>Teléfono y fax:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+5255255848">
+                55 2558 48
+              </a>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section class="grades-page" id="niveles">
-      <h2 class="section-title">Niveles disponibles</h2>
+    <!-- =========================
+         CATÁLOGOS POR NIVEL
+    ========================== -->
+
+    <section class="grades-page" id="niveles" aria-labelledby="levelsTitle">
+      <h2 class="section-title" id="levelsTitle">Catálogos disponibles</h2>
+
+      <p class="section-intro">
+        Elige el nivel escolar para consultar los productos disponibles.
+      </p>
 
       <div class="grade-grid">
         <article class="grade-card">
@@ -66,9 +318,10 @@
 
           <div class="grade-content">
             <h3>Jardín de niños</h3>
+
             <p>
-              Catálogo con uniformes, batas y materiales
-              para jardín de niños del IAE.
+              Encuentra uniformes, batas, accesorios y materiales para
+              jardín de niños del IAE.
             </p>
 
             <ul class="grade-list">
@@ -78,7 +331,9 @@
             </ul>
 
             <div class="actions">
-              <a href="jardin.html" class="btn-primary">Ver catálogo</a>
+              <a href="jardin.html" class="btn-primary">
+                Ver catálogo de jardín de niños
+              </a>
             </div>
           </div>
         </article>
@@ -88,9 +343,10 @@
 
           <div class="grade-content">
             <h3>Primaria</h3>
+
             <p>
-              Catálogo con uniformes, accesorios y productos
-              para primaria del IAE.
+              Consulta uniformes, accesorios y materiales escolares para
+              primaria del IAE.
             </p>
 
             <ul class="grade-list">
@@ -100,19 +356,22 @@
             </ul>
 
             <div class="actions">
-              <a href="primaria.html" class="btn-primary">Ver catálogo</a>
+              <a href="primaria.html" class="btn-primary">
+                Ver catálogo de primaria
+              </a>
             </div>
           </div>
         </article>
 
         <article class="grade-card">
-          <div class="grade-top grade-primary">Secundaria</div>
+          <div class="grade-top grade-secondary">Secundaria</div>
 
           <div class="grade-content">
             <h3>Secundaria</h3>
+
             <p>
-              Catálogo con uniformes, accesorios y productos
-              para secundaria del IAE.
+              Encuentra uniformes, accesorios y materiales escolares para
+              secundaria del IAE.
             </p>
 
             <ul class="grade-list">
@@ -122,30 +381,48 @@
             </ul>
 
             <div class="actions">
-              <a href="secundariaIAE.html" class="btn-primary">Ver catálogo</a>
+              <a href="secundariaIAE.html" class="btn-primary">
+                Ver catálogo de secundaria
+              </a>
             </div>
           </div>
         </article>
-
       </div>
     </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - IAE</p>
+    <p>© 2026 Papelería Sulamita · Instituto Anglo Español</p>
   </footer>
 
-  <script src="tienda.js?v=22"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=50"></script>
+
   <script>
     protectPage();
     setupHeader();
 
-    const role = localStorage.getItem("userRole");
-    const adminBtn = document.getElementById("adminBtn");
+    const cartButton = document.getElementById("cartBtn");
+    const adminButton = document.getElementById("adminBtn");
+    const userRole = localStorage.getItem("userRole");
 
-    if (role === "admin" && adminBtn) {
-      adminBtn.style.display = "inline-block";
-      adminBtn.addEventListener("click", function () {
+    if (cartButton) {
+      cartButton.addEventListener("click", function () {
+        window.location.href = "carrito.html";
+      });
+    }
+
+    if (userRole === "admin" && adminButton) {
+      adminButton.style.display = "inline-block";
+
+      adminButton.addEventListener("click", function () {
         window.location.href = "admin.html";
       });
     }
