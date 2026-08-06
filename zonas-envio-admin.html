@@ -3,29 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Catálogos de zonas | Papelería Sulamita</title>
+
+  <title>Administrar zonas de envío | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=48">
+  <link rel="stylesheet" href="styles.css?v=63">
 
   <style>
+    /* =========================
+       ESTRUCTURA GENERAL
+    ========================= */
+
     .shipping-admin-page {
       max-width: 1240px;
       margin: 0 auto;
-      padding: 48px 22px 70px;
+      padding: 48px 22px 72px;
     }
 
     .shipping-layout {
       display: grid;
-      grid-template-columns: minmax(330px, 430px) 1fr;
+      grid-template-columns: minmax(330px, 430px) minmax(0, 1fr);
       gap: 26px;
       align-items: start;
     }
 
     .shipping-card {
-      background: #ffffff;
+      padding: 24px;
       border: 1px solid #e5e7eb;
       border-radius: 24px;
-      padding: 24px;
+      background: #ffffff;
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
     }
 
@@ -34,12 +40,23 @@
       margin-top: 0;
     }
 
+    .section-description {
+      margin: 0 0 20px;
+      color: #64748b;
+      line-height: 1.55;
+    }
+
+    /* =========================
+       AVISOS
+    ========================= */
+
     .session-note,
-    .explanation-note {
-      padding: 14px;
-      border-radius: 16px;
+    .explanation-note,
+    .server-status {
       margin-bottom: 18px;
-      line-height: 1.5;
+      padding: 14px 16px;
+      border-radius: 16px;
+      line-height: 1.55;
     }
 
     .session-note {
@@ -54,8 +71,28 @@
       color: #0f2f5f;
     }
 
+    .server-status {
+      font-weight: 800;
+    }
+
+    .server-status.ok {
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .server-status.error {
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    /* =========================
+       SELECTORES
+    ========================= */
+
     .step-title {
-      margin: 20px 0 10px;
+      margin: 22px 0 10px;
       color: #334155;
       font-weight: 900;
     }
@@ -80,7 +117,10 @@
       font-weight: 800;
       text-align: left;
       cursor: pointer;
-      transition: 0.16s ease;
+      transition:
+        background 0.16s ease,
+        border-color 0.16s ease,
+        transform 0.16s ease;
     }
 
     .type-button:hover,
@@ -98,10 +138,6 @@
       box-shadow: 0 8px 18px rgba(0, 87, 184, 0.2);
     }
 
-    .zone-selector {
-      user-select: none;
-    }
-
     .zone-button.is-selected {
       outline: 3px solid rgba(0, 87, 184, 0.16);
       outline-offset: 2px;
@@ -114,13 +150,17 @@
     .current-selection {
       margin: 14px 0 0;
       padding: 12px 13px;
+      border: 1px solid #a7f3d0;
       border-radius: 14px;
       background: #ecfdf5;
-      border: 1px solid #a7f3d0;
       color: #065f46;
       font-weight: 800;
       line-height: 1.45;
     }
+
+    /* =========================
+       FORMULARIO
+    ========================= */
 
     .bulk-input {
       width: 100%;
@@ -136,34 +176,6 @@
       line-height: 1.45;
     }
 
-    .server-status {
-      margin-bottom: 18px;
-      padding: 14px 16px;
-      border-radius: 16px;
-      line-height: 1.5;
-      font-weight: 800;
-    }
-
-    .server-status.ok {
-      border: 1px solid #a7f3d0;
-      background: #ecfdf5;
-      color: #065f46;
-    }
-
-    .server-status.error {
-      border: 1px solid #fecaca;
-      background: #fef2f2;
-      color: #991b1b;
-    }
-
-    #formMessage:not(:empty) {
-      display: block;
-      margin-top: 16px;
-      position: sticky;
-      bottom: 12px;
-      z-index: 5;
-    }
-
     .form-actions,
     .row-actions {
       display: flex;
@@ -175,6 +187,18 @@
       flex: 1;
     }
 
+    #formMessage:not(:empty) {
+      display: block;
+      position: sticky;
+      z-index: 5;
+      bottom: 12px;
+      margin-top: 16px;
+    }
+
+    /* =========================
+       FILTROS
+    ========================= */
+
     .catalog-toolbar {
       display: grid;
       grid-template-columns: 1fr minmax(170px, 210px) auto;
@@ -182,22 +206,26 @@
       margin-bottom: 20px;
     }
 
+    /* =========================
+       CATÁLOGOS REGISTRADOS
+    ========================= */
+
     .catalog-section {
+      overflow: hidden;
       margin-bottom: 26px;
       border: 1px solid #e5e7eb;
       border-radius: 20px;
-      overflow: hidden;
       background: #ffffff;
     }
 
     .catalog-section-header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
       gap: 14px;
       padding: 16px 18px;
-      background: #f8fafc;
       border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .catalog-section-header h3 {
@@ -210,8 +238,8 @@
       border-radius: 999px;
       background: #e0ecff;
       color: #004aad;
-      font-weight: 800;
       font-size: 0.82rem;
+      font-weight: 800;
     }
 
     .catalog-list {
@@ -222,9 +250,9 @@
       display: grid;
       grid-template-columns: minmax(140px, 0.8fr) minmax(300px, 2fr);
       gap: 18px;
-      align-items: start;
       padding: 16px 18px;
       border-bottom: 1px solid #eef2f7;
+      align-items: start;
     }
 
     .catalog-row:last-child {
@@ -246,13 +274,13 @@
 
     .zone-assignment {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
       gap: 10px;
       padding: 8px 9px 8px 12px;
       border: 1px solid #dbeafe;
       border-radius: 14px;
       background: #f8fbff;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .zone-badge {
@@ -261,8 +289,8 @@
       border-radius: 999px;
       background: #eff6ff;
       color: #004aad;
-      font-weight: 800;
       font-size: 0.86rem;
+      font-weight: 800;
       text-align: center;
     }
 
@@ -273,13 +301,14 @@
     }
 
     .zone-assignment-actions .btn-sm {
-      padding: 7px 10px;
       min-height: 36px;
+      padding: 7px 10px;
     }
 
     .empty-section {
       padding: 18px;
       color: #64748b;
+      line-height: 1.5;
     }
 
     @media (max-width: 980px) {
@@ -308,141 +337,249 @@
       }
 
       .zone-assignment {
-        align-items: flex-start;
         flex-direction: column;
+        align-items: flex-start;
       }
     }
   </style>
 </head>
 
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
-      <div class="logo">Papelería Sulamita - Admin</div>
+      <div class="logo">Papelería Sulamita · Administración</div>
 
       <div class="nav-right">
-        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <div class="user-badge" id="userInfo">
+          Cargando sesión...
+        </div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="admin.html" class="nav-btn">Inventario</a>
         <a href="pedidos-admin.html" class="nav-btn">Pedidos</a>
         <a href="listas-admin.html" class="nav-btn">Listas</a>
-        <a href="zonas-envio-admin.html" class="nav-btn">Zonas de envío</a>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+        <a href="usuarios-admin.html" class="nav-btn">Usuarios</a>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
-  <main class="shipping-admin-page">
+  <main>
+    <!-- =========================
+         PRESENTACIÓN
+    ========================== -->
+
     <section class="page-hero admin-hero">
       <div class="page-hero-content">
-        <span class="page-badge">Administrador</span>
-        <h1>Catálogos para calcular el envío</h1>
+        <span class="page-badge">Panel administrativo</span>
+
+        <h1>Administrar zonas de envío</h1>
+
         <p>
-          Guarda cada código postal, colonia, alcaldía o municipio, estado y país
-          por separado, indicando a qué zona pertenece cada valor.
+          Registra códigos postales, alcaldías o municipios y colonias para
+          determinar el costo de entrega de cada pedido.
         </p>
       </div>
     </section>
 
-    <section class="shipping-layout">
-      <div class="shipping-card">
-        <h2 id="formTitle">Agregar datos a una o varias zonas</h2>
+    <!-- =========================
+         PANEL DE ZONAS
+    ========================== -->
 
-        <div class="session-note">
-          Ya iniciaste sesión como administrador. No necesitas volver a escribir una contraseña.
-        </div>
+    <section class="shipping-admin-page">
+      <div class="shipping-layout">
+        <!-- Formulario -->
+        <div class="shipping-card">
+          <h2 id="formTitle">
+            Agregar datos a una o varias zonas
+          </h2>
 
-        <div class="server-status" id="serverStatus">
-          Verificando que el servidor pueda guardar los catálogos...
-        </div>
+          <p class="section-description">
+            Sigue los tres pasos para registrar nuevos datos de cobertura.
+          </p>
 
-        <div class="explanation-note">
-          <strong>Regla para calcular el envío:</strong><br>
-          Los códigos postales y las alcaldías o municipios pueden pertenecer
-          a varias zonas. Las colonias son exclusivas y cada colonia debe
-          pertenecer solamente a una zona.<br>
-          El cliente pasa primero por C.P. y alcaldía; la colonia confirma
-          finalmente la zona y el precio. El estado y el país se capturan en
-          la dirección del cliente, pero no deciden la zona.
-        </div>
-
-        <p class="step-title">1. Elige qué datos vas a agregar</p>
-        <div class="type-selector" id="typeSelector"></div>
-
-        <p class="step-title">2. Elige una o varias zonas</p>
-        <div class="zone-selector" id="zoneSelector"></div>
-
-        <div class="current-selection" id="currentSelection">
-          Código postal → todavía no has seleccionado una zona.
-        </div>
-
-        <form id="catalogForm">
-          <input type="hidden" id="editingRuleId">
-
-          <div class="form-group" style="margin-top: 18px;">
-            <label for="catalogValues" id="valuesLabel">3. Códigos postales</label>
-            <textarea
-              id="catalogValues"
-              class="bulk-input"
-              placeholder="Escribe un código postal por línea.&#10;Ej.&#10;12222&#10;45667&#10;06700"
-              required
-            ></textarea>
-            <p class="field-help" id="valuesHelp">
-              Puedes pegar varios códigos postales. Cada línea se guardará como un registro independiente dentro de la zona seleccionada.
-            </p>
+          <div class="session-note">
+            Ya iniciaste sesión como administrador. No necesitas escribir
+            nuevamente una contraseña.
           </div>
 
-          <div class="form-actions">
-            <button class="btn-primary" type="submit" id="saveButton">
-              Agregar códigos postales
-            </button>
-            <button class="btn-outline" type="button" id="cancelEditButton" style="display: none;">
-              Cancelar edición
-            </button>
-          </div>
-        </form>
-
-        <div class="note" id="formMessage" aria-live="polite"></div>
-      </div>
-
-      <div class="shipping-card">
-        <div class="admin-table-header">
-          <h2>Datos registrados por separado</h2>
-          <button class="btn-outline" id="reloadButton" type="button">Actualizar</button>
-        </div>
-
-        <div class="catalog-toolbar">
-          <input
-            type="search"
-            id="catalogSearch"
-            placeholder="Buscar código postal, colonia, municipio..."
+          <div
+            class="server-status"
+            id="serverStatus"
+            aria-live="polite"
           >
+            Verificando la conexión con el servidor...
+          </div>
 
-          <select id="zoneFilter">
-            <option value="">Todas las zonas</option>
-          </select>
+          <div class="explanation-note">
+            <strong>Cómo se determina el costo:</strong><br>
 
-          <button class="btn-outline" id="clearFiltersButton" type="button">
-            Limpiar
-          </button>
+            Un código postal y una alcaldía o municipio pueden relacionarse
+            con varias zonas. La colonia pertenece a una sola zona y confirma
+            el precio definitivo del envío.<br><br>
+
+            El estado y el país se solicitan en la dirección del cliente,
+            pero no determinan la zona.
+          </div>
+
+          <p class="step-title">
+            1. Elige el tipo de dato
+          </p>
+
+          <div
+            class="type-selector"
+            id="typeSelector"
+            aria-label="Tipos de datos de envío"
+          ></div>
+
+          <p class="step-title">
+            2. Elige la zona o las zonas
+          </p>
+
+          <div
+            class="zone-selector"
+            id="zoneSelector"
+            aria-label="Zonas de envío"
+          ></div>
+
+          <div
+            class="current-selection"
+            id="currentSelection"
+            aria-live="polite"
+          >
+            Códigos postales → todavía no has seleccionado una zona.
+          </div>
+
+          <form id="catalogForm">
+            <input type="hidden" id="editingRuleId">
+
+            <div class="form-group" style="margin-top: 18px;">
+              <label for="catalogValues" id="valuesLabel">
+                3. Códigos postales
+              </label>
+
+              <textarea
+                id="catalogValues"
+                class="bulk-input"
+                placeholder="Escribe un código postal por línea.&#10;Ejemplo:&#10;12222&#10;45667&#10;06700"
+                required
+              ></textarea>
+
+              <p class="field-help" id="valuesHelp">
+                Cada código postal debe tener cinco dígitos.
+              </p>
+            </div>
+
+            <div class="form-actions">
+              <button
+                class="btn-primary"
+                type="submit"
+                id="saveButton"
+              >
+                Agregar códigos postales
+              </button>
+
+              <button
+                class="btn-outline"
+                type="button"
+                id="cancelEditButton"
+                hidden
+              >
+                Cancelar edición
+              </button>
+            </div>
+          </form>
+
+          <div
+            class="note"
+            id="formMessage"
+            aria-live="polite"
+          ></div>
         </div>
 
-        <div id="catalogSections">
-          <div class="note">Cargando datos...</div>
+        <!-- Catálogos existentes -->
+        <div class="shipping-card">
+          <div class="admin-table-header">
+            <div>
+              <h2>Datos registrados</h2>
+
+              <p class="section-description">
+                Busca un valor o filtra los resultados por zona.
+              </p>
+            </div>
+
+            <button
+              class="btn-outline"
+              id="reloadButton"
+              type="button"
+            >
+              Actualizar datos
+            </button>
+          </div>
+
+          <div class="catalog-toolbar">
+            <input
+              type="search"
+              id="catalogSearch"
+              placeholder="Buscar C. P., colonia o municipio"
+              aria-label="Buscar datos de zonas de envío"
+            >
+
+            <select
+              id="zoneFilter"
+              aria-label="Filtrar datos por zona"
+            >
+              <option value="">Todas las zonas</option>
+            </select>
+
+            <button
+              class="btn-outline"
+              id="clearFiltersButton"
+              type="button"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+
+          <div id="catalogSections" aria-live="polite">
+            <div class="note">
+              Cargando datos...
+            </div>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - Zonas de envío</p>
+    <p>© 2026 Papelería Sulamita · Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=48"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=63"></script>
+
   <script>
     protectPage();
     protectAdminPage();
     setupHeader();
+
+    /* =========================
+       CONFIGURACIÓN
+    ========================= */
 
     const fixedZones = [
       { numero: 1, nombre: "Zona 1", costo: 150 },
@@ -459,45 +596,32 @@
         singular: "Código postal",
         plural: "Códigos postales",
         placeholder:
-          "Escribe un código postal por línea.\nEj.\n12222\n45667\n06700",
+          "Escribe un código postal por línea.\\n" +
+          "Ejemplo:\\n12222\\n45667\\n06700",
         help:
-          "Cada código postal debe tener 5 dígitos. Cada línea se guardará por separado."
+          "Cada código postal debe tener exactamente cinco dígitos."
       },
-      colonia: {
-        button: "Colonias",
-        singular: "Colonia",
-        plural: "Colonias",
-        placeholder:
-          "Escribe una colonia por línea.\nEj.\nRoma Norte\nDel Valle Centro",
-        help:
-          "Cada colonia debe pertenecer a una sola zona. Si ya estaba en otra zona, se moverá a la nueva."
-      },
+
       municipio: {
         button: "Alcaldías o municipios",
         singular: "Alcaldía o municipio",
         plural: "Alcaldías o municipios",
         placeholder:
-          "Escribe una alcaldía o municipio por línea.\nEj.\nCuauhtémoc\nBenito Juárez",
+          "Escribe una alcaldía o municipio por línea.\\n" +
+          "Ejemplo:\\nCuauhtémoc\\nBenito Juárez",
         help:
-          "Cada alcaldía o municipio se guardará como un registro independiente."
+          "Cada alcaldía o municipio se guardará como un registro separado."
       },
-      estado: {
-        button: "Estados o entidades",
-        singular: "Estado o entidad federativa",
-        plural: "Estados o entidades federativas",
+
+      colonia: {
+        button: "Colonias",
+        singular: "Colonia",
+        plural: "Colonias",
         placeholder:
-          "Escribe un estado o entidad por línea.\nEj.\nCiudad de México\nEstado de México",
+          "Escribe una colonia por línea.\\n" +
+          "Ejemplo:\\nRoma Norte\\nDel Valle Centro",
         help:
-          "Cada estado o entidad se asignará individualmente a la zona seleccionada."
-      },
-      pais: {
-        button: "Países",
-        singular: "País",
-        plural: "Países",
-        placeholder:
-          "Escribe un país por línea.\nEj.\nMéxico",
-        help:
-          "Cada país se asignará individualmente a la zona seleccionada."
+          "Cada colonia pertenece a una sola zona. Si ya estaba registrada, se moverá a la nueva zona."
       }
     };
 
@@ -507,24 +631,38 @@
       "colonia"
     ];
 
+    /* =========================
+       ELEMENTOS DE LA PÁGINA
+    ========================= */
+
     const typeSelector = document.getElementById("typeSelector");
     const zoneSelector = document.getElementById("zoneSelector");
-    const currentSelection = document.getElementById("currentSelection");
+    const currentSelection = document.getElementById(
+      "currentSelection"
+    );
+
     const catalogForm = document.getElementById("catalogForm");
     const editingRuleId = document.getElementById("editingRuleId");
     const catalogValues = document.getElementById("catalogValues");
     const valuesLabel = document.getElementById("valuesLabel");
     const valuesHelp = document.getElementById("valuesHelp");
     const saveButton = document.getElementById("saveButton");
-    const cancelEditButton = document.getElementById("cancelEditButton");
+    const cancelEditButton = document.getElementById(
+      "cancelEditButton"
+    );
     const formTitle = document.getElementById("formTitle");
     const formMessage = document.getElementById("formMessage");
+
     const serverStatus = document.getElementById("serverStatus");
     const reloadButton = document.getElementById("reloadButton");
     const catalogSearch = document.getElementById("catalogSearch");
     const zoneFilter = document.getElementById("zoneFilter");
-    const clearFiltersButton = document.getElementById("clearFiltersButton");
-    const catalogSections = document.getElementById("catalogSections");
+    const clearFiltersButton = document.getElementById(
+      "clearFiltersButton"
+    );
+    const catalogSections = document.getElementById(
+      "catalogSections"
+    );
 
     let zones = [...fixedZones];
     let rules = [];
@@ -532,121 +670,255 @@
     let selectedZoneNumbers = new Set();
     let serverSupportsRules = false;
 
-    typeSelector.addEventListener("click", function (event) {
-      const button = event.target.closest("[data-type]");
-      if (!button) return;
+    /* =========================
+       EVENTOS
+    ========================= */
 
-      const nextType = button.dataset.type;
+    typeSelector.addEventListener(
+      "click",
+      function (event) {
+        const button = event.target.closest("[data-type]");
 
-      if (
-        nextType === "colonia" &&
-        selectedType !== "colonia" &&
-        selectedZoneNumbers.size > 1
-      ) {
-        selectedZoneNumbers = new Set();
-        showMessage(
-          "Las colonias solo pueden guardarse en una zona. Selecciona una sola zona.",
-          false
-        );
-      }
+        if (!button) return;
 
-      selectedType = nextType;
-      resetEditOnly();
-      renderSelectors();
-      updateFormForType();
-    });
+        const nextType = button.dataset.type;
 
-    zoneSelector.addEventListener("click", function (event) {
-      const button = event.target.closest("[data-zone-number]");
-      if (!button) return;
+        if (!typeConfig[nextType]) return;
 
-      const zoneNumber = Number(button.dataset.zoneNumber || 0);
-
-      if (!zoneNumber) return;
-
-      if (editingRuleId.value || selectedType === "colonia") {
         if (
-          selectedType === "colonia" &&
-          selectedZoneNumbers.size === 1 &&
-          selectedZoneNumbers.has(zoneNumber)
+          nextType === "colonia" &&
+          selectedType !== "colonia" &&
+          selectedZoneNumbers.size > 1
         ) {
           selectedZoneNumbers = new Set();
-        } else {
-          selectedZoneNumbers = new Set([zoneNumber]);
+
+          showMessage(
+            "Las colonias solo pueden pertenecer a una zona. Selecciona una zona definitiva."
+          );
         }
-      } else if (selectedZoneNumbers.has(zoneNumber)) {
-        selectedZoneNumbers.delete(zoneNumber);
-      } else {
-        selectedZoneNumbers.add(zoneNumber);
+
+        selectedType = nextType;
+        resetEditOnly();
+        renderSelectors();
+        updateFormForType();
       }
+    );
 
-      renderSelectors();
-      updateFormForType();
-    });
+    zoneSelector.addEventListener(
+      "click",
+      function (event) {
+        const button = event.target.closest(
+          "[data-zone-number]"
+        );
 
-    catalogForm.addEventListener("submit", saveCatalogValues);
-    cancelEditButton.addEventListener("click", resetForm);
-    reloadButton.addEventListener("click", loadData);
-    catalogSearch.addEventListener("input", renderCatalogs);
-    zoneFilter.addEventListener("change", renderCatalogs);
+        if (!button) return;
 
-    clearFiltersButton.addEventListener("click", function () {
-      catalogSearch.value = "";
-      zoneFilter.value = "";
-      renderCatalogs();
-    });
+        const zoneNumber = Number(
+          button.dataset.zoneNumber
+        );
+
+        if (!zoneNumber) return;
+
+        const onlyOneZoneAllowed =
+          Boolean(editingRuleId.value) ||
+          selectedType === "colonia";
+
+        if (onlyOneZoneAllowed) {
+          selectedZoneNumbers =
+            selectedZoneNumbers.size === 1 &&
+            selectedZoneNumbers.has(zoneNumber)
+              ? new Set()
+              : new Set([zoneNumber]);
+        } else if (selectedZoneNumbers.has(zoneNumber)) {
+          selectedZoneNumbers.delete(zoneNumber);
+        } else {
+          selectedZoneNumbers.add(zoneNumber);
+        }
+
+        renderSelectors();
+        updateFormForType();
+      }
+    );
+
+    catalogForm.addEventListener(
+      "submit",
+      saveCatalogValues
+    );
+
+    cancelEditButton.addEventListener(
+      "click",
+      resetForm
+    );
+
+    reloadButton.addEventListener(
+      "click",
+      loadData
+    );
+
+    catalogSearch.addEventListener(
+      "input",
+      renderCatalogs
+    );
+
+    zoneFilter.addEventListener(
+      "change",
+      renderCatalogs
+    );
+
+    clearFiltersButton.addEventListener(
+      "click",
+      function () {
+        catalogSearch.value = "";
+        zoneFilter.value = "";
+        renderCatalogs();
+      }
+    );
+
+    catalogSections.addEventListener(
+      "click",
+      function (event) {
+        const editButton = event.target.closest(
+          "[data-edit-rule-id]"
+        );
+
+        if (editButton) {
+          editRule(
+            Number(editButton.dataset.editRuleId)
+          );
+          return;
+        }
+
+        const deleteButton = event.target.closest(
+          "[data-delete-rule-id]"
+        );
+
+        if (deleteButton) {
+          deleteRule(
+            Number(deleteButton.dataset.deleteRuleId)
+          );
+        }
+      }
+    );
+
+    /* =========================
+       SELECTORES
+    ========================= */
 
     function renderSelectors() {
-      typeSelector.innerHTML = typeOrder.map((type) => `
-        <button
-          class="type-button ${type === selectedType ? "is-selected" : ""}"
-          type="button"
-          data-type="${type}"
-          aria-pressed="${type === selectedType ? "true" : "false"}"
-        >
-          ${escapeHtml(typeConfig[type].button)}
-        </button>
-      `).join("");
+      typeSelector.innerHTML = typeOrder
+        .map(function (type) {
+          const isSelected = type === selectedType;
 
-      zoneSelector.innerHTML = zones.map((zone) => {
-        const isSelected = selectedZoneNumbers.has(Number(zone.numero));
+          return `
+            <button
+              class="type-button ${
+                isSelected ? "is-selected" : ""
+              }"
+              type="button"
+              data-type="${type}"
+              aria-pressed="${String(isSelected)}"
+            >
+              ${escapeHtml(typeConfig[type].button)}
+            </button>
+          `;
+        })
+        .join("");
 
-        return `
-          <button
-            class="zone-button ${isSelected ? "is-selected" : ""}"
-            type="button"
-            data-zone-number="${Number(zone.numero)}"
-            aria-pressed="${isSelected ? "true" : "false"}"
-          >
-            ${isSelected ? "✓ " : ""}${escapeHtml(zone.nombre)} · ${formatMoney(zone.costo)}
-          </button>
-        `;
-      }).join("");
+      zoneSelector.innerHTML = zones
+        .map(function (zone) {
+          const zoneNumber = Number(zone.numero);
+          const isSelected =
+            selectedZoneNumbers.has(zoneNumber);
+
+          return `
+            <button
+              class="zone-button ${
+                isSelected ? "is-selected" : ""
+              }"
+              type="button"
+              data-zone-number="${zoneNumber}"
+              aria-pressed="${String(isSelected)}"
+            >
+              ${isSelected ? "✓ " : ""}
+              ${escapeHtml(zone.nombre)}
+              ·
+              ${formatShippingMoney(zone.costo)}
+            </button>
+          `;
+        })
+        .join("");
+
+      renderZoneFilterOptions();
+      renderCurrentSelection();
+    }
+
+    function renderZoneFilterOptions() {
+      const currentFilter = zoneFilter.value;
 
       zoneFilter.innerHTML = `
         <option value="">Todas las zonas</option>
-        ${zones.map((zone) => `
-          <option value="${Number(zone.numero)}">
-            ${escapeHtml(zone.nombre)}
-          </option>
-        `).join("")}
+
+        ${zones
+          .map(function (zone) {
+            return `
+              <option value="${Number(zone.numero)}">
+                ${escapeHtml(zone.nombre)}
+              </option>
+            `;
+          })
+          .join("")}
       `;
 
-      const selectedZones = zones.filter((zone) =>
-        selectedZoneNumbers.has(Number(zone.numero))
+      const filterStillExists = zones.some(
+        function (zone) {
+          return String(zone.numero) === currentFilter;
+        }
+      );
+
+      zoneFilter.value = filterStillExists
+        ? currentFilter
+        : "";
+    }
+
+    function renderCurrentSelection() {
+      const selectedZones = zones.filter(
+        function (zone) {
+          return selectedZoneNumbers.has(
+            Number(zone.numero)
+          );
+        }
       );
 
       if (selectedType === "colonia") {
-        currentSelection.textContent = selectedZones.length
-          ? `Colonias → ${selectedZones[0].nombre} (${formatMoney(selectedZones[0].costo)}) · zona definitiva`
-          : "Colonias → selecciona una sola zona definitiva.";
-      } else {
-        currentSelection.textContent = selectedZones.length
-          ? `${typeConfig[selectedType].plural} → ${selectedZones
-              .map((zone) => `${zone.nombre} (${formatMoney(zone.costo)})`)
-              .join(", ")}`
-          : `${typeConfig[selectedType].plural} → todavía no has seleccionado ninguna zona.`;
+        currentSelection.textContent =
+          selectedZones.length === 1
+            ? (
+              `Colonias → ${selectedZones[0].nombre} ` +
+              `(${formatShippingMoney(selectedZones[0].costo)}) ` +
+              "· zona definitiva"
+            )
+            : "Colonias → selecciona una sola zona definitiva.";
+
+        return;
       }
+
+      currentSelection.textContent =
+        selectedZones.length
+          ? (
+            `${typeConfig[selectedType].plural} → ` +
+            selectedZones
+              .map(function (zone) {
+                return (
+                  `${zone.nombre} ` +
+                  `(${formatShippingMoney(zone.costo)})`
+                );
+              })
+              .join(", ")
+          )
+          : (
+            `${typeConfig[selectedType].plural} → ` +
+            "todavía no has seleccionado ninguna zona."
+          );
     }
 
     function updateFormForType() {
@@ -656,106 +928,113 @@
       catalogValues.placeholder = config.placeholder;
       valuesHelp.textContent = config.help;
 
-      if (!editingRuleId.value) {
-        const zoneCount = selectedZoneNumbers.size;
-        if (selectedType === "colonia") {
-          saveButton.textContent = zoneCount
-            ? "Agregar colonias a esta zona"
-            : "Agregar colonias";
-        } else {
-          saveButton.textContent = zoneCount
-            ? `Agregar ${config.plural.toLowerCase()} a ${zoneCount} ${
-                zoneCount === 1 ? "zona" : "zonas"
-              }`
-            : `Agregar ${config.plural.toLowerCase()}`;
-        }
-      }
-    }
-
-    function parseValues() {
-      const values = catalogValues.value
-        .split(/\r?\n/)
-        .map((value) => value.trim())
-        .filter(Boolean);
-
-      const unique = [];
-      const used = new Set();
-
-      for (let value of values) {
-        if (selectedType === "codigo_postal") {
-          value = value.replace(/\D/g, "");
-
-          if (value.length !== 5) {
-            throw new Error(
-              `El código postal "${value || "(vacío)"}" debe tener exactamente 5 dígitos.`
-            );
-          }
-        }
-
-        const key = value.toLocaleLowerCase("es-MX");
-
-        if (!used.has(key)) {
-          used.add(key);
-          unique.push(value);
-        }
+      if (editingRuleId.value) {
+        saveButton.textContent = "Guardar cambio";
+        return;
       }
 
-      return unique;
+      const zoneCount = selectedZoneNumbers.size;
+
+      if (selectedType === "colonia") {
+        saveButton.textContent = zoneCount
+          ? "Agregar colonias a esta zona"
+          : "Agregar colonias";
+
+        return;
+      }
+
+      saveButton.textContent = zoneCount
+        ? (
+          `Agregar ${config.plural.toLowerCase()} ` +
+          `a ${zoneCount} ${zoneCount === 1 ? "zona" : "zonas"}`
+        )
+        : `Agregar ${config.plural.toLowerCase()}`;
     }
+
+    /* =========================
+       CONSULTAR DATOS
+    ========================= */
 
     async function loadData() {
-      catalogSections.innerHTML = `<div class="note">Cargando datos...</div>`;
+      catalogSections.innerHTML = `
+        <div class="note">
+          Cargando datos...
+        </div>
+      `;
+
+      setReloadingState(true);
 
       try {
-        const response = await fetch("/api/admin/zonas-envio", {
-          credentials: "include"
-        });
+        const response = await fetch(
+          "/api/admin/zonas-envio",
+          {
+            credentials: "include"
+          }
+        );
 
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudieron cargar los datos.");
+          throw new Error(
+            data.message ||
+            "No fue posible cargar los datos."
+          );
         }
 
-        serverSupportsRules = Number(data.version_reglas_envio) >= 5;
+        serverSupportsRules =
+          Number(data.version_reglas_envio) >= 5;
 
-        if (!serverSupportsRules) {
-          serverStatus.className = "server-status error";
-          serverStatus.textContent =
-            "El archivo visual ya se actualizó, pero Render todavía está usando un server.js anterior. Reemplaza server.js y vuelve a desplegar antes de guardar.";
-        } else {
+        if (serverSupportsRules) {
           serverStatus.className = "server-status ok";
           serverStatus.textContent =
-            "Servidor conectado. C.P. y alcaldías pueden repetirse en varias zonas; cada colonia pertenece a una sola zona y define el costo final.";
+            "Servidor conectado. Los C. P. y municipios pueden pertenecer a varias zonas; cada colonia define una sola zona final.";
+        } else {
+          serverStatus.className = "server-status error";
+          serverStatus.textContent =
+            "La página está actualizada, pero el servidor todavía usa una versión anterior. Actualiza server.js en Render antes de guardar.";
         }
 
         zones =
-          Array.isArray(data.zonas) && data.zonas.length
+          Array.isArray(data.zonas) &&
+          data.zonas.length
             ? data.zonas
             : [...fixedZones];
 
-        rules = Array.isArray(data.reglas) ? data.reglas : [];
+        rules = Array.isArray(data.reglas)
+          ? data.reglas
+          : [];
 
         renderSelectors();
         updateFormForType();
         renderCatalogs();
       } catch (error) {
         console.error(error);
+
         serverSupportsRules = false;
+        zones = [...fixedZones];
+
         serverStatus.className = "server-status error";
         serverStatus.textContent =
-          "No se pudo verificar el servidor. Revisa que el nuevo server.js haya terminado de desplegarse en Render.";
+          "No fue posible verificar el servidor. Revisa que Render haya terminado de desplegar la versión actualizada.";
 
-        zones = [...fixedZones];
         renderSelectors();
 
         catalogSections.innerHTML = `
           <div class="note error">
-            ${escapeHtml(error.message || "No se pudo conectar con el servidor.")}
+            ${escapeHtml(
+              error.message ||
+              "No fue posible conectar con el servidor."
+            )}
           </div>
         `;
+      } finally {
+        setReloadingState(false);
       }
     }
+
+    /* =========================
+       GUARDAR DATOS
+    ========================= */
 
     async function saveCatalogValues(event) {
       event.preventDefault();
@@ -763,15 +1042,18 @@
 
       if (!selectedZoneNumbers.size) {
         showMessage(
-          "Selecciona al menos una zona a la que pertenecen estos datos.",
+          "Selecciona al menos una zona.",
           true
         );
         return;
       }
 
-      if (selectedType === "colonia" && selectedZoneNumbers.size !== 1) {
+      if (
+        selectedType === "colonia" &&
+        selectedZoneNumbers.size !== 1
+      ) {
         showMessage(
-          "Cada colonia debe pertenecer a una sola zona. Selecciona únicamente una zona.",
+          "Cada colonia debe pertenecer a una sola zona.",
           true
         );
         return;
@@ -787,44 +1069,41 @@
       }
 
       if (!values.length) {
-        showMessage(`Escribe al menos un ${typeConfig[selectedType].singular.toLowerCase()}.`, true);
+        showMessage(
+          `Escribe al menos un ${
+            typeConfig[selectedType].singular.toLowerCase()
+          }.`,
+          true
+        );
         return;
       }
 
-      const editId = Number(editingRuleId.value || 0);
+      const editId = Number(
+        editingRuleId.value ||
+        0
+      );
 
       if (editId && values.length !== 1) {
-        showMessage("Durante la edición solo puedes guardar un valor.", true);
+        showMessage(
+          "Durante la edición solo puedes guardar un valor.",
+          true
+        );
         return;
       }
 
-      saveButton.disabled = true;
-      saveButton.textContent = editId ? "Guardando cambio..." : "Agregando...";
+      setSavingState(true, Boolean(editId));
 
       try {
         if (editId) {
-          const response = await fetch(
-            `/api/admin/zonas-envio/reglas/${editId}`,
-            {
-              method: "PUT",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                zona_numero: Number([...selectedZoneNumbers][0]),
-                tipo: selectedType,
-                valor: values[0],
-                activo: true
-              })
-            }
+          await updateRule(
+            editId,
+            values[0]
           );
 
-          const data = await readJsonResponse(response);
+          showMessage(
+            "El dato se actualizó correctamente."
+          );
 
-          if (!response.ok) {
-            throw new Error(data.message || "No se pudo actualizar el dato.");
-          }
-
-          showMessage("Dato actualizado correctamente.");
           resetForm(false);
           await loadData();
           return;
@@ -832,7 +1111,7 @@
 
         if (!serverSupportsRules) {
           throw new Error(
-            "Render todavía está usando un server.js anterior. Actualiza el servidor antes de guardar."
+            "El servidor todavía usa una versión anterior. Actualízalo antes de guardar."
           );
         }
 
@@ -841,9 +1120,13 @@
           {
             method: "POST",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json"
+            },
             body: JSON.stringify({
-              zona_numeros: Array.from(selectedZoneNumbers),
+              zona_numeros: Array.from(
+                selectedZoneNumbers
+              ),
               tipo: selectedType,
               valores: values
             })
@@ -853,7 +1136,10 @@
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudieron guardar los datos.");
+          throw new Error(
+            data.message ||
+            "No fue posible guardar los datos."
+          );
         }
 
         catalogValues.value = "";
@@ -861,7 +1147,13 @@
 
         showMessage(
           data.message ||
-            `${values.length} ${values.length === 1 ? "registro guardado" : "registros guardados"} correctamente.`
+          (
+            `${values.length} ${
+              values.length === 1
+                ? "registro guardado"
+                : "registros guardados"
+            } correctamente.`
+          )
         );
 
         formMessage.scrollIntoView({
@@ -870,162 +1162,328 @@
         });
       } catch (error) {
         console.error(error);
-        showMessage(error.message || "No se pudieron guardar los datos.", true);
+
+        showMessage(
+          error.message ||
+          "No fue posible guardar los datos.",
+          true
+        );
       } finally {
-        saveButton.disabled = false;
+        setSavingState(false, Boolean(editId));
         updateFormForType();
       }
     }
 
+    async function updateRule(ruleId, value) {
+      const selectedZoneNumber = Number(
+        Array.from(selectedZoneNumbers)[0]
+      );
+
+      const response = await fetch(
+        `/api/admin/zonas-envio/reglas/${ruleId}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            zona_numero: selectedZoneNumber,
+            tipo: selectedType,
+            valor: value,
+            activo: true
+          })
+        }
+      );
+
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+          "No fue posible actualizar el dato."
+        );
+      }
+    }
+
+    function parseValues() {
+      const values = catalogValues.value
+        .split(/\r?\n/)
+        .map(function (value) {
+          return value.trim();
+        })
+        .filter(Boolean);
+
+      const uniqueValues = [];
+      const usedValues = new Set();
+
+      for (let value of values) {
+        if (selectedType === "codigo_postal") {
+          const originalValue = value;
+          value = value.replace(/\D/g, "");
+
+          if (value.length !== 5) {
+            throw new Error(
+              `El código postal "${originalValue}" debe tener exactamente cinco dígitos.`
+            );
+          }
+        }
+
+        const normalizedValue = value
+          .toLocaleLowerCase("es-MX");
+
+        if (!usedValues.has(normalizedValue)) {
+          usedValues.add(normalizedValue);
+          uniqueValues.push(value);
+        }
+      }
+
+      return uniqueValues;
+    }
+
+    /* =========================
+       MOSTRAR CATÁLOGOS
+    ========================= */
+
     function renderCatalogs() {
-      const search = catalogSearch.value.trim().toLocaleLowerCase("es-MX");
-      const zoneNumber = Number(zoneFilter.value || 0);
+      const search = catalogSearch.value
+        .trim()
+        .toLocaleLowerCase("es-MX");
 
-      const filtered = rules.filter((rule) => {
-        const matchesSearch =
-          !search ||
-          String(rule.valor || "")
-            .toLocaleLowerCase("es-MX")
-            .includes(search);
+      const selectedZoneNumber = Number(
+        zoneFilter.value ||
+        0
+      );
 
-        const matchesZone =
-          !zoneNumber || Number(rule.zona_numero) === zoneNumber;
+      const filteredRules = rules.filter(
+        function (rule) {
+          const matchesSearch =
+            !search ||
+            String(rule.valor || "")
+              .toLocaleLowerCase("es-MX")
+              .includes(search);
 
-        return matchesSearch && matchesZone;
-      });
+          const matchesZone =
+            !selectedZoneNumber ||
+            Number(rule.zona_numero) ===
+              selectedZoneNumber;
 
-      catalogSections.innerHTML = typeOrder.map((type) => {
-        const typeRules = filtered.filter((rule) => rule.tipo === type);
-        const groups = groupRulesByValue(typeRules);
-        const config = typeConfig[type];
+          return matchesSearch && matchesZone;
+        }
+      );
 
-        return `
-          <section class="catalog-section">
-            <div class="catalog-section-header">
-              <h3>${escapeHtml(config.plural)}</h3>
-              <span
-                class="catalog-count"
-                title="${typeRules.length} asignaciones en total"
-              >
-                ${groups.length}
-              </span>
-            </div>
+      catalogSections.innerHTML = typeOrder
+        .map(function (type) {
+          const config = typeConfig[type];
 
-            <div class="catalog-list">
-              ${
-                groups.length
-                  ? groups.map(renderGroupedCatalogRow).join("")
-                  : `<div class="empty-section">Todavía no hay ${escapeHtml(config.plural.toLowerCase())} con estos filtros.</div>`
-              }
-            </div>
-          </section>
-        `;
-      }).join("");
+          const typeRules = filteredRules.filter(
+            function (rule) {
+              return rule.tipo === type;
+            }
+          );
+
+          const groups = groupRulesByValue(typeRules);
+
+          return `
+            <section class="catalog-section">
+              <div class="catalog-section-header">
+                <h3>${escapeHtml(config.plural)}</h3>
+
+                <span
+                  class="catalog-count"
+                  title="${typeRules.length} asignaciones"
+                >
+                  ${groups.length}
+                </span>
+              </div>
+
+              <div class="catalog-list">
+                ${
+                  groups.length
+                    ? groups
+                        .map(renderGroupedCatalogRow)
+                        .join("")
+                    : `
+                      <div class="empty-section">
+                        No hay ${
+                          escapeHtml(
+                            config.plural.toLowerCase()
+                          )
+                        } que coincidan con los filtros.
+                      </div>
+                    `
+                }
+              </div>
+            </section>
+          `;
+        })
+        .join("");
     }
 
     function groupRulesByValue(typeRules) {
       const groupsMap = new Map();
 
-      typeRules.forEach((rule) => {
-        const normalizedValue = String(rule.valor || "")
+      typeRules.forEach(function (rule) {
+        const normalizedValue = String(
+          rule.valor ||
+          ""
+        )
           .trim()
           .toLocaleLowerCase("es-MX");
 
         if (!groupsMap.has(normalizedValue)) {
-          groupsMap.set(normalizedValue, {
-            valor: String(rule.valor || "").trim(),
-            reglas: []
-          });
+          groupsMap.set(
+            normalizedValue,
+            {
+              valor: String(rule.valor || "").trim(),
+              reglas: []
+            }
+          );
         }
 
-        groupsMap.get(normalizedValue).reglas.push(rule);
+        groupsMap
+          .get(normalizedValue)
+          .reglas
+          .push(rule);
       });
 
       return Array.from(groupsMap.values())
-        .map((group) => ({
-          ...group,
-          reglas: group.reglas.sort(
-            (a, b) => Number(a.zona_numero) - Number(b.zona_numero)
-          )
-        }))
-        .sort((a, b) =>
-          a.valor.localeCompare(b.valor, "es-MX", {
-            numeric: true,
-            sensitivity: "base"
-          })
-        );
+        .map(function (group) {
+          return {
+            ...group,
+            reglas: group.reglas.sort(
+              function (firstRule, secondRule) {
+                return (
+                  Number(firstRule.zona_numero) -
+                  Number(secondRule.zona_numero)
+                );
+              }
+            )
+          };
+        })
+        .sort(function (firstGroup, secondGroup) {
+          return firstGroup.valor.localeCompare(
+            secondGroup.valor,
+            "es-MX",
+            {
+              numeric: true,
+              sensitivity: "base"
+            }
+          );
+        });
     }
 
     function renderGroupedCatalogRow(group) {
       const assignmentsHtml = group.reglas
-        .map((rule) => `
-          <div class="zone-assignment">
-            <span class="zone-badge">
-              ${escapeHtml(rule.zona)} · ${formatMoney(rule.costo)}
-            </span>
+        .map(function (rule) {
+          return `
+            <div class="zone-assignment">
+              <span class="zone-badge">
+                ${escapeHtml(
+                  rule.zona ||
+                  `Zona ${rule.zona_numero}`
+                )}
+                ·
+                ${formatShippingMoney(rule.costo)}
+              </span>
 
-            <div class="zone-assignment-actions">
-              <button
-                class="btn-outline btn-sm"
-                type="button"
-                onclick="editRule(${Number(rule.id)})"
-                aria-label="Editar ${escapeHtmlAttr(group.valor)} en ${escapeHtmlAttr(rule.zona)}"
-              >
-                Editar
-              </button>
+              <div class="zone-assignment-actions">
+                <button
+                  class="btn-outline btn-sm"
+                  type="button"
+                  data-edit-rule-id="${Number(rule.id)}"
+                  aria-label="Editar ${
+                    escapeHtmlAttr(group.valor)
+                  }"
+                >
+                  Editar
+                </button>
 
-              <button
-                class="btn-danger btn-sm"
-                type="button"
-                onclick="deleteRule(${Number(rule.id)})"
-                aria-label="Borrar ${escapeHtmlAttr(group.valor)} de ${escapeHtmlAttr(rule.zona)}"
-              >
-                Borrar
-              </button>
+                <button
+                  class="btn-danger btn-sm"
+                  type="button"
+                  data-delete-rule-id="${Number(rule.id)}"
+                  aria-label="Eliminar ${
+                    escapeHtmlAttr(group.valor)
+                  }"
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
-          </div>
-        `)
+          `;
+        })
         .join("");
 
       return `
         <article class="catalog-row">
-          <div class="catalog-value">${escapeHtml(group.valor)}</div>
-          <div class="zone-assignments">${assignmentsHtml}</div>
+          <div class="catalog-value">
+            ${escapeHtml(group.valor)}
+          </div>
+
+          <div class="zone-assignments">
+            ${assignmentsHtml}
+          </div>
         </article>
       `;
     }
 
-    function editRule(id) {
-      const rule = rules.find((item) => Number(item.id) === Number(id));
-      if (!rule) return;
+    /* =========================
+       EDITAR Y ELIMINAR
+    ========================= */
+
+    function editRule(ruleId) {
+      const rule = rules.find(
+        function (item) {
+          return Number(item.id) === ruleId;
+        }
+      );
+
+      if (!rule || !typeConfig[rule.tipo]) return;
 
       editingRuleId.value = String(rule.id);
       selectedType = rule.tipo;
-      selectedZoneNumbers = new Set([Number(rule.zona_numero)]);
-      catalogValues.value = rule.valor;
+      selectedZoneNumbers = new Set([
+        Number(rule.zona_numero)
+      ]);
+      catalogValues.value = rule.valor || "";
 
-      formTitle.textContent = `Editar ${typeConfig[selectedType].singular.toLowerCase()} en una zona`;
-      saveButton.textContent = "Guardar cambio";
-      cancelEditButton.style.display = "inline-block";
+      formTitle.textContent =
+        `Editar ${
+          typeConfig[selectedType]
+            .singular
+            .toLowerCase()
+        }`;
+
+      cancelEditButton.hidden = false;
 
       renderSelectors();
       updateFormForType();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
     }
 
-    async function deleteRule(id) {
-      const rule = rules.find((item) => Number(item.id) === Number(id));
+    async function deleteRule(ruleId) {
+      const rule = rules.find(
+        function (item) {
+          return Number(item.id) === ruleId;
+        }
+      );
+
       if (!rule) return;
 
       const confirmed = confirm(
-        `¿Seguro que quieres quitar "${rule.valor}" de ${rule.zona}?`
+        `¿Seguro que deseas eliminar "${rule.valor}" de ${rule.zona}?`
       );
 
       if (!confirmed) return;
 
       try {
         const response = await fetch(
-          `/api/admin/zonas-envio/reglas/${Number(id)}`,
+          `/api/admin/zonas-envio/reglas/${ruleId}`,
           {
             method: "DELETE",
             credentials: "include"
@@ -1035,43 +1493,87 @@
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudo borrar el dato.");
+          throw new Error(
+            data.message ||
+            "No fue posible eliminar el dato."
+          );
         }
 
-        showMessage("Dato eliminado correctamente.");
         await loadData();
+
+        showMessage(
+          "El dato se eliminó correctamente."
+        );
       } catch (error) {
         console.error(error);
-        showMessage(error.message || "No se pudo borrar el dato.", true);
+
+        showMessage(
+          error.message ||
+          "No fue posible eliminar el dato.",
+          true
+        );
       }
     }
+
+    /* =========================
+       RESTABLECER FORMULARIO
+    ========================= */
 
     function resetEditOnly() {
       if (!editingRuleId.value) return;
 
       editingRuleId.value = "";
       catalogValues.value = "";
-      formTitle.textContent = "Agregar datos a una o varias zonas";
-      cancelEditButton.style.display = "none";
+      formTitle.textContent =
+        "Agregar datos a una o varias zonas";
+      cancelEditButton.hidden = true;
     }
 
-    function resetForm(clearZone = true) {
+    function resetForm(clearZones = true) {
       editingRuleId.value = "";
       catalogValues.value = "";
-      formTitle.textContent = "Agregar datos a una o varias zonas";
-      cancelEditButton.style.display = "none";
+      formTitle.textContent =
+        "Agregar datos a una o varias zonas";
+      cancelEditButton.hidden = true;
 
-      if (clearZone) {
+      if (clearZones) {
         selectedZoneNumbers = new Set();
       }
 
       renderSelectors();
       updateFormForType();
+      clearMessage();
     }
 
-    function showMessage(message, isError = false) {
+    /* =========================
+       ESTADOS Y MENSAJES
+    ========================= */
+
+    function setReloadingState(isLoading) {
+      reloadButton.disabled = isLoading;
+      reloadButton.textContent = isLoading
+        ? "Actualizando..."
+        : "Actualizar datos";
+    }
+
+    function setSavingState(isSaving, isEditing) {
+      saveButton.disabled = isSaving;
+
+      if (isSaving) {
+        saveButton.textContent = isEditing
+          ? "Guardando cambio..."
+          : "Guardando datos...";
+      }
+    }
+
+    function showMessage(
+      message,
+      isError = false
+    ) {
       formMessage.textContent = message;
-      formMessage.className = isError ? "note error" : "note success";
+      formMessage.className = isError
+        ? "note error"
+        : "note success";
     }
 
     function clearMessage() {
@@ -1080,7 +1582,9 @@
     }
 
     async function readJsonResponse(response) {
-      const contentType = response.headers.get("content-type") || "";
+      const contentType =
+        response.headers.get("content-type") ||
+        "";
 
       if (!contentType.includes("application/json")) {
         return {};
@@ -1089,8 +1593,20 @@
       return response.json();
     }
 
-    function formatMoney(value) {
-      return `$${Number(value || 0).toFixed(2)}`;
+    /* =========================
+       FORMATOS Y SEGURIDAD
+    ========================= */
+
+    function formatShippingMoney(value) {
+      return new Intl.NumberFormat(
+        "es-MX",
+        {
+          style: "currency",
+          currency: "MXN",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }
+      ).format(Number(value || 0));
     }
 
     function escapeHtml(value) {
@@ -1103,8 +1619,12 @@
     }
 
     function escapeHtmlAttr(value) {
-      return escapeHtml(value).replaceAll("\\", "\\\\");
+      return escapeHtml(value);
     }
+
+    /* =========================
+       INICIO
+    ========================= */
 
     renderSelectors();
     updateFormForType();
