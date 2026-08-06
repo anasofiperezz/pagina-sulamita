@@ -3,11 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Listas de útiles | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=37">
+  <link rel="stylesheet" href="styles.css?v=52">
 
   <style>
+    /* =========================
+       ESTRUCTURA GENERAL
+    ========================= */
+
     .lists-page {
       max-width: 1180px;
       margin: 0 auto;
@@ -15,83 +21,116 @@
     }
 
     .lists-hero {
-      background: linear-gradient(135deg, rgba(0, 59, 125, 0.95), rgba(156, 0, 43, 0.92));
-      color: #ffffff;
-      border-radius: 28px;
+      margin-bottom: 28px;
       padding: 44px;
-      margin-bottom: 34px;
+      border-radius: 28px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(0, 59, 125, 0.96),
+          rgba(156, 0, 43, 0.92)
+        );
+      color: #ffffff;
       box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
     }
 
     .lists-hero h1 {
       margin: 0 0 12px;
       font-size: clamp(2rem, 4vw, 3.4rem);
-      line-height: 1.05;
+      line-height: 1.08;
     }
 
     .lists-hero p {
-      max-width: 720px;
+      max-width: 760px;
       margin: 0;
       font-size: 1.05rem;
-      opacity: 0.94;
+      line-height: 1.6;
+      opacity: 0.96;
     }
 
     .lists-note {
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      color: #9a3412;
-      border-radius: 18px;
+      margin-bottom: 30px;
       padding: 16px 18px;
-      margin-bottom: 28px;
+      border: 1px solid #bfdbfe;
+      border-radius: 18px;
+      background: #eff6ff;
+      color: #0f2f5f;
       line-height: 1.55;
     }
 
-    .lists-section-title {
-      margin: 34px 0 18px;
-      font-size: 1.7rem;
-      color: #1f2937;
+    .lists-note strong {
+      display: block;
+      margin-bottom: 4px;
     }
 
+    .lists-section-title {
+      margin: 36px 0 18px;
+      color: #1f2937;
+      font-size: 1.7rem;
+    }
+
+    /* =========================
+       TARJETAS DE LISTAS
+    ========================= */
+
     .list-card {
-      background: #ffffff;
+      margin-bottom: 26px;
+      padding: 24px;
       border: 1px solid #e5e7eb;
       border-radius: 24px;
-      padding: 24px;
+      background: #ffffff;
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-      margin-bottom: 26px;
     }
 
     .list-card-header {
       display: flex;
-      justify-content: space-between;
       gap: 18px;
-      flex-wrap: wrap;
       margin-bottom: 16px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
     }
 
     .list-card-tag {
+      display: inline-block;
       width: fit-content;
+      margin-bottom: 10px;
+      padding: 7px 12px;
+      border-radius: 999px;
       background: #eff6ff;
       color: #004aad;
-      border-radius: 999px;
-      padding: 7px 12px;
-      font-weight: 800;
       font-size: 0.82rem;
+      font-weight: 800;
       letter-spacing: 0.02em;
-      margin-bottom: 10px;
-      display: inline-block;
     }
 
     .list-card h3 {
       margin: 0 0 8px;
-      font-size: 1.25rem;
       color: #111827;
+      font-size: 1.25rem;
     }
 
     .list-card p {
       margin: 0;
       color: #4b5563;
-      line-height: 1.5;
+      line-height: 1.55;
+    }
+
+    .list-meta {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .list-meta-badge {
+      display: inline-flex;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 0.84rem;
+      font-weight: 700;
     }
 
     .list-actions {
@@ -105,30 +144,31 @@
       text-decoration: none;
     }
 
+    /* =========================
+       VISTA PREVIA DE ARCHIVOS
+    ========================= */
+
     .file-viewer {
-      width: min(100%, 820px);
-      min-height: 520px;
+      width: min(100%, 920px);
+      min-height: 260px;
+      margin: 26px auto 8px;
+      overflow: hidden;
       border: 1px solid #dbe3f0;
       border-radius: 24px;
       background: #f8fafc;
-      overflow: hidden;
-      margin: 26px auto 8px;
       box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
     }
 
     .pdf-pages-viewer {
-      width: min(100%, 920px);
-      min-height: 260px;
       padding: 18px;
       overflow: visible;
-      background: #f8fafc;
     }
 
     .pdf-pages-container {
       display: flex;
-      flex-direction: column;
-      gap: 24px;
       width: 100%;
+      gap: 24px;
+      flex-direction: column;
     }
 
     .pdf-page {
@@ -162,16 +202,16 @@
     }
 
     .pdf-loading {
-      min-height: 220px;
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      min-height: 220px;
       padding: 28px;
-      text-align: center;
+      gap: 8px;
       color: #334155;
       font-weight: 700;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
     }
 
     .pdf-loading small {
@@ -179,44 +219,35 @@
       font-weight: 500;
     }
 
-    .image-preview-img {
-      width: 100%;
-      max-width: 760px;
-      max-height: 680px;
-      object-fit: contain;
-      display: block;
-      background: #ffffff;
-      border-radius: 16px;
-    }
-
     .image-viewer {
       display: flex;
-      justify-content: center;
-      align-items: center;
       padding: 18px;
+      align-items: center;
+      justify-content: center;
     }
 
+    .image-preview-img,
     .image-viewer img {
+      display: block;
       width: 100%;
       max-width: 760px;
       max-height: 680px;
-      object-fit: contain;
       border-radius: 16px;
-      display: block;
       background: #ffffff;
+      object-fit: contain;
     }
 
     .file-message {
-      width: 100%;
-      min-height: 520px;
-      padding: 42px 28px;
-      text-align: center;
-      color: #334155;
       display: flex;
-      flex-direction: column;
+      width: 100%;
+      min-height: 360px;
+      padding: 42px 28px;
+      background: linear-gradient(135deg, #f8fafc, #eef6ff);
+      color: #334155;
+      text-align: center;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #f8fafc, #eef6ff);
+      flex-direction: column;
     }
 
     .file-message h4 {
@@ -226,7 +257,7 @@
     }
 
     .file-message p {
-      max-width: 520px;
+      max-width: 540px;
       margin: 0 auto;
     }
 
@@ -238,13 +269,7 @@
 
       .file-viewer {
         width: 100%;
-        min-height: 360px;
         border-radius: 20px;
-      }
-
-      .file-message {
-        min-height: 360px;
-        padding: 30px 18px;
       }
 
       .pdf-pages-viewer {
@@ -259,65 +284,130 @@
       .image-viewer img {
         max-height: 520px;
       }
+
+      .list-actions {
+        width: 100%;
+      }
+
+      .list-actions a {
+        flex: 1 1 160px;
+        text-align: center;
+      }
     }
   </style>
 </head>
 
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
 
       <div class="nav-right">
-        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <div class="user-badge" id="userInfo">
+          Cargando sesión...
+        </div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="index.html#escuelas" class="nav-btn">Escuelas</a>
         <a href="listas-utiles.html" class="nav-btn">Listas de útiles</a>
-        <a href="listas-admin.html" class="nav-btn" id="adminListsBtn" style="display: none;">Administrar listas</a>
+
+        <a
+          href="listas-admin.html"
+          class="nav-btn"
+          id="adminListsBtn"
+          style="display: none;"
+        >
+          Administrar listas
+        </a>
+
         <a href="contacto.html" class="nav-btn">Contacto</a>
-        <button class="nav-btn" id="cartBtn">Carrito</button>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+
+        <button class="nav-btn" id="cartBtn" type="button">
+          Carrito
+        </button>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
   <main class="lists-page">
+    <!-- =========================
+         PRESENTACIÓN
+    ========================== -->
+
     <section class="lists-hero">
-      <h1>Listas de útiles 2026-2027</h1>
+      <h1>Listas de útiles 2026–2027</h1>
+
       <p>
-        Consulta las listas oficiales de la escuela y la lista preparada por Papelería Sulamita
-        desde esta página. Todas las páginas de cada PDF se muestran una debajo de otra.
+        Consulta las listas oficiales de las escuelas y las listas preparadas
+        por Papelería Sulamita. Puedes ver cada documento en la página,
+        abrirlo en otra pestaña o descargarlo.
       </p>
     </section>
 
     <div class="lists-note">
-      <strong>Nota:</strong> Las páginas del PDF se cargan como imágenes para evitar errores del visor del navegador.
-      En documentos largos, espera unos segundos mientras aparecen todas las hojas.
+      <strong>Consulta de documentos</strong>
+
+      Las páginas de los PDF se muestran como imágenes para facilitar su lectura.
+      En documentos largos, la carga puede tardar unos segundos.
     </div>
 
-    <div id="listsContainer">
-      <article class="list-card">
-        <h3>Cargando listas...</h3>
-        <p>Estamos consultando las listas disponibles.</p>
-      </article>
-    </div>
+    <!-- =========================
+         LISTAS DISPONIBLES
+    ========================== -->
+
+    <section aria-label="Listas de útiles disponibles">
+      <div id="listsContainer" aria-live="polite">
+        <article class="list-card">
+          <h3>Cargando listas disponibles...</h3>
+
+          <p>
+            Estamos consultando los documentos publicados.
+          </p>
+        </article>
+      </div>
+    </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - Listas de útiles</p>
+    <p>© 2026 Papelería Sulamita · Listas de útiles</p>
   </footer>
 
-  <script src="tienda.js?v=37"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=52"></script>
+
   <script>
     protectPage();
     setupHeader();
 
-    const role = localStorage.getItem("userRole");
-    const adminListsBtn = document.getElementById("adminListsBtn");
+    /* =========================
+       ACCESOS DEL ADMINISTRADOR
+    ========================= */
 
-    if (role === "admin" && adminListsBtn) {
-      adminListsBtn.style.display = "inline-block";
+    const userRole = localStorage.getItem("userRole");
+    const adminListsButton = document.getElementById("adminListsBtn");
+
+    if (userRole === "admin" && adminListsButton) {
+      adminListsButton.style.display = "inline-block";
     }
+
+    /* =========================
+       CARGA DE LISTAS
+    ========================= */
 
     loadSchoolLists();
 
@@ -325,21 +415,33 @@
       const container = document.getElementById("listsContainer");
 
       try {
-        const response = await fetch("/api/listas-utiles");
-        const data = await response.json();
+        const response = await fetch("/api/listas-utiles", {
+          credentials: "include"
+        });
+
+        const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudieron cargar las listas.");
+          throw new Error(
+            data.message ||
+            "No fue posible cargar las listas."
+          );
         }
 
         const lists = Array.isArray(data) ? data : [];
+
         renderLists(lists);
       } catch (error) {
         console.error(error);
+
         container.innerHTML = `
           <article class="list-card">
-            <h3>No se pudieron cargar las listas</h3>
-            <p>Intenta actualizar la página. Si el problema continúa, contacta a la papelería.</p>
+            <h3>No fue posible cargar las listas</h3>
+
+            <p>
+              Actualiza la página. Si el problema continúa, contacta
+              a la papelería.
+            </p>
           </article>
         `;
       }
@@ -348,38 +450,62 @@
     function renderLists(lists) {
       const container = document.getElementById("listsContainer");
 
-      const papeleriaLists = lists.filter((item) => item.tipo === "Papelería");
-      const escuelaLists = lists.filter((item) => item.tipo !== "Papelería");
+      const papeleriaLists = lists.filter(function (item) {
+        return item.tipo === "Papelería";
+      });
+
+      const schoolLists = lists.filter(function (item) {
+        return item.tipo !== "Papelería";
+      });
 
       const sections = [];
 
       if (papeleriaLists.length) {
         sections.push(`
-          <h2 class="lists-section-title">Lista de Papelería Sulamita</h2>
-          ${papeleriaLists.map(renderListCard).join("")}
+          <h2 class="lists-section-title">
+            Listas de Papelería Sulamita
+          </h2>
+
+          ${papeleriaLists
+            .map(renderListCard)
+            .join("")}
         `);
       }
 
-      if (escuelaLists.length) {
+      if (schoolLists.length) {
         sections.push(`
-          <h2 class="lists-section-title">Listas oficiales de la escuela</h2>
-          ${escuelaLists.map(renderListCard).join("")}
+          <h2 class="lists-section-title">
+            Listas oficiales de las escuelas
+          </h2>
+
+          ${schoolLists
+            .map(renderListCard)
+            .join("")}
         `);
       }
 
       if (!sections.length) {
         container.innerHTML = `
           <article class="list-card">
-            <h3>Aún no hay listas publicadas</h3>
-            <p>Cuando subas una lista desde el panel de administración, aparecerá aquí.</p>
+            <h3>Todavía no hay listas publicadas</h3>
+
+            <p>
+              Las listas aparecerán aquí en cuanto sean publicadas
+              por la papelería.
+            </p>
           </article>
         `;
         return;
       }
 
       container.innerHTML = sections.join("");
+
       setupPdfImageViewers();
     }
+
+    /* =========================
+       VISORES DE PDF
+    ========================= */
 
     function setupPdfImageViewers() {
       const viewers = document.querySelectorAll(
@@ -389,13 +515,16 @@
       if (!viewers.length) return;
 
       if (!("IntersectionObserver" in window)) {
-        viewers.forEach((viewer) => loadCloudinaryPdfPages(viewer));
+        viewers.forEach(function (viewer) {
+          loadCloudinaryPdfPages(viewer);
+        });
+
         return;
       }
 
       const observer = new IntersectionObserver(
-        (entries, currentObserver) => {
-          entries.forEach((entry) => {
+        function (entries, currentObserver) {
+          entries.forEach(function (entry) {
             if (!entry.isIntersecting) return;
 
             currentObserver.unobserve(entry.target);
@@ -407,7 +536,9 @@
         }
       );
 
-      viewers.forEach((viewer) => observer.observe(viewer));
+      viewers.forEach(function (viewer) {
+        observer.observe(viewer);
+      });
     }
 
     async function loadCloudinaryPdfPages(viewer) {
@@ -418,36 +549,57 @@
         return;
       }
 
-      const fileUrl = String(viewer.dataset.pdfUrl || "").trim();
+      const fileUrl = String(
+        viewer.dataset.pdfUrl ||
+        ""
+      ).trim();
 
       if (!fileUrl || !isCloudinaryUrl(fileUrl)) {
         showPdfLoadError(
           viewer,
-          "Este PDF no está alojado en Cloudinary y no se puede convertir automáticamente."
+          "Este documento no puede mostrarse como imágenes. Utiliza el botón Abrir PDF."
         );
         return;
       }
 
       viewer.dataset.loading = "true";
+
       viewer.innerHTML = `
         <div class="pdf-loading">
-          <span>Cargando páginas del PDF...</span>
-          <small id="pdfStatus-${viewer.dataset.viewerId}">Preparando página 1</small>
+          <span>Cargando páginas del documento...</span>
+          <small>Preparando la página 1</small>
         </div>
+
         <div class="pdf-pages-container"></div>
       `;
 
-      const pagesContainer = viewer.querySelector(".pdf-pages-container");
-      const loadingBox = viewer.querySelector(".pdf-loading");
+      const pagesContainer = viewer.querySelector(
+        ".pdf-pages-container"
+      );
+
+      const loadingBox = viewer.querySelector(
+        ".pdf-loading"
+      );
+
       const status = viewer.querySelector("small");
+
       const maxPages = 100;
       let loadedPages = 0;
 
       try {
-        for (let pageNumber = 1; pageNumber <= maxPages; pageNumber += 1) {
-          status.textContent = `Cargando página ${pageNumber}...`;
+        for (
+          let pageNumber = 1;
+          pageNumber <= maxPages;
+          pageNumber += 1
+        ) {
+          status.textContent =
+            `Cargando página ${pageNumber}...`;
 
-          const pageUrl = buildCloudinaryPdfPageUrl(fileUrl, pageNumber);
+          const pageUrl = buildCloudinaryPdfPageUrl(
+            fileUrl,
+            pageNumber
+          );
+
           const image = await loadImage(pageUrl);
 
           if (!image) {
@@ -461,28 +613,40 @@
           pageLabel.className = "pdf-page-number";
           pageLabel.textContent = `Página ${pageNumber}`;
 
-          image.alt = `Página ${pageNumber} del documento`;
-          image.loading = pageNumber <= 2 ? "eager" : "lazy";
+          image.alt =
+            `Página ${pageNumber} del documento`;
+
+          image.loading =
+            pageNumber <= 2
+              ? "eager"
+              : "lazy";
+
           image.decoding = "async";
 
           pageWrapper.append(pageLabel, image);
           pagesContainer.appendChild(pageWrapper);
+
           loadedPages += 1;
         }
 
         if (!loadedPages) {
           throw new Error(
-            "Cloudinary no pudo generar imágenes de las páginas del PDF."
+            "No fue posible generar la vista previa de este PDF."
           );
         }
 
         loadingBox.remove();
         viewer.dataset.loaded = "true";
       } catch (error) {
-        console.error("Error cargando páginas del PDF:", error);
+        console.error(
+          "Error al cargar las páginas del PDF:",
+          error
+        );
+
         showPdfLoadError(
           viewer,
-          error.message || "No se pudieron cargar las páginas."
+          error.message ||
+          "No fue posible cargar las páginas."
         );
       } finally {
         delete viewer.dataset.loading;
@@ -490,7 +654,7 @@
     }
 
     function loadImage(url) {
-      return new Promise((resolve) => {
+      return new Promise(function (resolve) {
         const image = new Image();
 
         image.onload = function () {
@@ -512,7 +676,10 @@
       );
     }
 
-    function buildCloudinaryPdfPageUrl(fileUrl, pageNumber) {
+    function buildCloudinaryPdfPageUrl(
+      fileUrl,
+      pageNumber
+    ) {
       let url = String(fileUrl || "").trim();
 
       url = url
@@ -524,7 +691,10 @@
         `/upload/w_1400,c_limit,q_auto:good,pg_${pageNumber},f_jpg/`
       );
 
-      url = url.replace(/\.pdf(\?.*)?$/i, ".jpg$1");
+      url = url.replace(
+        /\.pdf(\?.*)?$/i,
+        ".jpg$1"
+      );
 
       return url;
     }
@@ -532,30 +702,75 @@
     function showPdfLoadError(viewer, detail) {
       viewer.innerHTML = `
         <div class="file-message">
-          <h4>No se pudieron generar las páginas</h4>
-          <p>${escapeHtml(detail || "Intenta abrir el documento en otra pestaña.")}</p>
+          <h4>Vista previa no disponible</h4>
+
+          <p>
+            ${escapeHtml(
+              detail ||
+              "Abre el documento en otra pestaña para consultarlo."
+            )}
+          </p>
         </div>
       `;
     }
 
+    /* =========================
+       TARJETAS DE LISTAS
+    ========================= */
+
     function renderListCard(item) {
-      const fileUrl = String(item.archivo_url || "").trim();
-      const fileType = String(item.archivo_tipo || "").toLowerCase();
-      const isPdf = fileUrl.toLowerCase().includes(".pdf") || fileType.includes("pdf");
+      const fileUrl = String(
+        item.archivo_url ||
+        ""
+      ).trim();
+
+      const fileType = String(
+        item.archivo_tipo ||
+        ""
+      ).toLowerCase();
+
+      const isPdf =
+        fileUrl.toLowerCase().includes(".pdf") ||
+        fileType.includes("pdf");
+
       const isImage =
         fileType.includes("image") ||
-        fileUrl.toLowerCase().match(/\.(png|jpg|jpeg|webp)(\?|$)/);
+        /\.(png|jpg|jpeg|webp)(\?|$)/i.test(fileUrl);
 
-      const meta = [item.escuela, item.nivel, item.grado]
-        .map((value) => String(value || "").trim())
-        .filter(Boolean)
-        .join(" · ");
+      const metadata = [
+        item.escuela,
+        item.nivel,
+        item.grado
+      ]
+        .map(function (value) {
+          return String(value || "").trim();
+        })
+        .filter(Boolean);
+
+      const metadataHtml = metadata.length
+        ? `
+          <div class="list-meta">
+            ${metadata
+              .map(function (value) {
+                return `
+                  <span class="list-meta-badge">
+                    ${escapeHtml(value)}
+                  </span>
+                `;
+              })
+              .join("")}
+          </div>
+        `
+        : "";
 
       let viewerHtml = `
         <div class="file-viewer">
           <div class="file-message">
-            <h4>Vista previa no disponible para este formato</h4>
-            <p>Abre o descarga el archivo para consultarlo.</p>
+            <h4>Vista previa no disponible</h4>
+
+            <p>
+              Utiliza el botón Abrir PDF para consultar este documento.
+            </p>
           </div>
         </div>
       `;
@@ -565,11 +780,13 @@
           <div
             class="file-viewer pdf-pages-viewer"
             data-pdf-url="${escapeHtmlAttr(fileUrl)}"
-            data-viewer-id="${Number(item.id) || Date.now()}"
-            aria-label="Todas las páginas de ${escapeHtmlAttr(item.nombre || "Lista de útiles")}"
+            aria-label="Páginas de ${escapeHtmlAttr(
+              item.nombre ||
+              "Lista de útiles"
+            )}"
           >
             <div class="pdf-loading">
-              <span>Preparando todas las páginas del PDF...</span>
+              <span>Preparando las páginas del PDF...</span>
             </div>
           </div>
         `;
@@ -578,34 +795,89 @@
       if (isImage) {
         viewerHtml = `
           <div class="file-viewer image-viewer">
-            <img class="image-preview-img" src="${escapeHtmlAttr(fileUrl)}" alt="${escapeHtmlAttr(item.nombre || "Lista de útiles")}" loading="lazy">
+            <img
+              class="image-preview-img"
+              src="${escapeHtmlAttr(fileUrl)}"
+              alt="${escapeHtmlAttr(
+                item.nombre ||
+                "Lista de útiles"
+              )}"
+              loading="lazy"
+            >
           </div>
         `;
       }
+
+      const actionsHtml = fileUrl
+        ? `
+          <div class="list-actions">
+            <a
+              class="btn-primary"
+              href="${escapeHtmlAttr(fileUrl)}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Abrir PDF
+            </a>
+
+            <a
+              class="btn-outline"
+              href="${escapeHtmlAttr(fileUrl)}"
+              download
+            >
+              Descargar
+            </a>
+          </div>
+        `
+        : "";
 
       return `
         <article class="list-card">
           <div class="list-card-header">
             <div>
-              <span class="list-card-tag">${escapeHtml(item.tipo || "Lista")}</span>
-              <h3>${escapeHtml(item.nombre || "Lista de útiles")}</h3>
-              <p>${escapeHtml(item.descripcion || meta || "Lista disponible para consulta.")}</p>
-              ${meta ? `<p style="margin-top: 8px;"><strong>${escapeHtml(meta)}</strong></p>` : ""}
+              <span class="list-card-tag">
+                ${escapeHtml(item.tipo || "Lista")}
+              </span>
+
+              <h3>
+                ${escapeHtml(
+                  item.nombre ||
+                  "Lista de útiles"
+                )}
+              </h3>
+
+              <p>
+                ${escapeHtml(
+                  item.descripcion ||
+                  "Documento disponible para consulta."
+                )}
+              </p>
+
+              ${metadataHtml}
             </div>
 
-            <div class="list-actions">
-              <a class="btn-primary" href="${escapeHtmlAttr(fileUrl)}" target="_blank" rel="noopener">
-                Abrir en pestaña
-              </a>
-              <a class="btn-outline" href="${escapeHtmlAttr(fileUrl)}" download>
-                Descargar
-              </a>
-            </div>
+            ${actionsHtml}
           </div>
 
           ${viewerHtml}
         </article>
       `;
+    }
+
+    /* =========================
+       UTILIDADES
+    ========================= */
+
+    async function readJsonResponse(response) {
+      const contentType =
+        response.headers.get("content-type") ||
+        "";
+
+      if (!contentType.includes("application/json")) {
+        return {};
+      }
+
+      return response.json();
     }
 
     function escapeHtml(value) {
