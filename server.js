@@ -2940,6 +2940,38 @@ app.post("/api/pedidos", async (req, res) => {
     const subtotalFinal = Math.max(0, Number(subtotal || 0));
     const isDelivery = tipo_entrega === "delivery";
 
+    const allowedPaymentMethods = [
+      "transferencia",
+      "efectivo_tienda",
+      "tarjeta_tienda"
+    ];
+
+    if (!allowedPaymentMethods.includes(metodo_pago)) {
+      return res.status(400).json({
+        message:
+          "Método de pago no permitido. Solo se acepta transferencia bancaria, efectivo en tienda o tarjeta en tienda."
+      });
+    }
+
+    if (isDelivery && metodo_pago !== "transferencia") {
+      return res.status(400).json({
+        message:
+          "Los pedidos con envío a domicilio únicamente pueden pagarse mediante transferencia bancaria."
+      });
+    }
+
+    if (
+      !isDelivery &&
+      !["transferencia", "efectivo_tienda", "tarjeta_tienda"].includes(
+        metodo_pago
+      )
+    ) {
+      return res.status(400).json({
+        message:
+          "Para recoger en tienda puedes pagar por transferencia, efectivo o tarjeta."
+      });
+    }
+
     let shippingCostFinal = 0;
     let shippingZoneIdFinal = null;
     let shippingZoneNameFinal = "";
@@ -3054,11 +3086,6 @@ app.post("/api/pedidos", async (req, res) => {
         });
       }
 
-      if (metodo_pago === "tarjeta" && !voucher_url) {
-        return res.status(400).json({
-          message: "Falta subir el voucher de pago con tarjeta."
-        });
-      }
     }
 
     await client.query("BEGIN");
@@ -3140,9 +3167,7 @@ app.post("/api/pedidos", async (req, res) => {
       }
     }
 
-    const estadoPagoFinal =
-      estado_pago ||
-      (metodo_pago === "tarjeta" ? "pagado" : "pendiente");
+    const estadoPagoFinal = estado_pago || "pendiente";
 
     const orderResult = await client.query(
       `

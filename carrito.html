@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=48">
+  <link rel="stylesheet" href="styles.css?v=49">
 
   <style>
     .shipping-help-card {
@@ -156,10 +156,10 @@
             <div class="info-card">
               <h3>Formas de pago</h3>
               <p>
-                Para pedidos a distancia, por el momento únicamente aceptamos transferencia bancaria.
+                Para envíos a domicilio únicamente aceptamos transferencia bancaria.
               </p>
               <p>
-                Si recoges tu pedido en tienda física, puedes pagar con efectivo o tarjeta.
+                Al recoger en tienda puedes pagar por transferencia, efectivo o tarjeta.
               </p>
             </div>
           </div>
@@ -356,11 +356,11 @@
             <div class="payment-notice">
               <strong>Aviso importante sobre pagos</strong>
               <p>
-                Por el momento, los pedidos a distancia únicamente pueden pagarse por
+                Los pedidos con envío a domicilio únicamente pueden pagarse por
                 transferencia bancaria.
               </p>
               <p>
-                Los pagos con tarjeta y efectivo se reciben únicamente en tienda física.
+                El efectivo y la tarjeta se reciben únicamente al recoger el pedido en tienda.
               </p>
             </div>
 
@@ -368,10 +368,17 @@
               <label for="paymentMethod">Método de pago</label>
               <select id="paymentMethod">
                 <option value="">Selecciona método de pago</option>
-                <option value="transferencia">Transferencia bancaria para pedido a distancia</option>
-                <option value="efectivo_tienda">Efectivo en tienda física</option>
-                <option value="tarjeta_tienda">Tarjeta en tienda física</option>
+                <option value="transferencia">Transferencia bancaria</option>
+                <option value="efectivo_tienda">Efectivo al recoger en tienda</option>
+                <option value="tarjeta_tienda">Tarjeta al recoger en tienda</option>
               </select>
+            </div>
+
+            <div class="payment-info-card" id="paymentAvailabilityInfo">
+              <h4>Forma de pago disponible</h4>
+              <p id="paymentAvailabilityText">
+                Al recoger en tienda puedes pagar por transferencia, efectivo o tarjeta.
+              </p>
             </div>
 
             <div class="payment-info-card" id="cardPaymentInfo" style="display: none;">
@@ -513,8 +520,8 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=48"></script>
-  <script src="zonas-envio.js?v=8"></script>
+  <script src="tienda.js?v=49"></script>
+  <script src="zonas-envio.js?v=9"></script>
 
   <script>
     protectPage();
@@ -539,6 +546,8 @@
     }
 
     const paymentMethod = document.getElementById("paymentMethod");
+    const deliveryMethod = document.getElementById("deliveryMethod");
+    const paymentAvailabilityText = document.getElementById("paymentAvailabilityText");
     const cardPaymentInfo = document.getElementById("cardPaymentInfo");
     const cashPaymentInfo = document.getElementById("cashPaymentInfo");
     const transferPaymentInfo = document.getElementById("transferPaymentInfo");
@@ -547,6 +556,48 @@
     const invoiceGroup = document.getElementById("invoiceGroup");
     const invoicePaymentMode = document.getElementById("invoicePaymentMode");
     const invoiceVoucherGroup = document.getElementById("invoiceVoucherGroup");
+
+    function updatePaymentOptionsByDelivery() {
+      const isDelivery = deliveryMethod.value === "delivery";
+
+      const transferOption = paymentMethod.querySelector(
+        'option[value="transferencia"]'
+      );
+      const cashOption = paymentMethod.querySelector(
+        'option[value="efectivo_tienda"]'
+      );
+      const cardOption = paymentMethod.querySelector(
+        'option[value="tarjeta_tienda"]'
+      );
+
+      if (transferOption) transferOption.disabled = false;
+      if (cashOption) cashOption.disabled = isDelivery;
+      if (cardOption) cardOption.disabled = isDelivery;
+
+      if (isDelivery) {
+        paymentMethod.value = "transferencia";
+
+        if (paymentAvailabilityText) {
+          paymentAvailabilityText.textContent =
+            "Para envío a domicilio el pago debe realizarse mediante transferencia bancaria.";
+        }
+      } else {
+        if (
+          !["", "transferencia", "efectivo_tienda", "tarjeta_tienda"].includes(
+            paymentMethod.value
+          )
+        ) {
+          paymentMethod.value = "";
+        }
+
+        if (paymentAvailabilityText) {
+          paymentAvailabilityText.textContent =
+            "Al recoger en tienda puedes pagar por transferencia, efectivo o tarjeta.";
+        }
+      }
+
+      updatePaymentInfo();
+    }
 
     function updatePaymentInfo() {
       const value = paymentMethod.value;
@@ -571,9 +622,10 @@
     }
 
     paymentMethod.addEventListener("change", updatePaymentInfo);
+    deliveryMethod.addEventListener("change", updatePaymentOptionsByDelivery);
     requiresInvoice.addEventListener("change", updateInvoiceForm);
 
-    updatePaymentInfo();
+    updatePaymentOptionsByDelivery();
     updateInvoiceForm();
   </script>
 </body>
