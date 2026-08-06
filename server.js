@@ -740,6 +740,72 @@ async function ensureDatabaseUpdates() {
   }
 }
 
+
+async function ensureShippingRulesSetup() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS zonas_envio (
+        id SERIAL PRIMARY KEY,
+        numero INTEGER NOT NULL UNIQUE,
+        nombre TEXT NOT NULL,
+        costo NUMERIC(10, 2) NOT NULL,
+        activo BOOLEAN DEFAULT TRUE,
+        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    const fixedZones = [
+      [1, "Zona 1", 150],
+      [2, "Zona 2", 175],
+      [3, "Zona 3", 200],
+      [4, "Zona 4", 225],
+      [5, "Zona 5", 250],
+      [6, "Zona 6", 275]
+    ];
+
+    for (const [numero, nombre, costo] of fixedZones) {
+      await pool.query(
+        `
+        INSERT INTO zonas_envio (numero, nombre, costo, activo)
+        VALUES ($1, $2, $3, TRUE)
+        ON CONFLICT (numero)
+        DO UPDATE SET
+          nombre = EXCLUDED.nombre,
+          costo = EXCLUDED.costo,
+          activo = TRUE
+        `,
+        [numero, nombre, costo]
+      );
+    }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reglas_envio (
+        id SERIAL PRIMARY KEY,
+        zona_id INTEGER NOT NULL REFERENCES zonas_envio(id) ON DELETE CASCADE,
+        tipo TEXT NOT NULL CHECK (
+          tipo IN ('codigo_postal', 'colonia', 'municipio', 'estado', 'pais')
+        ),
+        valor TEXT NOT NULL,
+        valor_normalizado TEXT NOT NULL,
+        activo BOOLEAN DEFAULT TRUE,
+        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (tipo, valor_normalizado)
+      );
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_reglas_envio_busqueda
+      ON reglas_envio(tipo, valor_normalizado)
+      WHERE activo IS NOT FALSE;
+    `);
+
+    console.log("Catálogos de zonas de envío listos.");
+  } catch (error) {
+    console.error("Error preparando catálogos de zonas de envío:", error);
+    throw error;
+  }
+}
+
 /* =========================
    STATUS
 ========================= */
@@ -2182,6 +2248,7 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
     );
 
     res.json({
+      version_reglas_envio: 2,
       zonas: zonesResult.rows.map((zone) => ({
         id: Number(zone.id),
         numero: Number(zone.numero),
@@ -2194,6 +2261,115 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
   } catch (error) {
     console.error("Error en GET /api/admin/zonas-envio:", error);
     res.status(500).json({ message: "Error al obtener las reglas de envío." });
+  }
+});
+
+
+app.post("/api/admin/zonas-envio/reglas/lote", requireAdminSession, async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const zonaNumero = Number(req.body.zona_numero);
+    const tipo = normalizeShippingRuleType(req.body.tipo);
+    const valoresEntrada = Array.isArray(req.body.valores) ? req.body.valores : [];
+
+    if (!zonaNumero || !tipo || !valoresEntrada.length) {
+      return res.status(400).json({
+        message: "Selecciona una zona, un tipo de dato y escribe al menos un valor."
+      });
+    }
+
+    const zoneResult = await client.query(
+      `
+      SELECT id
+      FROM zonas_envio
+      WHERE numero = $1 AND activo IS NOT FALSE
+      LIMIT 1
+      `,
+      [zonaNumero]
+    );
+
+    if (!zoneResult.rows.length) {
+      return res.status(400).json({
+        message: "La zona seleccionada no existe."
+      });
+    }
+
+    const zonaId = Number(zoneResult.rows[0].id);
+    const validValues = [];
+    const seen = new Set();
+
+    for (const rawValue of valoresEntrada) {
+      const valor = String(rawValue || "").trim();
+      const valorNormalizado = normalizeShippingRuleValue(tipo, valor);
+
+      if (!valor || !valorNormalizado) {
+        return res.status(400).json({
+          message:
+            tipo === "codigo_postal"
+              ? `El código postal "${valor || "(vacío)"}" debe tener exactamente 5 dígitos.`
+              : `El valor "${valor || "(vacío)"}" no es válido.`
+        });
+      }
+
+      const key = `${tipo}|||${valorNormalizado}`;
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        validValues.push({ valor, valorNormalizado });
+      }
+    }
+
+    await client.query("BEGIN");
+
+    const saved = [];
+
+    for (const item of validValues) {
+      const result = await client.query(
+        `
+        INSERT INTO reglas_envio (
+          zona_id,
+          tipo,
+          valor,
+          valor_normalizado,
+          activo
+        )
+        VALUES ($1, $2, $3, $4, TRUE)
+        ON CONFLICT (tipo, valor_normalizado)
+        DO UPDATE SET
+          zona_id = EXCLUDED.zona_id,
+          valor = EXCLUDED.valor,
+          activo = TRUE
+        RETURNING id
+        `,
+        [zonaId, tipo, item.valor, item.valorNormalizado]
+      );
+
+      saved.push({
+        id: Number(result.rows[0].id),
+        valor: item.valor
+      });
+    }
+
+    await client.query("COMMIT");
+
+    res.status(201).json({
+      message:
+        saved.length === 1
+          ? "1 dato guardado correctamente."
+          : `${saved.length} datos guardados correctamente.`,
+      total_guardados: saved.length,
+      guardados: saved
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error en POST /api/admin/zonas-envio/reglas/lote:", error);
+
+    res.status(500).json({
+      message: error.message || "Error al guardar los datos de envío."
+    });
+  } finally {
+    client.release();
   }
 });
 
@@ -3183,8 +3359,14 @@ app.get("/pago-pendiente", (req, res) => {
    INICIAR SERVIDOR
 ========================= */
 
-ensureDatabaseUpdates().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+ensureDatabaseUpdates()
+  .then(() => ensureShippingRulesSetup())
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("No se pudo iniciar el servidor:", error);
+    process.exit(1);
   });
-});

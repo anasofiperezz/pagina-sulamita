@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Catálogos de zonas | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=43">
+  <link rel="stylesheet" href="styles.css?v=44">
 
   <style>
     .shipping-admin-page {
@@ -125,6 +125,34 @@
       color: #64748b;
       font-size: 0.9rem;
       line-height: 1.45;
+    }
+
+    .server-status {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      line-height: 1.5;
+      font-weight: 800;
+    }
+
+    .server-status.ok {
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .server-status.error {
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    #formMessage:not(:empty) {
+      display: block;
+      margin-top: 16px;
+      position: sticky;
+      bottom: 12px;
+      z-index: 5;
     }
 
     .form-actions,
@@ -277,6 +305,10 @@
           Ya iniciaste sesión como administrador. No necesitas volver a escribir una contraseña.
         </div>
 
+        <div class="server-status" id="serverStatus">
+          Verificando que el servidor pueda guardar los catálogos...
+        </div>
+
         <div class="explanation-note">
           <strong>Ejemplo:</strong><br>
           C.P. 12222 → Zona 1<br>
@@ -356,7 +388,7 @@
     <p>© 2026 Papelería Sulamita - Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=43"></script>
+  <script src="tienda.js?v=44"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -439,6 +471,7 @@
     const cancelEditButton = document.getElementById("cancelEditButton");
     const formTitle = document.getElementById("formTitle");
     const formMessage = document.getElementById("formMessage");
+    const serverStatus = document.getElementById("serverStatus");
     const reloadButton = document.getElementById("reloadButton");
     const catalogSearch = document.getElementById("catalogSearch");
     const zoneFilter = document.getElementById("zoneFilter");
@@ -449,6 +482,7 @@
     let rules = [];
     let selectedType = "codigo_postal";
     let selectedZoneNumber = 0;
+    let serverSupportsRules = false;
 
     typeSelector.addEventListener("click", function (event) {
       const button = event.target.closest("[data-type]");
@@ -582,6 +616,18 @@
           throw new Error(data.message || "No se pudieron cargar los datos.");
         }
 
+        serverSupportsRules = Number(data.version_reglas_envio) >= 2;
+
+        if (!serverSupportsRules) {
+          serverStatus.className = "server-status error";
+          serverStatus.textContent =
+            "El archivo visual ya se actualizó, pero Render todavía está usando un server.js anterior. Reemplaza server.js y vuelve a desplegar antes de guardar.";
+        } else {
+          serverStatus.className = "server-status ok";
+          serverStatus.textContent =
+            "Servidor conectado correctamente. Los datos que guardes aparecerán en la lista de la derecha.";
+        }
+
         zones =
           Array.isArray(data.zonas) && data.zonas.length
             ? data.zonas
@@ -594,6 +640,11 @@
         renderCatalogs();
       } catch (error) {
         console.error(error);
+        serverSupportsRules = false;
+        serverStatus.className = "server-status error";
+        serverStatus.textContent =
+          "No se pudo verificar el servidor. Revisa que el nuevo server.js haya terminado de desplegarse en Render.";
+
         zones = [...fixedZones];
         renderSelectors();
 
@@ -667,47 +718,44 @@
           return;
         }
 
-        let added = 0;
-        const errors = [];
+        if (!serverSupportsRules) {
+          throw new Error(
+            "Render todavía está usando un server.js anterior. Actualiza el servidor antes de guardar."
+          );
+        }
 
-        for (const value of values) {
-          try {
-            const response = await fetch("/api/admin/zonas-envio/reglas", {
-              method: "POST",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                zona_numero: selectedZoneNumber,
-                tipo: selectedType,
-                valor: value
-              })
-            });
-
-            const data = await readJsonResponse(response);
-
-            if (!response.ok) {
-              throw new Error(data.message || "No se pudo agregar.");
-            }
-
-            added += 1;
-          } catch (error) {
-            errors.push(`${value}: ${error.message}`);
+        const response = await fetch(
+          "/api/admin/zonas-envio/reglas/lote",
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              zona_numero: selectedZoneNumber,
+              tipo: selectedType,
+              valores: values
+            })
           }
+        );
+
+        const data = await readJsonResponse(response);
+
+        if (!response.ok) {
+          throw new Error(data.message || "No se pudieron guardar los datos.");
         }
 
         catalogValues.value = "";
         await loadData();
 
-        if (errors.length) {
-          showMessage(
-            `Se agregaron ${added} registros. No se agregaron: ${errors.join(" | ")}`,
-            true
-          );
-        } else {
-          showMessage(
-            `${added} ${added === 1 ? "registro agregado" : "registros agregados"} correctamente.`
-          );
-        }
+        showMessage(
+          data.message ||
+            `${values.length} ${values.length === 1 ? "registro guardado" : "registros guardados"} correctamente.`
+        );
+
+        formMessage.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
       } catch (error) {
         console.error(error);
         showMessage(error.message || "No se pudieron guardar los datos.", true);
