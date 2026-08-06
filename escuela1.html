@@ -3,71 +3,309 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>IPAE | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=50">
+
+  <style>
+    /* =========================
+       INFORMACIÓN DE LA ESCUELA
+    ========================= */
+
+    .school-detail {
+      padding: 36px 20px 10px;
+    }
+
+    .detail-card {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 26px;
+      border: 1px solid #dbe3f0;
+      border-radius: 20px;
+      background: #ffffff;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .detail-card h2 {
+      margin: 0 0 8px;
+      color: #111827;
+    }
+
+    .detail-card > p {
+      margin: 0 0 22px;
+      color: #64748b;
+      line-height: 1.55;
+    }
+
+    .campus-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .campus-card {
+      padding: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #f8fafc;
+    }
+
+    .campus-card h3 {
+      margin: 0 0 14px;
+      color: #0f2f5f;
+    }
+
+    .campus-card p {
+      margin: 8px 0;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    .campus-address {
+      margin: 0 0 14px;
+      color: #334155;
+      font-style: normal;
+      line-height: 1.65;
+    }
+
+    .phone-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .phone-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 10px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #004aad;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .phone-link:hover {
+      text-decoration: underline;
+    }
+
+    /* =========================
+       NIVELES DISPONIBLES
+    ========================= */
+
+    .grades-page {
+      padding: 42px 20px 64px;
+    }
+
+    .section-title {
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .section-intro {
+      max-width: 720px;
+      margin: 0 auto 28px;
+      color: #64748b;
+      line-height: 1.55;
+      text-align: center;
+    }
+
+    .grade-card .grade-content p {
+      min-height: 52px;
+    }
+
+    @media (max-width: 760px) {
+      .campus-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
+
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
+
       <div class="nav-right">
         <div class="user-badge" id="userInfo">Cargando sesión...</div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
-        <a href="#niveles" class="nav-btn">Niveles</a>
-        <button class="nav-btn" id="cartBtn">Carrito</button>
-        <button class="nav-btn" id="adminBtn" style="display:none;">Panel admin</button>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+        <a href="#niveles" class="nav-btn">Catálogos</a>
+        <a href="contacto.html" class="nav-btn">Contacto</a>
+        <a href="carrito.html" class="nav-btn">Carrito</a>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
   <main>
-    <section class="page-hero school-hero-1">
+    <!-- =========================
+         PRESENTACIÓN DEL IPAE
+    ========================== -->
+
+    <section class="page-hero school-hero">
       <div class="page-hero-content">
         <span class="page-badge">IPAE</span>
-        <h1>Instituto Pedagógico Anglo Español (IPAE)</h1>
-        <p>Esta escuela cuenta con Secundaria y Preparatoria.</p>
+
+        <h1>Instituto Pedagógico Anglo Español</h1>
+
+        <p>
+          Consulta los datos de contacto de secundaria y preparatoria,
+          o entra al catálogo correspondiente para encontrar uniformes,
+          materiales y productos escolares.
+        </p>
       </div>
     </section>
 
-    <section class="school-detail">
+    <!-- =========================
+         DATOS DE LA ESCUELA
+    ========================== -->
+
+    <section class="school-detail" aria-labelledby="schoolInfoTitle">
       <div class="detail-card">
-        <h3>Información de la escuela</h3>
-        <p><strong>Secundaria:</strong> Jalapa 44, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700</p>
-        <p><strong>Teléfonos Secundaria:</strong> 55-55-25-57-90, 55-55-25-76-37, 55-55-25-76-36, 55-55-25-76-38</p>
-        <p><strong>Tel. y Fax Secundaria:</strong> 55-55-25-58-48</p>
+        <h2 id="schoolInfoTitle">Información de la escuela</h2>
 
-        <br>
+        <p>
+          Selecciona el plantel correspondiente para consultar su dirección
+          y teléfonos de contacto.
+        </p>
 
-        <p><strong>Preparatoria:</strong> Durango 101, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700</p>
-        <p><strong>Teléfonos Preparatoria:</strong> 55-55-25-88-25, 55-55-11-44-25, 55-25-30-27</p>
-        <p><strong>Tel. y Fax Preparatoria:</strong> 55-52-08-70-13</p>
+        <div class="campus-grid">
+          <!-- Secundaria -->
+          <article class="campus-card">
+            <h3>Secundaria</h3>
+
+            <address class="campus-address">
+              Jalapa 44, colonia Roma Norte,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06700
+            </address>
+
+            <p><strong>Teléfonos:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+525555255790">
+                55 5525 5790
+              </a>
+
+              <a class="phone-link" href="tel:+525555257637">
+                55 5525 7637
+              </a>
+
+              <a class="phone-link" href="tel:+525555257636">
+                55 5525 7636
+              </a>
+
+              <a class="phone-link" href="tel:+525555257638">
+                55 5525 7638
+              </a>
+            </div>
+
+            <p><strong>Teléfono y fax:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+525555255848">
+                55 5525 5848
+              </a>
+            </div>
+          </article>
+
+          <!-- Preparatoria -->
+          <article class="campus-card">
+            <h3>Preparatoria</h3>
+
+            <address class="campus-address">
+              Durango 101, colonia Roma Norte,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06700
+            </address>
+
+            <p><strong>Teléfonos:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+525555258825">
+                55 5525 8825
+              </a>
+
+              <a class="phone-link" href="tel:+525555114425">
+                55 5511 4425
+              </a>
+
+              <a class="phone-link" href="tel:+5255253027">
+                55 2530 27
+              </a>
+            </div>
+
+            <p><strong>Teléfono y fax:</strong></p>
+
+            <div class="phone-list">
+              <a class="phone-link" href="tel:+525552087013">
+                55 5208 7013
+              </a>
+            </div>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section class="grades-page" id="niveles">
-      <h2 class="section-title">Niveles disponibles</h2>
+    <!-- =========================
+         CATÁLOGOS POR NIVEL
+    ========================== -->
+
+    <section class="grades-page" id="niveles" aria-labelledby="levelsTitle">
+      <h2 class="section-title" id="levelsTitle">Catálogos disponibles</h2>
+
+      <p class="section-intro">
+        Elige el nivel escolar para consultar los productos disponibles.
+      </p>
 
       <div class="grade-grid">
         <article class="grade-card">
           <div class="grade-top grade-secondary">Secundaria</div>
+
           <div class="grade-content">
             <h3>Secundaria</h3>
-            <p>Catálogo con uniformes, materiales y productos para secundaria del IPAE.</p>
+
+            <p>
+              Encuentra uniformes, materiales y productos escolares para
+              secundaria del IPAE.
+            </p>
+
             <div class="actions">
-              <a href="secundariaIPAE.html" class="btn-primary">Ver catálogo</a>
+              <a href="secundariaIPAE.html" class="btn-primary">
+                Ver catálogo de secundaria
+              </a>
             </div>
           </div>
         </article>
 
         <article class="grade-card">
           <div class="grade-top grade-highschool">Preparatoria</div>
+
           <div class="grade-content">
             <h3>Preparatoria</h3>
-            <p>Catálogo con uniformes, materiales y productos para preparatoria del IPAE.</p>
+
+            <p>
+              Consulta uniformes, materiales y productos escolares para
+              preparatoria del IPAE.
+            </p>
+
             <div class="actions">
-              <a href="preparatoria.html" class="btn-primary">Ver catálogo</a>
+              <a href="preparatoria.html" class="btn-primary">
+                Ver catálogo de preparatoria
+              </a>
             </div>
           </div>
         </article>
@@ -75,24 +313,23 @@
     </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - IPAE</p>
+    <p>© 2026 Papelería Sulamita · Instituto Pedagógico Anglo Español</p>
   </footer>
 
-  <script src="tienda.js?v=22"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=50"></script>
+
   <script>
     protectPage();
     setupHeader();
-
-    const role = localStorage.getItem("userRole");
-    const adminBtn = document.getElementById("adminBtn");
-
-    if (role === "admin" && adminBtn) {
-      adminBtn.style.display = "inline-block";
-      adminBtn.addEventListener("click", function () {
-        window.location.href = "admin.html";
-      });
-    }
   </script>
 </body>
 </html>
