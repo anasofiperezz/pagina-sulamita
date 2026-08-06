@@ -3,268 +3,522 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Acceso | Tienda Escolar</title>
+
+  <title>Acceso | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=53">
+
+  <style>
+    /* =========================
+       ESTRUCTURA DE ACCESO
+    ========================= */
+
+    .login-page {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 520px);
+      gap: 32px;
+      max-width: 1180px;
+      min-height: calc(100vh - 80px);
+      margin: 0 auto;
+      padding: 48px 22px 70px;
+      align-items: center;
+    }
+
+    .login-left {
+      padding: 38px;
+      border-radius: 28px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(0, 59, 125, 0.97),
+          rgba(156, 0, 43, 0.93)
+        );
+      color: #ffffff;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+    }
+
+    .login-left h1 {
+      margin: 12px 0 16px;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      line-height: 1.05;
+    }
+
+    .login-left > p {
+      max-width: 680px;
+      margin: 0;
+      font-size: 1.03rem;
+      line-height: 1.65;
+      opacity: 0.96;
+    }
+
+    .login-left .page-badge {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
+
+    /* =========================
+       TIPOS DE ACCESO
+    ========================= */
+
+    .features {
+      display: grid;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .feature {
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.11);
+      line-height: 1.55;
+    }
+
+    .feature strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    /* =========================
+       FORMULARIOS
+    ========================= */
+
+    .login-right {
+      padding: 28px;
+      border: 1px solid #e5e7eb;
+      border-radius: 26px;
+      background: #ffffff;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 26px;
+      padding: 6px;
+      border-radius: 16px;
+      background: #f1f5f9;
+    }
+
+    .tab-btn {
+      padding: 11px 10px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: #475569;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: #004aad;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .panel h2 {
+      margin: 0 0 7px;
+      color: #111827;
+    }
+
+    .panel .subtext {
+      margin: 0 0 22px;
+      line-height: 1.5;
+    }
+
+    .required-mark {
+      color: #b0002f;
+      font-weight: 800;
+    }
+
+    .access-note {
+      margin: 16px 0 0;
+      padding: 13px 14px;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      background: #eff6ff;
+      color: #0f2f5f;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .guest-box {
+      padding: 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: #f8fafc;
+    }
+
+    .login-right .btn-primary,
+    .login-right .btn-secondary {
+      width: 100%;
+    }
+
+    #messageBox {
+      margin-top: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .login-page {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .login-left {
+        padding: 30px 24px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .login-page {
+        padding: 24px 14px 46px;
+      }
+
+      .login-right {
+        padding: 20px;
+      }
+
+      .tabs {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
-<body class="login-body">
-  <div class="login-container">
+
+<body>
+  <main class="login-page">
+    <!-- =========================
+         PRESENTACIÓN
+    ========================== -->
+
     <section class="login-left">
-      <div class="badge">Tienda Escolar</div>
-      <h1>Acceso obligatorio antes de entrar</h1>
+      <span class="page-badge">Papelería Sulamita</span>
+
+      <h1>Bienvenido</h1>
+
       <p>
-        Antes de ver escuelas, grados, productos o carrito, el usuario debe
-        iniciar sesión, registrarse o entrar como invitado.
+        Inicia sesión, crea una cuenta o continúa como invitado para consultar
+        los catálogos escolares, agregar productos al carrito y realizar tu pedido.
       </p>
 
       <div class="features">
         <div class="feature">
-          Administrador: acceso para gestionar escuelas, productos y pedidos.
+          <strong>Administrador</strong>
+          Acceso al inventario, los productos, las listas y el seguimiento
+          de pedidos.
         </div>
+
         <div class="feature">
-          Cliente: acceso con cuenta para comprar y revisar pedidos.
+          <strong>Cliente</strong>
+          Acceso con cuenta para realizar compras y conservar tus datos.
         </div>
+
         <div class="feature">
-          Invitado: acceso rápido sin registro para comprar directamente.
+          <strong>Invitado</strong>
+          Acceso rápido para comprar sin crear una cuenta.
         </div>
       </div>
     </section>
 
-    <section class="login-right">
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="login">Iniciar sesión</button>
-        <button class="tab-btn" data-tab="register">Registrarse</button>
-        <button class="tab-btn" data-tab="guest">Invitado</button>
+    <!-- =========================
+         ACCESO AL SISTEMA
+    ========================== -->
+
+    <section class="login-right" aria-label="Acceso a Papelería Sulamita">
+      <div class="tabs" role="tablist" aria-label="Opciones de acceso">
+        <button
+          class="tab-btn active"
+          type="button"
+          data-tab="login"
+          role="tab"
+          aria-selected="true"
+          aria-controls="login"
+        >
+          Iniciar sesión
+        </button>
+
+        <button
+          class="tab-btn"
+          type="button"
+          data-tab="register"
+          role="tab"
+          aria-selected="false"
+          aria-controls="register"
+        >
+          Crear cuenta
+        </button>
+
+        <button
+          class="tab-btn"
+          type="button"
+          data-tab="guest"
+          role="tab"
+          aria-selected="false"
+          aria-controls="guest"
+        >
+          Continuar como invitado
+        </button>
       </div>
 
-      <div class="panel active" id="login">
-        <h2>Bienvenido</h2>
-        <p class="subtext">Ingresa para continuar al sistema.</p>
+      <!-- Iniciar sesión -->
+      <div class="panel active" id="login" role="tabpanel">
+        <h2>Iniciar sesión</h2>
+
+        <p class="subtext">
+          Escribe los datos de tu cuenta para continuar.
+        </p>
 
         <form id="loginForm">
           <div class="form-group">
-            <label for="loginEmail">Correo electrónico</label>
-            <input type="email" id="loginEmail" placeholder="correo@ejemplo.com" required />
+            <label for="loginEmail">
+              Correo electrónico
+              <span class="required-mark">*</span>
+            </label>
+
+            <input
+              type="email"
+              id="loginEmail"
+              name="email"
+              autocomplete="email"
+              placeholder="correo@ejemplo.com"
+              required
+            />
           </div>
 
           <div class="form-group">
-            <label for="loginPassword">Contraseña</label>
-            <input type="password" id="loginPassword" placeholder="Tu contraseña" required />
+            <label for="loginPassword">
+              Contraseña
+              <span class="required-mark">*</span>
+            </label>
+
+            <input
+              type="password"
+              id="loginPassword"
+              name="password"
+              autocomplete="current-password"
+              placeholder="Escribe tu contraseña"
+              required
+            />
           </div>
 
           <div class="form-group">
-            <label for="loginRole">Tipo de acceso</label>
-            <select id="loginRole" required>
+            <label for="loginRole">
+              Tipo de cuenta
+              <span class="required-mark">*</span>
+            </label>
+
+            <select id="loginRole" name="role" required>
               <option value="cliente">Cliente</option>
               <option value="admin">Administrador</option>
             </select>
           </div>
 
-          <button type="submit" class="btn-primary">Entrar</button>
+          <button type="submit" class="btn-primary">
+            Entrar
+          </button>
         </form>
+
+        <div class="access-note">
+          El acceso de administrador requiere una cuenta autorizada por
+          Papelería Sulamita.
+        </div>
       </div>
 
-      <div class="panel" id="register">
-        <h2>Crear cuenta</h2>
-        <p class="subtext">Regístrate como cliente para comprar y guardar tus datos.</p>
+      <!-- Registro -->
+      <div class="panel" id="register" role="tabpanel" hidden>
+        <h2>Crear una cuenta</h2>
+
+        <p class="subtext">
+          Regístrate como cliente para comprar y conservar tus datos de acceso.
+        </p>
 
         <form id="registerForm">
           <div class="form-group">
-            <label for="registerName">Nombre completo</label>
-            <input type="text" id="registerName" placeholder="Tu nombre" required />
+            <label for="registerName">
+              Nombre completo
+              <span class="required-mark">*</span>
+            </label>
+
+            <input
+              type="text"
+              id="registerName"
+              name="name"
+              autocomplete="name"
+              placeholder="Escribe tu nombre y apellidos"
+              required
+            />
           </div>
 
           <div class="form-group">
-            <label for="registerEmail">Correo electrónico</label>
-            <input type="email" id="registerEmail" placeholder="correo@ejemplo.com" required />
+            <label for="registerEmail">
+              Correo electrónico
+              <span class="required-mark">*</span>
+            </label>
+
+            <input
+              type="email"
+              id="registerEmail"
+              name="email"
+              autocomplete="email"
+              placeholder="correo@ejemplo.com"
+              required
+            />
           </div>
 
           <div class="form-group">
-            <label for="registerPassword">Contraseña</label>
-            <input type="password" id="registerPassword" placeholder="Crea una contraseña" required />
+            <label for="registerPassword">
+              Contraseña
+              <span class="required-mark">*</span>
+            </label>
+
+            <input
+              type="password"
+              id="registerPassword"
+              name="password"
+              autocomplete="new-password"
+              minlength="6"
+              placeholder="Crea una contraseña"
+              required
+            />
+
+            <p class="subtext">
+              Utiliza al menos 6 caracteres.
+            </p>
           </div>
 
-          <button type="submit" class="btn-primary">Registrarme</button>
+          <button type="submit" class="btn-primary">
+            Crear cuenta
+          </button>
         </form>
       </div>
 
-      <div class="panel" id="guest">
-        <h2>Entrar como invitado</h2>
-        <p class="subtext">Podrás comprar sin cuenta, pero igual debes pasar por esta pantalla.</p>
+      <!-- Invitado -->
+      <div class="panel" id="guest" role="tabpanel" hidden>
+        <h2>Continuar como invitado</h2>
+
+        <p class="subtext">
+          Puedes realizar tu compra sin crear una cuenta. Usaremos estos datos
+          para identificar tu pedido.
+        </p>
 
         <div class="guest-box">
           <form id="guestForm">
             <div class="form-group">
-              <label for="guestName">Nombre</label>
-              <input type="text" id="guestName" placeholder="Tu nombre" required />
+              <label for="guestName">
+                Nombre completo
+                <span class="required-mark">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="guestName"
+                name="name"
+                autocomplete="name"
+                placeholder="Escribe tu nombre y apellidos"
+                required
+              />
             </div>
 
             <div class="form-group">
-              <label for="guestEmail">Correo electrónico</label>
-              <input type="email" id="guestEmail" placeholder="correo@ejemplo.com" required />
+              <label for="guestEmail">
+                Correo electrónico
+                <span class="required-mark">*</span>
+              </label>
+
+              <input
+                type="email"
+                id="guestEmail"
+                name="email"
+                autocomplete="email"
+                placeholder="correo@ejemplo.com"
+                required
+              />
             </div>
 
-            <button type="submit" class="btn-secondary">Continuar como invitado</button>
+            <button type="submit" class="btn-secondary">
+              Entrar como invitado
+            </button>
           </form>
         </div>
       </div>
 
-      <div class="note" id="messageBox"></div>
+      <div class="note" id="messageBox" aria-live="polite"></div>
     </section>
-  </div>
+  </main>
+
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=53"></script>
 
   <script>
-    const API_URL = "";
-    const isGitHubPages = window.location.hostname.includes("github.io");
+    /* =========================
+       PESTAÑAS DE ACCESO
+    ========================= */
 
     const tabButtons = document.querySelectorAll(".tab-btn");
-    const panels = document.querySelectorAll(".panel");
-    const messageBox = document.getElementById("messageBox");
+    const accessPanels = document.querySelectorAll(".panel");
 
-    tabButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        tabButtons.forEach((btn) => btn.classList.remove("active"));
-        panels.forEach((panel) => panel.classList.remove("active"));
-        button.classList.add("active");
-        document.getElementById(button.dataset.tab).classList.add("active");
-        hideMessage();
+    tabButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        const selectedTab = button.dataset.tab;
+
+        tabButtons.forEach(function (currentButton) {
+          const isActive = currentButton === button;
+
+          currentButton.classList.toggle("active", isActive);
+          currentButton.setAttribute(
+            "aria-selected",
+            isActive ? "true" : "false"
+          );
+        });
+
+        accessPanels.forEach(function (panel) {
+          const isActive = panel.id === selectedTab;
+
+          panel.classList.toggle("active", isActive);
+          panel.hidden = !isActive;
+        });
+
+        const firstField = document.querySelector(
+          `#${selectedTab} input, #${selectedTab} select`
+        );
+
+        if (firstField) {
+          firstField.focus();
+        }
+
+        clearAccessMessage();
       });
     });
 
-    function showMessage(text, isError = false) {
-      messageBox.textContent = text;
-      messageBox.classList.add("show");
+    function clearAccessMessage() {
+      const messageBox = document.getElementById("messageBox");
 
-      if (isError) {
-        messageBox.style.background = "#fef2f2";
-        messageBox.style.color = "#dc2626";
-      } else {
-        messageBox.style.background = "#eff6ff";
-        messageBox.style.color = "#1d4ed8";
-      }
-    }
+      if (!messageBox) return;
 
-    function hideMessage() {
-      messageBox.classList.remove("show");
       messageBox.textContent = "";
+      messageBox.className = "note";
     }
 
-    function saveSession(user) {
-      localStorage.setItem("sessionActive", "true");
-      localStorage.setItem("userId", user.id || "");
-      localStorage.setItem("userRole", user.rol || "cliente");
-      localStorage.setItem("userName", user.nombre || "");
-      localStorage.setItem("userEmail", user.email || "");
+    /*
+      tienda.js conserva la lógica para iniciar sesión, registrar clientes
+      y permitir el acceso como invitado.
+    */
+    if (typeof setupAuthPage === "function") {
+      setupAuthPage();
     }
-
-    document.getElementById("loginForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      hideMessage();
-
-      if (isGitHubPages) {
-        showMessage(
-          "El inicio de sesión con cuenta necesita servidor Node.js. En GitHub Pages usa la pestaña Invitado, o publica el proyecto en Render para usar login real.",
-          true
-        );
-        return;
-      }
-
-      const email = document.getElementById("loginEmail").value.trim();
-      const password = document.getElementById("loginPassword").value.trim();
-      const role = document.getElementById("loginRole").value;
-
-      try {
-        const response = await fetch(`${API_URL}/api/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, role })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          showMessage(data.message || "No se pudo iniciar sesión.", true);
-          return;
-        }
-
-        saveSession(data.user);
-        showMessage("Acceso correcto.");
-
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 700);
-      } catch (error) {
-        console.error(error);
-        showMessage("No se pudo conectar con el servidor.", true);
-      }
-    });
-
-    document.getElementById("registerForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      hideMessage();
-
-      if (isGitHubPages) {
-        showMessage(
-          "El registro necesita servidor Node.js. En GitHub Pages usa la pestaña Invitado, o publica el proyecto en Render para guardar usuarios reales.",
-          true
-        );
-        return;
-      }
-
-      const nombre = document.getElementById("registerName").value.trim();
-      const email = document.getElementById("registerEmail").value.trim();
-      const password = document.getElementById("registerPassword").value.trim();
-
-      try {
-        const response = await fetch(`${API_URL}/api/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nombre, email, password })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          showMessage(data.message || "No se pudo registrar el usuario.", true);
-          return;
-        }
-
-        localStorage.setItem("sessionActive", "true");
-        localStorage.setItem("userId", data.userId || "");
-        localStorage.setItem("userRole", "cliente");
-        localStorage.setItem("userName", nombre);
-        localStorage.setItem("userEmail", email);
-
-        showMessage("Registro exitoso.");
-
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 700);
-      } catch (error) {
-        console.error(error);
-        showMessage("No se pudo conectar con el servidor.", true);
-      }
-    });
-
-    document.getElementById("guestForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-      hideMessage();
-
-      const name = document.getElementById("guestName").value.trim();
-      const email = document.getElementById("guestEmail").value.trim();
-
-      localStorage.setItem("sessionActive", "true");
-      localStorage.removeItem("userId");
-      localStorage.setItem("userRole", "guest");
-      localStorage.setItem("userName", name);
-      localStorage.setItem("userEmail", email);
-
-      showMessage("Entrada como invitado correcta.");
-
-      setTimeout(() => {
-        window.location.href = "index.html";
-      }, 700);
-    });
   </script>
 </body>
 </html>
