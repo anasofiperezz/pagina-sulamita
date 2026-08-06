@@ -3,62 +3,190 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Pago pendiente | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=56">
+
+  <style>
+    /* =========================
+       PÁGINA DE PAGO PENDIENTE
+    ========================= */
+
+    .payment-status-page {
+      display: flex;
+      min-height: calc(100vh - 180px);
+      padding: 56px 20px 72px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .payment-status-card {
+      width: min(100%, 760px);
+      padding: 34px;
+      border: 1px solid #fde68a;
+      border-radius: 24px;
+      background: #ffffff;
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+      text-align: center;
+    }
+
+    .payment-status-icon {
+      display: flex;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 18px;
+      border-radius: 50%;
+      background: #fffbeb;
+      color: #92400e;
+      font-size: 2rem;
+      font-weight: 800;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .payment-status-card h1 {
+      margin: 0 0 12px;
+      color: #111827;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+    }
+
+    .payment-status-card > p {
+      max-width: 620px;
+      margin: 0 auto;
+      color: #475569;
+      line-height: 1.65;
+    }
+
+    .payment-status-note {
+      margin-top: 20px;
+      padding: 15px 17px;
+      border: 1px solid #bfdbfe;
+      border-radius: 16px;
+      background: #eff6ff;
+      color: #0f2f5f;
+      line-height: 1.55;
+      text-align: left;
+    }
+
+    .payment-status-note strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .payment-status-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 26px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .payment-status-actions a {
+      min-width: 190px;
+      text-decoration: none;
+      text-align: center;
+    }
+
+    @media (max-width: 520px) {
+      .payment-status-page {
+        padding: 34px 14px 54px;
+      }
+
+      .payment-status-card {
+        padding: 26px 20px;
+      }
+
+      .payment-status-actions {
+        flex-direction: column;
+      }
+
+      .payment-status-actions a {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
 
       <div class="nav-right">
-        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+        <div class="user-badge" id="userInfo">
+          Cargando sesión...
+        </div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="carrito.html" class="nav-btn">Carrito</a>
-        <button class="nav-btn" id="logoutBtn">Cerrar sesión</button>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
   <main>
-    <section class="page-hero cart-hero">
-      <div class="page-hero-content">
-        <span class="page-badge">Mercado Pago</span>
-        <h1>Pago pendiente</h1>
+    <!-- =========================
+         MENSAJE DE PAGO PENDIENTE
+    ========================== -->
+
+    <section class="payment-status-page">
+      <div class="payment-status-card">
+        <div class="payment-status-icon" aria-hidden="true">
+          …
+        </div>
+
+        <span class="page-badge">Confirmación en proceso</span>
+
+        <h1>Tu pago está pendiente</h1>
+
         <p>
-          Mercado Pago todavía no confirmó el pago.
+          La operación todavía no ha sido confirmada. Esto puede suceder cuando
+          el método de pago necesita más tiempo para procesarse.
         </p>
-      </div>
-    </section>
 
-    <section class="cart-page">
-      <div class="cart-card" style="max-width: 760px; margin: 0 auto;">
-        <div class="info-card">
-          <h2>Tu pago está pendiente</h2>
-          <p>
-            Esto puede pasar si elegiste un método que tarda más en confirmarse.
-          </p>
-          <p>
-            Por ahora el pedido no se registró como pagado. Conserva tu comprobante
-            y revisa el estado en Mercado Pago.
-          </p>
+        <div class="payment-status-note">
+          <strong>Qué debes hacer ahora</strong>
 
-          <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
-            <a href="carrito.html" class="btn-primary">Volver al carrito</a>
-            <a href="index.html" class="btn-outline">Volver al inicio</a>
-          </div>
+          El pedido aún no aparece como pagado. Conserva tu comprobante y revisa
+          el estado de la operación en Mercado Pago antes de intentar pagar
+          nuevamente.
+        </div>
+
+        <div class="payment-status-actions">
+          <a href="carrito.html" class="btn-primary">
+            Regresar al carrito
+          </a>
+
+          <a href="index.html" class="btn-outline">
+            Volver al inicio
+          </a>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - Pago pendiente</p>
+    <p>© 2026 Papelería Sulamita · Pago pendiente</p>
   </footer>
 
-  <script src="tienda.js?v=22"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=56"></script>
 
   <script>
     protectPage();
