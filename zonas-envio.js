@@ -140,7 +140,7 @@
       `C.P. ${address.codigo_postal}`,
       `${address.municipio}, ${address.estado}, ${address.pais}`,
       `${address.zona} · Envío ${formatMoney(address.costo_envio)}`,
-      `Tarifa determinada por ${address.regla_tipo_etiqueta}: ${address.regla_valor}`,
+      `Tarifa final determinada por colonia: ${address.regla_valor}`,
       `Horario para recibir: ${formatTimeForDisplay(address.horario_recepcion)}`,
       "Tiempo estimado de entrega: 1 a 3 días hábiles"
     ];
@@ -302,11 +302,9 @@
 
   function hasEnoughDataToSearch(address) {
     return Boolean(
-      /^\d{5}$/.test(address.codigo_postal) ||
-      address.colonia.length >= 2 ||
-      address.municipio.length >= 2 ||
-      address.estado.length >= 2 ||
-      address.pais.length >= 2
+      /^\d{5}$/.test(address.codigo_postal) &&
+      address.municipio.length >= 2 &&
+      address.colonia.length >= 2
     );
   }
 
@@ -358,7 +356,9 @@
         <strong>${escapeHtml(matchedShippingRule.zona)}</strong>
         · Costo: <strong>${formatMoney(matchedShippingRule.costo)}</strong>
         <br>
-        Coincidencias usadas: ${matchText}
+        Ruta usada: ${matchText}
+        <br>
+        <strong>La colonia confirmó la zona final.</strong>
         <br>
         Entrega estimada de 1 a 3 días hábiles, después de las 3:00 p. m.
       `;
@@ -376,6 +376,7 @@
     if (state === "not-found") {
       status.className = "shipping-zone-status is-error";
       status.textContent =
+        lastShippingResolution?.message ||
         "No hay una tarifa configurada para estos datos. Contacta a la papelería para confirmar el envío.";
       return;
     }
@@ -388,7 +389,7 @@
 
     status.className = "shipping-zone-status";
     status.textContent =
-      "Escribe código postal, colonia, alcaldía o municipio, estado y país para calcular el costo.";
+      "Escribe el código postal, la alcaldía o municipio y la colonia. La colonia confirmará la zona final.";
   }
 
   function addCheckoutValidationCapture() {

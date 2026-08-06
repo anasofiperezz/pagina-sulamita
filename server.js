@@ -696,6 +696,27 @@ async function ensureDatabaseUpdates() {
       ON reglas_envio(zona_id, tipo, valor_normalizado);
     `);
 
+    /*
+      Los códigos postales y las alcaldías/municipios pueden repetirse
+      en varias zonas. Las colonias son exclusivas: una colonia solo
+      puede apuntar a una zona.
+    */
+    await pool.query(`
+      DELETE FROM reglas_envio anterior
+      USING reglas_envio reciente
+      WHERE
+        anterior.tipo = 'colonia'
+        AND reciente.tipo = 'colonia'
+        AND anterior.valor_normalizado = reciente.valor_normalizado
+        AND anterior.id < reciente.id;
+    `);
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_reglas_envio_colonia_unica
+      ON reglas_envio(valor_normalizado)
+      WHERE tipo = 'colonia';
+    `);
+
     await pool.query(`
       ALTER TABLE pedidos
       ADD COLUMN IF NOT EXISTS requiere_factura BOOLEAN DEFAULT FALSE,
@@ -825,6 +846,27 @@ async function ensureShippingRulesSetup() {
     await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS ux_reglas_envio_zona_tipo_valor
       ON reglas_envio(zona_id, tipo, valor_normalizado);
+    `);
+
+    /*
+      Los códigos postales y las alcaldías/municipios pueden repetirse
+      en varias zonas. Las colonias son exclusivas: una colonia solo
+      puede apuntar a una zona.
+    */
+    await pool.query(`
+      DELETE FROM reglas_envio anterior
+      USING reglas_envio reciente
+      WHERE
+        anterior.tipo = 'colonia'
+        AND reciente.tipo = 'colonia'
+        AND anterior.valor_normalizado = reciente.valor_normalizado
+        AND anterior.id < reciente.id;
+    `);
+
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_reglas_envio_colonia_unica
+      ON reglas_envio(valor_normalizado)
+      WHERE tipo = 'colonia';
     `);
 
     console.log("Catálogos de zonas de envío listos.");
@@ -2209,118 +2251,119 @@ async function resolveShippingRule(address) {
     }
   }
 
-  if (!matchesByType.size) {
-    return null;
-  }
-
-  const firstType = SHIPPING_RULE_PRIORITY.find((type) =>
-    matchesByType.has(type)
-  );
-
-  if (!firstType) {
-    return null;
-  }
-
-  let candidateZoneIds = new Set(
-    matchesByType.get(firstType).map((rule) => Number(rule.zona_id))
-  );
-
-  const usedTypes = [firstType];
+  const postalRules = matchesByType.get("codigo_postal") || [];
+  const municipalityRules = matchesByType.get("municipio") || [];
+  const neighborhoodRules = matchesByType.get("colonia") || [];
 
   /*
-    Cuando el C.P. existe en varias zonas, la alcaldía o municipio
-    se utiliza primero para desambiguar, tal como lo necesita la papelería.
-    Si aún quedan varias zonas, se revisan colonia, estado y país.
+    La colonia es el dato definitivo para elegir la zona.
+    C.P. y alcaldía/municipio sirven como filtros previos y ambos
+    pueden estar registrados en varias zonas.
   */
-  const narrowingOrder =
-    firstType === "codigo_postal"
-      ? ["municipio", "colonia", "estado", "pais"]
-      : SHIPPING_RULE_PRIORITY.slice(
-          SHIPPING_RULE_PRIORITY.indexOf(firstType) + 1
-        );
-
-  for (const type of narrowingOrder) {
-    const typeRules = matchesByType.get(type);
-
-    if (!typeRules || !typeRules.length || candidateZoneIds.size <= 1) {
-      continue;
-    }
-
-    const typeZoneIds = new Set(
-      typeRules.map((rule) => Number(rule.zona_id))
-    );
-
-    const intersection = new Set(
-      [...candidateZoneIds].filter((zoneId) => typeZoneIds.has(zoneId))
-    );
-
-    /*
-      Solo reducimos las opciones cuando hay una coincidencia real.
-      Si la alcaldía no coincide con ninguna de las zonas del C.P.,
-      conservamos las candidatas y seguimos buscando otro dato útil.
-    */
-    if (intersection.size > 0) {
-      candidateZoneIds = intersection;
-      usedTypes.push(type);
-    }
-  }
-
-  if (candidateZoneIds.size !== 1) {
-    const candidateZonesMap = new Map();
-
-    for (const rules of matchesByType.values()) {
-      for (const rule of rules) {
-        if (!candidateZoneIds.has(Number(rule.zona_id))) continue;
-
-        candidateZonesMap.set(Number(rule.zona_id), {
-          zona_id: Number(rule.zona_id),
-          zona_numero: Number(rule.zona_numero),
-          zona: rule.zona,
-          costo: Number(rule.costo || 0)
-        });
-      }
-    }
-
+  if (!neighborhoodRules.length) {
     return {
-      ambigua: true,
-      zonas_candidatas: Array.from(candidateZonesMap.values()).sort(
-        (a, b) => a.zona_numero - b.zona_numero
-      ),
-      tipos_coincidentes: Array.from(matchesByType.keys())
+      resolucion_invalida: true,
+      codigo: "COLONIA_NO_REGISTRADA",
+      message:
+        "La colonia todavía no está registrada en una zona de envío. Agrégala desde Zonas de envío."
     };
   }
 
-  const selectedZoneId = Number([...candidateZoneIds][0]);
-  const coincidencias = [];
+  if (neighborhoodRules.length > 1) {
+    return {
+      resolucion_invalida: true,
+      codigo: "COLONIA_DUPLICADA",
+      message:
+        "La colonia está registrada en más de una zona. Cada colonia debe pertenecer solamente a una zona."
+    };
+  }
 
-  for (const type of usedTypes) {
-    const rule = (matchesByType.get(type) || []).find(
-      (item) => Number(item.zona_id) === selectedZoneId
+  let candidateZoneIds = null;
+  const usedMatches = [];
+
+  if (postalRules.length) {
+    candidateZoneIds = new Set(
+      postalRules.map((rule) => Number(rule.zona_id))
+    );
+  }
+
+  if (municipalityRules.length) {
+    const municipalityZoneIds = new Set(
+      municipalityRules.map((rule) => Number(rule.zona_id))
     );
 
-    if (rule) {
-      coincidencias.push({
-        regla_id: Number(rule.id),
-        tipo: rule.tipo,
-        tipo_etiqueta: rule.tipo_etiqueta,
-        valor: rule.valor
-      });
+    if (candidateZoneIds) {
+      const intersection = new Set(
+        [...candidateZoneIds].filter((zoneId) =>
+          municipalityZoneIds.has(zoneId)
+        )
+      );
+
+      if (!intersection.size) {
+        return {
+          resolucion_invalida: true,
+          codigo: "CP_MUNICIPIO_NO_COINCIDEN",
+          message:
+            "El código postal y la alcaldía o municipio no coinciden en ninguna zona configurada."
+        };
+      }
+
+      candidateZoneIds = intersection;
+    } else {
+      candidateZoneIds = municipalityZoneIds;
     }
   }
 
-  const selectedRule =
-    coincidencias.length
-      ? (matchesByType.get(coincidencias[0].tipo) || []).find(
-          (item) => Number(item.zona_id) === selectedZoneId
-        )
-      : Array.from(matchesByType.values())
-          .flat()
-          .find((item) => Number(item.zona_id) === selectedZoneId);
+  const neighborhoodRule = neighborhoodRules[0];
+  const selectedZoneId = Number(neighborhoodRule.zona_id);
+
+  if (candidateZoneIds && !candidateZoneIds.has(selectedZoneId)) {
+    return {
+      resolucion_invalida: true,
+      codigo: "COLONIA_NO_COINCIDE",
+      message:
+        "La colonia no corresponde a las zonas permitidas por el código postal y la alcaldía o municipio."
+    };
+  }
+
+  const postalMatch = postalRules.find(
+    (rule) => Number(rule.zona_id) === selectedZoneId
+  );
+
+  if (postalMatch) {
+    usedMatches.push({
+      regla_id: Number(postalMatch.id),
+      tipo: postalMatch.tipo,
+      tipo_etiqueta: postalMatch.tipo_etiqueta,
+      valor: postalMatch.valor
+    });
+  }
+
+  const municipalityMatch = municipalityRules.find(
+    (rule) => Number(rule.zona_id) === selectedZoneId
+  );
+
+  if (municipalityMatch) {
+    usedMatches.push({
+      regla_id: Number(municipalityMatch.id),
+      tipo: municipalityMatch.tipo,
+      tipo_etiqueta: municipalityMatch.tipo_etiqueta,
+      valor: municipalityMatch.valor
+    });
+  }
+
+  usedMatches.push({
+    regla_id: Number(neighborhoodRule.id),
+    tipo: neighborhoodRule.tipo,
+    tipo_etiqueta: neighborhoodRule.tipo_etiqueta,
+    valor: neighborhoodRule.valor
+  });
 
   return {
-    ...selectedRule,
+    ...neighborhoodRule,
     ambigua: false,
-    coincidencias
+    coincidencias: usedMatches,
+    criterio_final: "colonia"
   };
 }
 
@@ -2336,18 +2379,12 @@ app.post("/api/zonas-envio/calcular", async (req, res) => {
       });
     }
 
-    if (matchedRule.ambigua) {
-      const zoneNames = matchedRule.zonas_candidatas
-        .map((zone) => zone.zona)
-        .join(", ");
-
+    if (matchedRule.resolucion_invalida) {
       return res.json({
         encontrada: false,
-        ambigua: true,
-        zonas_candidatas: matchedRule.zonas_candidatas,
-        message:
-          `Estos datos coinciden con varias zonas (${zoneNames}). ` +
-          "Revisa que la alcaldía o municipio esté registrada en una sola de esas zonas."
+        ambigua: false,
+        codigo: matchedRule.codigo || "DIRECCION_NO_RESUELTA",
+        message: matchedRule.message
       });
     }
 
@@ -2359,6 +2396,7 @@ app.post("/api/zonas-envio/calcular", async (req, res) => {
       regla_tipo_etiqueta: matchedRule.tipo_etiqueta,
       regla_valor: matchedRule.valor,
       coincidencias: matchedRule.coincidencias || [],
+      criterio_final: matchedRule.criterio_final || "colonia",
       zona_id: matchedRule.zona_id,
       zona_numero: matchedRule.zona_numero,
       zona: matchedRule.zona,
@@ -2410,7 +2448,7 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
     );
 
     res.json({
-      version_reglas_envio: 4,
+      version_reglas_envio: 5,
       zonas: zonesResult.rows.map((zone) => ({
         id: Number(zone.id),
         numero: Number(zone.numero),
@@ -2451,7 +2489,14 @@ app.post("/api/admin/zonas-envio/reglas/lote", requireAdminSession, async (req, 
     if (!zoneNumbers.length || !tipo || !valoresEntrada.length) {
       return res.status(400).json({
         message:
-          "Selecciona una o varias zonas, un tipo de dato y escribe al menos un valor."
+          "Selecciona una zona, el tipo de dato y escribe al menos un valor."
+      });
+    }
+
+    if (tipo === "colonia" && zoneNumbers.length !== 1) {
+      return res.status(400).json({
+        message:
+          "Cada colonia debe pertenecer a una sola zona. Selecciona únicamente una zona para guardar colonias."
       });
     }
 
@@ -2500,31 +2545,60 @@ app.post("/api/admin/zonas-envio/reglas/lote", requireAdminSession, async (req, 
 
     const saved = [];
 
-    for (const zone of zonesResult.rows) {
+    if (tipo === "colonia") {
+      const zone = zonesResult.rows[0];
+
       for (const item of validValues) {
-        const result = await client.query(
+        const existingResult = await client.query(
           `
-          INSERT INTO reglas_envio (
-            zona_id,
-            tipo,
-            valor,
-            valor_normalizado,
-            activo
-          )
-          VALUES ($1, $2, $3, $4, TRUE)
-          ON CONFLICT (zona_id, tipo, valor_normalizado)
-          DO UPDATE SET
-            valor = EXCLUDED.valor,
-            activo = TRUE
-          RETURNING id
+          SELECT id
+          FROM reglas_envio
+          WHERE tipo = 'colonia'
+            AND valor_normalizado = $1
+          LIMIT 1
           `,
-          [
-            Number(zone.id),
-            tipo,
-            item.valor,
-            item.valorNormalizado
-          ]
+          [item.valorNormalizado]
         );
+
+        let result;
+
+        if (existingResult.rows.length) {
+          result = await client.query(
+            `
+            UPDATE reglas_envio
+            SET
+              zona_id = $1,
+              valor = $2,
+              activo = TRUE
+            WHERE id = $3
+            RETURNING id
+            `,
+            [
+              Number(zone.id),
+              item.valor,
+              Number(existingResult.rows[0].id)
+            ]
+          );
+        } else {
+          result = await client.query(
+            `
+            INSERT INTO reglas_envio (
+              zona_id,
+              tipo,
+              valor,
+              valor_normalizado,
+              activo
+            )
+            VALUES ($1, 'colonia', $2, $3, TRUE)
+            RETURNING id
+            `,
+            [
+              Number(zone.id),
+              item.valor,
+              item.valorNormalizado
+            ]
+          );
+        }
 
         saved.push({
           id: Number(result.rows[0].id),
@@ -2534,26 +2608,63 @@ app.post("/api/admin/zonas-envio/reglas/lote", requireAdminSession, async (req, 
           costo: Number(zone.costo || 0)
         });
       }
+    } else {
+      for (const zone of zonesResult.rows) {
+        for (const item of validValues) {
+          const result = await client.query(
+            `
+            INSERT INTO reglas_envio (
+              zona_id,
+              tipo,
+              valor,
+              valor_normalizado,
+              activo
+            )
+            VALUES ($1, $2, $3, $4, TRUE)
+            ON CONFLICT (zona_id, tipo, valor_normalizado)
+            DO UPDATE SET
+              valor = EXCLUDED.valor,
+              activo = TRUE
+            RETURNING id
+            `,
+            [
+              Number(zone.id),
+              tipo,
+              item.valor,
+              item.valorNormalizado
+            ]
+          );
+
+          saved.push({
+            id: Number(result.rows[0].id),
+            valor: item.valor,
+            zona_numero: Number(zone.numero),
+            zona: zone.nombre,
+            costo: Number(zone.costo || 0)
+          });
+        }
+      }
     }
 
     await client.query("COMMIT");
 
     const totalValues = validValues.length;
     const totalZones = zonesResult.rows.length;
-    const totalSaved = saved.length;
 
     res.status(201).json({
       message:
-        `${totalValues} ${
-          totalValues === 1 ? "dato guardado" : "datos guardados"
-        } en ${totalZones} ${
-          totalZones === 1 ? "zona" : "zonas"
-        } (${totalSaved} ${
-          totalSaved === 1 ? "registro" : "registros"
-        } en total).`,
+        tipo === "colonia"
+          ? `${totalValues} ${
+              totalValues === 1 ? "colonia guardada" : "colonias guardadas"
+            } en ${zonesResult.rows[0].nombre}.`
+          : `${totalValues} ${
+              totalValues === 1 ? "dato guardado" : "datos guardados"
+            } en ${totalZones} ${
+              totalZones === 1 ? "zona" : "zonas"
+            } (${saved.length} registros en total).`,
       total_valores: totalValues,
       total_zonas: totalZones,
-      total_guardados: totalSaved,
+      total_guardados: saved.length,
       guardados: saved
     });
   } catch (error) {
@@ -2580,9 +2691,10 @@ app.post("/api/admin/zonas-envio/reglas", requireAdminSession, async (req, res) 
 
     if (!zonaNumero || !tipo || !valor || !valorNormalizado) {
       return res.status(400).json({
-        message: tipo === "codigo_postal"
-          ? "Selecciona una zona y escribe un código postal de 5 dígitos."
-          : "Selecciona una zona, el tipo de dato y escribe su valor."
+        message:
+          tipo === "codigo_postal"
+            ? "Selecciona una zona y escribe un código postal de 5 dígitos."
+            : "Selecciona una zona, el tipo de dato y escribe su valor."
       });
     }
 
@@ -2597,7 +2709,39 @@ app.post("/api/admin/zonas-envio/reglas", requireAdminSession, async (req, res) 
     );
 
     if (!zoneResult.rows.length) {
-      return res.status(400).json({ message: "La zona seleccionada no existe." });
+      return res.status(400).json({
+        message: "La zona seleccionada no existe."
+      });
+    }
+
+    const zoneId = Number(zoneResult.rows[0].id);
+
+    if (tipo === "colonia") {
+      const result = await pool.query(
+        `
+        INSERT INTO reglas_envio (
+          zona_id,
+          tipo,
+          valor,
+          valor_normalizado,
+          activo
+        )
+        VALUES ($1, 'colonia', $2, $3, TRUE)
+        ON CONFLICT (valor_normalizado)
+        WHERE tipo = 'colonia'
+        DO UPDATE SET
+          zona_id = EXCLUDED.zona_id,
+          valor = EXCLUDED.valor,
+          activo = TRUE
+        RETURNING id
+        `,
+        [zoneId, valor, valorNormalizado]
+      );
+
+      return res.status(201).json({
+        message: "Colonia guardada en una sola zona.",
+        id: Number(result.rows[0].id)
+      });
     }
 
     const result = await pool.query(
@@ -2610,24 +2754,24 @@ app.post("/api/admin/zonas-envio/reglas", requireAdminSession, async (req, res) 
         activo
       )
       VALUES ($1, $2, $3, $4, TRUE)
+      ON CONFLICT (zona_id, tipo, valor_normalizado)
+      DO UPDATE SET
+        valor = EXCLUDED.valor,
+        activo = TRUE
       RETURNING id
       `,
-      [Number(zoneResult.rows[0].id), tipo, valor, valorNormalizado]
+      [zoneId, tipo, valor, valorNormalizado]
     );
 
     res.status(201).json({
-      message: "Regla de envío agregada correctamente.",
+      message: "Dato de envío agregado correctamente.",
       id: Number(result.rows[0].id)
     });
   } catch (error) {
-    if (error.code === "23505") {
-      return res.status(400).json({
-        message: "Ese dato ya está registrado dentro de esa misma zona."
-      });
-    }
-
     console.error("Error en POST /api/admin/zonas-envio/reglas:", error);
-    res.status(500).json({ message: "Error al agregar la regla de envío." });
+    res.status(500).json({
+      message: error.message || "Error al agregar el dato de envío."
+    });
   }
 });
 
@@ -2658,6 +2802,27 @@ app.put("/api/admin/zonas-envio/reglas/:id", requireAdminSession, async (req, re
 
     if (!zoneResult.rows.length) {
       return res.status(400).json({ message: "La zona seleccionada no existe." });
+    }
+
+    if (tipo === "colonia") {
+      const duplicateColony = await pool.query(
+        `
+        SELECT id
+        FROM reglas_envio
+        WHERE tipo = 'colonia'
+          AND valor_normalizado = $1
+          AND id <> $2
+        LIMIT 1
+        `,
+        [valorNormalizado, ruleId]
+      );
+
+      if (duplicateColony.rows.length) {
+        return res.status(400).json({
+          message:
+            "Esa colonia ya existe. Edita el registro de esa colonia en lugar de crear otro."
+        });
+      }
     }
 
     const result = await pool.query(
@@ -2810,14 +2975,14 @@ app.post("/api/pedidos", async (req, res) => {
 
       if (!matchedRule) {
         return res.status(400).json({
-          message: "No hay una tarifa configurada para esta dirección. Contacta a la papelería."
+          message:
+            "No hay una tarifa configurada para esta dirección. Contacta a la papelería."
         });
       }
 
-      if (matchedRule.ambigua) {
+      if (matchedRule.resolucion_invalida) {
         return res.status(400).json({
-          message:
-            "Esta dirección coincide con varias zonas. Revisa la alcaldía o municipio, o configura una regla que deje una sola zona posible."
+          message: matchedRule.message
         });
       }
 

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Catálogos de zonas | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=47">
+  <link rel="stylesheet" href="styles.css?v=48">
 
   <style>
     .shipping-admin-page {
@@ -357,10 +357,13 @@
         </div>
 
         <div class="explanation-note">
-          <strong>Puedes seleccionar varias zonas al mismo tiempo.</strong><br>
-          Ejemplo: marca Zona 1 y Zona 5, escribe el C.P. 12222 una sola vez
-          y presiona guardar. El C.P. quedará registrado en las dos zonas.<br>
-          Para desmarcar una zona, vuelve a hacer clic sobre ella.
+          <strong>Regla para calcular el envío:</strong><br>
+          Los códigos postales y las alcaldías o municipios pueden pertenecer
+          a varias zonas. Las colonias son exclusivas y cada colonia debe
+          pertenecer solamente a una zona.<br>
+          El cliente pasa primero por C.P. y alcaldía; la colonia confirma
+          finalmente la zona y el precio. El estado y el país se capturan en
+          la dirección del cliente, pero no deciden la zona.
         </div>
 
         <p class="step-title">1. Elige qué datos vas a agregar</p>
@@ -435,7 +438,7 @@
     <p>© 2026 Papelería Sulamita - Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=47"></script>
+  <script src="tienda.js?v=48"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -467,7 +470,7 @@
         placeholder:
           "Escribe una colonia por línea.\nEj.\nRoma Norte\nDel Valle Centro",
         help:
-          "Cada colonia se asignará individualmente a la zona seleccionada."
+          "Cada colonia debe pertenecer a una sola zona. Si ya estaba en otra zona, se moverá a la nueva."
       },
       municipio: {
         button: "Alcaldías o municipios",
@@ -500,10 +503,8 @@
 
     const typeOrder = [
       "codigo_postal",
-      "colonia",
       "municipio",
-      "estado",
-      "pais"
+      "colonia"
     ];
 
     const typeSelector = document.getElementById("typeSelector");
@@ -535,7 +536,21 @@
       const button = event.target.closest("[data-type]");
       if (!button) return;
 
-      selectedType = button.dataset.type;
+      const nextType = button.dataset.type;
+
+      if (
+        nextType === "colonia" &&
+        selectedType !== "colonia" &&
+        selectedZoneNumbers.size > 1
+      ) {
+        selectedZoneNumbers = new Set();
+        showMessage(
+          "Las colonias solo pueden guardarse en una zona. Selecciona una sola zona.",
+          false
+        );
+      }
+
+      selectedType = nextType;
       resetEditOnly();
       renderSelectors();
       updateFormForType();
@@ -549,8 +564,16 @@
 
       if (!zoneNumber) return;
 
-      if (editingRuleId.value) {
-        selectedZoneNumbers = new Set([zoneNumber]);
+      if (editingRuleId.value || selectedType === "colonia") {
+        if (
+          selectedType === "colonia" &&
+          selectedZoneNumbers.size === 1 &&
+          selectedZoneNumbers.has(zoneNumber)
+        ) {
+          selectedZoneNumbers = new Set();
+        } else {
+          selectedZoneNumbers = new Set([zoneNumber]);
+        }
       } else if (selectedZoneNumbers.has(zoneNumber)) {
         selectedZoneNumbers.delete(zoneNumber);
       } else {
@@ -613,11 +636,17 @@
         selectedZoneNumbers.has(Number(zone.numero))
       );
 
-      currentSelection.textContent = selectedZones.length
-        ? `${typeConfig[selectedType].plural} → ${selectedZones
-            .map((zone) => `${zone.nombre} (${formatMoney(zone.costo)})`)
-            .join(", ")}`
-        : `${typeConfig[selectedType].plural} → todavía no has seleccionado ninguna zona.`;
+      if (selectedType === "colonia") {
+        currentSelection.textContent = selectedZones.length
+          ? `Colonias → ${selectedZones[0].nombre} (${formatMoney(selectedZones[0].costo)}) · zona definitiva`
+          : "Colonias → selecciona una sola zona definitiva.";
+      } else {
+        currentSelection.textContent = selectedZones.length
+          ? `${typeConfig[selectedType].plural} → ${selectedZones
+              .map((zone) => `${zone.nombre} (${formatMoney(zone.costo)})`)
+              .join(", ")}`
+          : `${typeConfig[selectedType].plural} → todavía no has seleccionado ninguna zona.`;
+      }
     }
 
     function updateFormForType() {
@@ -629,11 +658,17 @@
 
       if (!editingRuleId.value) {
         const zoneCount = selectedZoneNumbers.size;
-        saveButton.textContent = zoneCount
-          ? `Agregar ${config.plural.toLowerCase()} a ${zoneCount} ${
-              zoneCount === 1 ? "zona" : "zonas"
-            }`
-          : `Agregar ${config.plural.toLowerCase()}`;
+        if (selectedType === "colonia") {
+          saveButton.textContent = zoneCount
+            ? "Agregar colonias a esta zona"
+            : "Agregar colonias";
+        } else {
+          saveButton.textContent = zoneCount
+            ? `Agregar ${config.plural.toLowerCase()} a ${zoneCount} ${
+                zoneCount === 1 ? "zona" : "zonas"
+              }`
+            : `Agregar ${config.plural.toLowerCase()}`;
+        }
       }
     }
 
@@ -682,7 +717,7 @@
           throw new Error(data.message || "No se pudieron cargar los datos.");
         }
 
-        serverSupportsRules = Number(data.version_reglas_envio) >= 4;
+        serverSupportsRules = Number(data.version_reglas_envio) >= 5;
 
         if (!serverSupportsRules) {
           serverStatus.className = "server-status error";
@@ -691,7 +726,7 @@
         } else {
           serverStatus.className = "server-status ok";
           serverStatus.textContent =
-            "Servidor conectado correctamente. Puedes marcar varias zonas y guardar el mismo dato en todas de una sola vez.";
+            "Servidor conectado. C.P. y alcaldías pueden repetirse en varias zonas; cada colonia pertenece a una sola zona y define el costo final.";
         }
 
         zones =
@@ -729,6 +764,14 @@
       if (!selectedZoneNumbers.size) {
         showMessage(
           "Selecciona al menos una zona a la que pertenecen estos datos.",
+          true
+        );
+        return;
+      }
+
+      if (selectedType === "colonia" && selectedZoneNumbers.size !== 1) {
+        showMessage(
+          "Cada colonia debe pertenecer a una sola zona. Selecciona únicamente una zona.",
           true
         );
         return;
