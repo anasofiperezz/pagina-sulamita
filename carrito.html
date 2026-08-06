@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Carrito | Papelería Sulamita</title>
+  <title>Carrito de compras | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=49">
+  <link rel="stylesheet" href="styles.css?v=50">
 
   <style>
     .shipping-help-card {
@@ -85,6 +85,52 @@
       }
     }
 
+
+    /* Secciones del proceso de compra */
+    .checkout-section {
+      margin-top: 24px;
+      padding-top: 22px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .checkout-section-header {
+      margin-bottom: 14px;
+    }
+
+    .checkout-section-header h4 {
+      margin: 0 0 5px;
+      color: #111827;
+      font-size: 1rem;
+    }
+
+    .checkout-section-header p,
+    .summary-caption,
+    .confirmation-note {
+      color: #64748b;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .summary-caption {
+      margin: -4px 0 16px;
+    }
+
+    .required-note {
+      margin: 8px 0 18px;
+      color: #64748b;
+      font-size: 0.88rem;
+    }
+
+    .required-mark {
+      color: #b0002f;
+      font-weight: 800;
+    }
+
+    .confirmation-note {
+      margin: 18px 0 14px;
+      text-align: center;
+    }
+
   </style>
 </head>
 
@@ -98,7 +144,7 @@
         <a href="index.html" class="nav-btn">Inicio</a>
         <a href="contacto.html" class="nav-btn">Contacto</a>
         <a href="carrito.html" class="nav-btn">Carrito</a>
-        <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
+        <button class="nav-btn" id="adminBtn" style="display: none;">Panel administrativo</button>
         <a href="zonas-envio-admin.html" class="nav-btn" id="shippingZonesAdminBtn" style="display: none;">
           Zonas de envío
         </a>
@@ -110,11 +156,12 @@
   <main>
     <section class="page-hero cart-hero">
       <div class="page-hero-content">
-        <span class="page-badge">Tu compra</span>
-        <h1>Carrito de compras</h1>
+        <span class="page-badge">Tu pedido</span>
+        <h1>Revisa y confirma tu compra</h1>
         <p>
-          Revisa tus productos, paquetes, tallas, cantidades y selecciona tu método
-          de entrega y pago antes de confirmar el pedido.
+          Verifica los productos, las cantidades y los descuentos. Después elige
+          la forma de entrega, el método de pago y, si la necesitas, agrega la
+          información para tu factura.
         </p>
       </div>
     </section>
@@ -124,7 +171,7 @@
         <div class="cart-left">
           <div class="cart-card">
             <div class="cart-card-header">
-              <h2>Productos agregados</h2>
+              <h2>Productos de tu pedido</h2>
               <button class="btn-outline" id="clearCartBtn" type="button">
                 Vaciar carrito
               </button>
@@ -133,33 +180,33 @@
             <div id="cartItems" class="cart-items"></div>
 
             <div id="emptyCartMessage" class="empty-cart" style="display: none;">
-              Tu carrito está vacío.
+              Tu carrito está vacío. Agrega productos para comenzar un pedido.
             </div>
           </div>
 
           <div class="cart-card" style="margin-top: 20px;">
-            <h2>Información importante</h2>
+            <h2>Antes de confirmar</h2>
 
             <div class="info-card">
-              <h3>Descuentos</h3>
+              <h3>Paquetes y descuentos</h3>
               <p>
-                Si agregas un paquete con descuento, el descuento aparecerá automáticamente
+                Los descuentos de los paquetes se aplican automáticamente y aparecen
                 en el resumen del pedido.
               </p>
               <ul>
                 <li>Uniforme completo diario con gala.</li>
                 <li>Uniforme completo de deportes.</li>
-                <li>Lista completa de útiles: libros de texto + cuadernos con agenda escolar e higiene.</li>
+                <li>Lista completa de útiles, libros, cuadernos, agenda escolar y artículos de higiene.</li>
               </ul>
             </div>
 
             <div class="info-card">
               <h3>Formas de pago</h3>
               <p>
-                Para envíos a domicilio únicamente aceptamos transferencia bancaria.
+                Los pedidos con envío a domicilio se pagan únicamente mediante transferencia bancaria.
               </p>
               <p>
-                Al recoger en tienda puedes pagar por transferencia, efectivo o tarjeta.
+                Al recoger en la papelería puedes pagar por transferencia, en efectivo o con tarjeta.
               </p>
             </div>
           </div>
@@ -168,6 +215,10 @@
         <div class="cart-right">
           <div class="summary-card">
             <h3>Resumen del pedido</h3>
+
+            <p class="summary-caption">
+              El total se actualiza al cambiar la entrega o calcular el costo de envío.
+            </p>
 
             <div class="summary-row">
               <span>Subtotal</span>
@@ -190,22 +241,30 @@
             </div>
 
             <div class="form-group">
-              <label for="deliveryMethod">Método de entrega</label>
+              <label for="deliveryMethod">Forma de entrega</label>
               <select id="deliveryMethod">
-                <option value="pickup">Recoger en papelería</option>
-                <option value="delivery">Envío a domicilio</option>
+                <option value="pickup">Recoger en la papelería</option>
+                <option value="delivery">Enviar a domicilio</option>
               </select>
             </div>
 
             <div id="addressGroup" style="display: none;">
+              <div class="checkout-section-header">
+                <h4>Datos para la entrega</h4>
+                <p>
+                  Completa la información de la persona que recibirá el pedido y la dirección exacta.
+                </p>
+              </div>
+
+              <p class="required-note">
+                Los campos marcados con <span class="required-mark">*</span> son necesarios para realizar el envío.
+              </p>
+
               <div class="shipping-help-card">
-                <strong>Envío a domicilio</strong>
-                Escribe tu dirección normalmente. La página buscará reglas independientes por
-                código postal, colonia, alcaldía o municipio, estado y país, y mostrará
-                automáticamente el costo de envío. La entrega tarda de 1 a 3 días hábiles,
-                después de las 3:00 p. m.
-                <br><br>
-                <strong>Prioridad:</strong> código postal → colonia → alcaldía/municipio → estado → país.
+                <strong>Cómo se calcula el envío</strong>
+                El sistema revisa primero el código postal y la alcaldía o municipio.
+                Después utiliza la colonia para confirmar la zona y el costo final.
+                La entrega tarda de 1 a 3 días hábiles y se realiza después de las 3:00 p. m.
 
                 <div class="shipping-price-grid" aria-label="Precios por zona">
                   <div class="shipping-price-item">Zona 1 · $150</div>
@@ -218,7 +277,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingFullName">Nombre completo de quien recibe</label>
+                <label for="shippingFullName">Nombre completo de quien recibe <span class="required-mark">*</span></label>
                 <input
                   type="text"
                   id="shippingFullName"
@@ -228,7 +287,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingPhone">Número de contacto</label>
+                <label for="shippingPhone">Número de contacto <span class="required-mark">*</span></label>
                 <input
                   type="tel"
                   id="shippingPhone"
@@ -238,7 +297,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingEmail">Correo electrónico</label>
+                <label for="shippingEmail">Correo electrónico <span class="required-mark">*</span></label>
                 <input
                   type="email"
                   id="shippingEmail"
@@ -248,19 +307,20 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingZip">Código postal</label>
+                <label for="shippingZip">Código postal <span class="required-mark">*</span></label>
                 <input
                   type="text"
                   id="shippingZip"
                   inputmode="numeric"
                   maxlength="5"
+                  pattern="[0-9]{5}"
                   autocomplete="postal-code"
                   placeholder="Escribe los 5 dígitos"
                 />
               </div>
 
               <div class="form-group">
-                <label for="shippingNeighborhood">Colonia</label>
+                <label for="shippingNeighborhood">Colonia <span class="required-mark">*</span></label>
                 <input
                   type="text"
                   id="shippingNeighborhood"
@@ -270,7 +330,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingCity">Alcaldía o municipio</label>
+                <label for="shippingCity">Alcaldía o municipio <span class="required-mark">*</span></label>
                 <input
                   type="text"
                   id="shippingCity"
@@ -280,7 +340,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingState">Estado o entidad federativa</label>
+                <label for="shippingState">Estado o entidad federativa <span class="required-mark">*</span></label>
                 <input
                   type="text"
                   id="shippingState"
@@ -290,7 +350,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingCountry">País</label>
+                <label for="shippingCountry">País <span class="required-mark">*</span></label>
                 <input
                   type="text"
                   id="shippingCountry"
@@ -301,11 +361,11 @@
               </div>
 
               <div id="shippingCoverageStatus" class="shipping-zone-status">
-                Escribe tu código postal y selecciona tu colonia.
+                Completa el código postal, la alcaldía o municipio y la colonia para calcular el costo de envío.
               </div>
 
               <div class="form-group">
-                <label for="shippingStreet">Calle / Dirección</label>
+                <label for="shippingStreet">Calle <span class="required-mark">*</span></label>
                 <input
                   type="text"
                   id="shippingStreet"
@@ -315,7 +375,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingExtNumber">Número exterior</label>
+                <label for="shippingExtNumber">Número exterior <span class="required-mark">*</span></label>
                 <input
                   type="text"
                   id="shippingExtNumber"
@@ -324,7 +384,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingIntNumber">Número interior / departamento</label>
+                <label for="shippingIntNumber">Número interior o departamento</label>
                 <input
                   type="text"
                   id="shippingIntNumber"
@@ -333,7 +393,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingReceiveTime">Hora en que puedes recibir</label>
+                <label for="shippingReceiveTime">Hora en que puedes recibir <span class="required-mark">*</span></label>
                 <input
                   type="time"
                   id="shippingReceiveTime"
@@ -344,7 +404,7 @@
               </div>
 
               <div class="form-group">
-                <label for="shippingReferences">Referencias de la dirección</label>
+                <label for="shippingReferences">Referencias para encontrar la dirección</label>
                 <textarea
                   id="shippingReferences"
                   rows="3"
@@ -354,20 +414,19 @@
             </div>
 
             <div class="payment-notice">
-              <strong>Aviso importante sobre pagos</strong>
+              <strong>Importante</strong>
               <p>
-                Los pedidos con envío a domicilio únicamente pueden pagarse por
-                transferencia bancaria.
+                Los envíos a domicilio se pagan únicamente mediante transferencia bancaria.
               </p>
               <p>
-                El efectivo y la tarjeta se reciben únicamente al recoger el pedido en tienda.
+                El efectivo y la tarjeta se reciben al recoger el pedido en la papelería.
               </p>
             </div>
 
             <div class="form-group">
               <label for="paymentMethod">Método de pago</label>
               <select id="paymentMethod">
-                <option value="">Selecciona método de pago</option>
+                <option value="">Selecciona un método de pago</option>
                 <option value="transferencia">Transferencia bancaria</option>
                 <option value="efectivo_tienda">Efectivo al recoger en tienda</option>
                 <option value="tarjeta_tienda">Tarjeta al recoger en tienda</option>
@@ -375,26 +434,26 @@
             </div>
 
             <div class="payment-info-card" id="paymentAvailabilityInfo">
-              <h4>Forma de pago disponible</h4>
+              <h4>Pago disponible para esta entrega</h4>
               <p id="paymentAvailabilityText">
-                Al recoger en tienda puedes pagar por transferencia, efectivo o tarjeta.
+                Al recoger en la papelería puedes pagar por transferencia, en efectivo o con tarjeta.
               </p>
             </div>
 
             <div class="payment-info-card" id="cardPaymentInfo" style="display: none;">
-              <h4>Pago con tarjeta en tienda física</h4>
+              <h4>Pago con tarjeta</h4>
               <p>
-                El pago con tarjeta se realiza únicamente al recoger el pedido en la papelería.
+                El pago con tarjeta se realiza al recoger el pedido en la papelería.
               </p>
               <p class="subtext">
-                Por el momento no hay pago con tarjeta en línea.
+                No se realizan cargos con tarjeta desde esta página.
               </p>
             </div>
 
             <div class="payment-info-card" id="cashPaymentInfo" style="display: none;">
-              <h4>Pago en efectivo en tienda física</h4>
+              <h4>Pago en efectivo</h4>
               <p>
-                El pago en efectivo se realiza únicamente al recoger el pedido en la papelería.
+                El pago en efectivo se realiza al recoger el pedido en la papelería.
               </p>
             </div>
 
@@ -422,12 +481,12 @@
               </div>
 
               <p class="subtext">
-                Si tu pedido incluye libros y otros productos, revisa con la papelería si necesitas hacer transferencias separadas.
+                Si tu pedido incluye libros y otros productos, confirma con la papelería si debes realizar transferencias separadas.
               </p>
             </div>
 
             <div class="form-group">
-              <label for="requiresInvoice">¿Requieres factura?</label>
+              <label for="requiresInvoice">¿Necesitas factura?</label>
               <select id="requiresInvoice">
                 <option value="no">No</option>
                 <option value="si">Sí</option>
@@ -436,14 +495,14 @@
 
             <div id="invoiceGroup" style="display: none;">
               <div class="payment-info-card">
-                <h4>Datos para factura</h4>
+                <h4>Documentos para facturación</h4>
                 <p class="subtext">
-                  Sube los datos necesarios para emitir tu factura. La constancia fiscal debe estar actualizada.
+                  La constancia de situación fiscal debe estar actualizada. Los archivos pueden enviarse como imagen o PDF.
                 </p>
               </div>
 
               <div class="form-group">
-                <label for="invoiceFiscalFile">Constancia fiscal actualizada</label>
+                <label for="invoiceFiscalFile">Constancia de situación fiscal actualizada</label>
                 <input
                   type="file"
                   id="invoiceFiscalFile"
@@ -464,24 +523,24 @@
               </div>
 
               <div class="form-group">
-                <label for="invoicePaymentMode">Modo de pago para factura</label>
+                <label for="invoicePaymentMode">Forma de pago para la factura</label>
                 <select id="invoicePaymentMode">
-                  <option value="">Selecciona modo de pago</option>
+                  <option value="">Selecciona una forma de pago</option>
                   <option value="Tarjeta">Tarjeta en tienda física</option>
-                  <option value="Transferencia">Transferencia bancaria para pedido a distancia</option>
+                  <option value="Transferencia">Transferencia bancaria</option>
                   <option value="Efectivo">Efectivo en tienda física</option>
                 </select>
               </div>
 
               <div class="form-group">
-                <label for="invoiceReceiptFile">Foto de nota de compra</label>
+                <label for="invoiceReceiptFile">Nota o comprobante de compra</label>
                 <input
                   type="file"
                   id="invoiceReceiptFile"
                   accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
                 />
                 <p class="subtext">
-                  Sube foto o PDF de la nota de compra.
+                  Sube una fotografía clara o un archivo PDF.
                 </p>
               </div>
 
@@ -498,7 +557,7 @@
               </div>
 
               <div class="form-group">
-                <label for="invoiceEmail">Correo donde se enviará la factura</label>
+                <label for="invoiceEmail">Correo para recibir la factura</label>
                 <input
                   type="email"
                   id="invoiceEmail"
@@ -506,6 +565,10 @@
                 />
               </div>
             </div>
+
+            <p class="confirmation-note">
+              Antes de confirmar, revisa que tus productos y datos sean correctos.
+            </p>
 
             <button class="btn-primary full-width" id="checkoutBtn" type="button">
               Confirmar pedido
@@ -517,22 +580,23 @@
   </main>
 
   <footer>
-    <p>© 2026 Papelería Sulamita - Carrito</p>
+    <p>© 2026 Papelería Sulamita · Carrito de compras</p>
   </footer>
 
-  <script src="tienda.js?v=49"></script>
-  <script src="zonas-envio.js?v=9"></script>
+  <script src="tienda.js?v=50"></script>
+  <script src="zonas-envio.js?v=10"></script>
 
   <script>
+    /* Preparación de la página */
     protectPage();
     setupHeader();
     setupCartPage();
 
-    const role = localStorage.getItem("userRole");
+    const userRole = localStorage.getItem("userRole");
     const adminBtn = document.getElementById("adminBtn");
     const shippingZonesAdminBtn = document.getElementById("shippingZonesAdminBtn");
 
-    if (role === "admin") {
+    if (userRole === "admin") {
       if (adminBtn) {
         adminBtn.style.display = "inline-block";
         adminBtn.addEventListener("click", function () {
@@ -579,7 +643,7 @@
 
         if (paymentAvailabilityText) {
           paymentAvailabilityText.textContent =
-            "Para envío a domicilio el pago debe realizarse mediante transferencia bancaria.";
+            "Para envío a domicilio, el pago debe realizarse mediante transferencia bancaria.";
         }
       } else {
         if (
@@ -592,7 +656,7 @@
 
         if (paymentAvailabilityText) {
           paymentAvailabilityText.textContent =
-            "Al recoger en tienda puedes pagar por transferencia, efectivo o tarjeta.";
+            "Al recoger en tienda puedes pagar por transferencia, en efectivo o con tarjeta.";
         }
       }
 
