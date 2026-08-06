@@ -1,7 +1,6 @@
 /* =========================================================
-   ZONAS DE ENVÍO - PAPELERÍA SULAMITA
-   Este archivo se carga después de tienda.js y antes de
-   ejecutar setupCartPage().
+   REGLAS DE ENVÍO - PAPELERÍA SULAMITA
+   Se carga después de tienda.js y antes de setupCartPage().
 ========================================================= */
 
 (function () {
@@ -10,8 +9,10 @@
   const originalSetupCartPage = window.setupCartPage;
   const nativeFetch = window.fetch.bind(window);
 
-  let selectedCoverage = null;
-  let coverageRequestId = 0;
+  let matchedShippingRule = null;
+  let calculationRequestId = 0;
+  let calculationTimer = null;
+  let calculationInProgress = false;
   let fetchInterceptorInstalled = false;
 
   window.currentShippingCost = 0;
@@ -41,26 +42,41 @@
       "pickup";
 
     const envio =
-      deliveryMethod === "delivery" && cart.length > 0 && selectedCoverage
-        ? Number(selectedCoverage.costo || 0)
+      deliveryMethod === "delivery" && getCart().length > 0 && matchedShippingRule
+        ? Number(matchedShippingRule.costo || 0)
         : 0;
-
-    const total = subtotal + envio - descuento;
 
     return {
       subtotal: roundMoney(subtotal),
       descuento: roundMoney(descuento),
       envio: roundMoney(envio),
-      total: roundMoney(total)
+      total: roundMoney(subtotal + envio - descuento)
     };
   };
 
   window.getShippingAddressData = function () {
     return {
-      cobertura_envio_id: selectedCoverage ? Number(selectedCoverage.id) : null,
-      zona_id: selectedCoverage ? Number(selectedCoverage.zona_id) : null,
-      zona: selectedCoverage ? String(selectedCoverage.zona || "") : "",
-      costo_envio: selectedCoverage ? Number(selectedCoverage.costo || 0) : 0,
+      regla_envio_id: matchedShippingRule
+        ? Number(matchedShippingRule.regla_id)
+        : null,
+      regla_tipo: matchedShippingRule
+        ? String(matchedShippingRule.regla_tipo || "")
+        : "",
+      regla_tipo_etiqueta: matchedShippingRule
+        ? String(matchedShippingRule.regla_tipo_etiqueta || "")
+        : "",
+      regla_valor: matchedShippingRule
+        ? String(matchedShippingRule.regla_valor || "")
+        : "",
+      zona_id: matchedShippingRule
+        ? Number(matchedShippingRule.zona_id)
+        : null,
+      zona: matchedShippingRule
+        ? String(matchedShippingRule.zona || "")
+        : "",
+      costo_envio: matchedShippingRule
+        ? Number(matchedShippingRule.costo || 0)
+        : 0,
       nombre_completo:
         document.getElementById("shippingFullName")?.value.trim() || "",
       telefono:
@@ -94,7 +110,7 @@
   window.isValidShippingAddress = function (address) {
     return Boolean(
       address &&
-      address.cobertura_envio_id &&
+      address.regla_envio_id &&
       address.nombre_completo &&
       address.telefono &&
       isValidEmail(address.email) &&
@@ -123,6 +139,7 @@
       `C.P. ${address.codigo_postal}`,
       `${address.municipio}, ${address.estado}, ${address.pais}`,
       `${address.zona} · Envío ${formatMoney(address.costo_envio)}`,
+      `Tarifa determinada por ${address.regla_tipo_etiqueta}: ${address.regla_valor}`,
       `Horario para recibir: ${formatTimeForDisplay(address.horario_recepcion)}`,
       "Tiempo estimado de entrega: 1 a 3 días hábiles"
     ];
@@ -141,18 +158,15 @@
       originalSetupCartPage();
     }
 
-    setupShippingZoneForm();
+    setupShippingRuleCalculator();
     addCheckoutValidationCapture();
   };
 
-  function setupShippingZoneForm() {
-    const zipInput = document.getElementById("shippingZip");
-    const neighborhoodSelect = document.getElementById("shippingNeighborhood");
+  function setupShippingRuleCalculator() {
     const deliveryMethod = document.getElementById("deliveryMethod");
     const fullName = document.getElementById("shippingFullName");
     const email = document.getElementById("shippingEmail");
-
-    if (!zipInput || !neighborhoodSelect) return;
+    const zip = document.getElementById("shippingZip");
 
     if (fullName && !fullName.value) {
       fullName.value = localStorage.getItem("userName") || "";
@@ -162,209 +176,193 @@
       email.value = localStorage.getItem("userEmail") || "";
     }
 
-    zipInput.addEventListener("input", function () {
-      zipInput.value = zipInput.value.replace(/\D/g, "").slice(0, 5);
-      resetCoverageSelection();
+    if (zip) {
+      zip.addEventListener("input", function () {
+        zip.value = zip.value.replace(/\D/g, "").slice(0, 5);
+      });
+    }
 
-      if (zipInput.value.length === 5) {
-        searchCoverageByZip(zipInput.value);
-      }
-    });
+    [
+      "shippingZip",
+      "shippingNeighborhood",
+      "shippingCity",
+      "shippingState",
+      "shippingCountry"
+    ].forEach((id) => {
+      const input = document.getElementById(id);
+      if (!input) return;
 
-    neighborhoodSelect.addEventListener("change", function () {
-      const option = neighborhoodSelect.selectedOptions[0];
-
-      if (!option || !option.dataset.coverage) {
-        resetCoverageSelection(false);
-        return;
-      }
-
-      try {
-        selectedCoverage = JSON.parse(option.dataset.coverage);
-      } catch (error) {
-        console.error("No se pudo leer la cobertura:", error);
-        resetCoverageSelection(false);
-        return;
-      }
-
-      applySelectedCoverage();
+      input.addEventListener("input", scheduleShippingCalculation);
+      input.addEventListener("change", scheduleShippingCalculation);
+      input.addEventListener("blur", scheduleShippingCalculation);
     });
 
     if (deliveryMethod) {
       deliveryMethod.addEventListener("change", function () {
-        if (deliveryMethod.value !== "delivery") {
-          window.currentShippingCost = 0;
-        } else if (selectedCoverage) {
-          window.currentShippingCost = Number(selectedCoverage.costo || 0);
+        if (deliveryMethod.value === "delivery") {
+          scheduleShippingCalculation();
+        } else {
+          clearMatchedRule();
+          updateShippingStatus();
         }
 
-        updateShippingZoneMessage();
         updateCartTotals();
       });
     }
 
-    updateShippingZoneMessage();
+    updateShippingStatus();
   }
 
-  async function searchCoverageByZip(zipCode) {
-    const requestId = ++coverageRequestId;
-    const neighborhoodSelect = document.getElementById("shippingNeighborhood");
-    const status = document.getElementById("shippingCoverageStatus");
+  function scheduleShippingCalculation() {
+    clearTimeout(calculationTimer);
+    clearMatchedRule();
 
-    if (!neighborhoodSelect) return;
+    const deliveryMethod = document.getElementById("deliveryMethod")?.value;
+    if (deliveryMethod !== "delivery") {
+      updateShippingStatus();
+      return;
+    }
 
-    neighborhoodSelect.disabled = true;
-    neighborhoodSelect.innerHTML = `<option value="">Buscando colonias...</option>`;
+    calculationInProgress = true;
+    updateShippingStatus("loading");
+    updateCartTotals();
 
-    if (status) {
-      status.className = "shipping-zone-status is-loading";
-      status.textContent = "Buscando cobertura para este código postal...";
+    calculationTimer = setTimeout(calculateShippingRule, 450);
+  }
+
+  async function calculateShippingRule() {
+    const requestId = ++calculationRequestId;
+    const address = getMatchableAddressData();
+
+    if (!hasEnoughDataToSearch(address)) {
+      calculationInProgress = false;
+      clearMatchedRule(false);
+      updateShippingStatus();
+      updateCartTotals();
+      return;
     }
 
     try {
-      const response = await nativeFetch(
-        `/api/zonas-envio/cobertura?codigo_postal=${encodeURIComponent(zipCode)}`,
-        {
-          credentials: "include"
-        }
-      );
-
+      const response = await nativeFetch("/api/zonas-envio/calcular", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(address)
+      });
       const data = await readJsonSafely(response);
 
-      if (requestId !== coverageRequestId) return;
+      if (requestId !== calculationRequestId) return;
 
       if (!response.ok) {
-        throw new Error(data.message || "No se pudo consultar la cobertura.");
+        throw new Error(data.message || "No se pudo calcular el envío.");
       }
 
-      const coverages = Array.isArray(data) ? data : [];
-
-      if (!coverages.length) {
-        neighborhoodSelect.innerHTML = `
-          <option value="">Sin colonias disponibles para este C.P.</option>
-        `;
-        neighborhoodSelect.disabled = true;
-
-        if (status) {
-          status.className = "shipping-zone-status is-error";
-          status.textContent =
-            "Este código postal todavía no está registrado en una zona de entrega. Contacta a la papelería para confirmarlo.";
-        }
-
-        return;
-      }
-
-      neighborhoodSelect.innerHTML = [
-        `<option value="">Selecciona tu colonia</option>`,
-        ...coverages.map((coverage) => {
-          const serialized = escapeHtmlAttr(JSON.stringify(coverage));
-
-          return `
-            <option
-              value="${escapeHtmlAttr(coverage.colonia)}"
-              data-coverage="${serialized}"
-            >
-              ${escapeHtml(coverage.colonia)} — ${escapeHtml(coverage.municipio)}, ${escapeHtml(coverage.estado)} — ${escapeHtml(coverage.zona)} (${formatMoney(coverage.costo)})
-            </option>
-          `;
-        })
-      ].join("");
-
-      neighborhoodSelect.disabled = false;
-
-      if (status) {
-        status.className = "shipping-zone-status is-ready";
-        status.textContent =
-          "Selecciona tu colonia para calcular automáticamente el costo de envío.";
-      }
+      matchedShippingRule = data.encontrada ? data : null;
+      window.currentShippingCost = matchedShippingRule
+        ? Number(matchedShippingRule.costo || 0)
+        : 0;
+      calculationInProgress = false;
+      updateShippingStatus(matchedShippingRule ? "success" : "not-found");
+      updateCartTotals();
     } catch (error) {
-      console.error("Error consultando cobertura:", error);
+      if (requestId !== calculationRequestId) return;
 
-      neighborhoodSelect.innerHTML = `
-        <option value="">No se pudo cargar la cobertura</option>
-      `;
-      neighborhoodSelect.disabled = true;
-
-      if (status) {
-        status.className = "shipping-zone-status is-error";
-        status.textContent =
-          error.message || "No se pudo consultar la cobertura de envío.";
-      }
+      console.error("Error calculando el envío:", error);
+      matchedShippingRule = null;
+      window.currentShippingCost = 0;
+      calculationInProgress = false;
+      updateShippingStatus("error", error.message);
+      updateCartTotals();
     }
   }
 
-  function applySelectedCoverage() {
-    if (!selectedCoverage) return;
-
-    const city = document.getElementById("shippingCity");
-    const state = document.getElementById("shippingState");
-    const country = document.getElementById("shippingCountry");
-
-    if (city) city.value = selectedCoverage.municipio || "";
-    if (state) state.value = selectedCoverage.estado || "";
-    if (country) country.value = selectedCoverage.pais || "";
-
-    window.currentShippingCost = Number(selectedCoverage.costo || 0);
-    updateShippingZoneMessage();
-    updateCartTotals();
+  function getMatchableAddressData() {
+    return {
+      codigo_postal:
+        document.getElementById("shippingZip")?.value.trim() || "",
+      colonia:
+        document.getElementById("shippingNeighborhood")?.value.trim() || "",
+      municipio:
+        document.getElementById("shippingCity")?.value.trim() || "",
+      estado:
+        document.getElementById("shippingState")?.value.trim() || "",
+      pais:
+        document.getElementById("shippingCountry")?.value.trim() || ""
+    };
   }
 
-  function resetCoverageSelection(clearNeighborhood = true) {
-    selectedCoverage = null;
+  function hasEnoughDataToSearch(address) {
+    return Boolean(
+      /^\d{5}$/.test(address.codigo_postal) ||
+      address.colonia.length >= 2 ||
+      address.municipio.length >= 2 ||
+      address.estado.length >= 2 ||
+      address.pais.length >= 2
+    );
+  }
+
+  function clearMatchedRule(cancelRequest = true) {
+    if (cancelRequest) {
+      calculationRequestId += 1;
+    }
+
+    matchedShippingRule = null;
     window.currentShippingCost = 0;
-
-    const neighborhoodSelect = document.getElementById("shippingNeighborhood");
-    const city = document.getElementById("shippingCity");
-    const state = document.getElementById("shippingState");
-    const country = document.getElementById("shippingCountry");
-
-    if (clearNeighborhood && neighborhoodSelect) {
-      neighborhoodSelect.innerHTML = `
-        <option value="">Primero escribe el código postal</option>
-      `;
-      neighborhoodSelect.disabled = true;
-    }
-
-    if (city) city.value = "";
-    if (state) state.value = "";
-    if (country) country.value = "";
-
-    updateShippingZoneMessage();
-    updateCartTotals();
   }
 
-  function updateShippingZoneMessage() {
+  function updateShippingStatus(state = "idle", detail = "") {
     const status = document.getElementById("shippingCoverageStatus");
-    const deliveryMethod = document.getElementById("deliveryMethod");
+    const deliveryMethod = document.getElementById("deliveryMethod")?.value;
 
     if (!status) return;
 
-    if (deliveryMethod && deliveryMethod.value !== "delivery") {
+    if (deliveryMethod !== "delivery") {
       status.className = "shipping-zone-status";
       status.textContent =
         "Selecciona Envío a domicilio para calcular el costo por zona.";
       return;
     }
 
-    if (!selectedCoverage) {
-      status.className = "shipping-zone-status";
-      status.textContent =
-        "Escribe tu código postal y selecciona la ubicación registrada.";
+    if (state === "loading" || calculationInProgress) {
+      status.className = "shipping-zone-status is-loading";
+      status.textContent = "Calculando el costo de envío...";
       return;
     }
 
-    status.className = "shipping-zone-status is-success";
-    status.innerHTML = `
-      <strong>${escapeHtml(selectedCoverage.zona)}</strong>
-      · Costo de envío: <strong>${formatMoney(selectedCoverage.costo)}</strong>
-      <br>
-      Entrega estimada de 1 a 3 días hábiles, después de las 3:00 p. m.
-    `;
+    if (state === "success" && matchedShippingRule) {
+      status.className = "shipping-zone-status is-success";
+      status.innerHTML = `
+        <strong>${escapeHtml(matchedShippingRule.zona)}</strong>
+        · Costo: <strong>${formatMoney(matchedShippingRule.costo)}</strong>
+        <br>
+        Coincidencia por ${escapeHtml(matchedShippingRule.regla_tipo_etiqueta)}:
+        <strong>${escapeHtml(matchedShippingRule.regla_valor)}</strong>
+        <br>
+        Entrega estimada de 1 a 3 días hábiles, después de las 3:00 p. m.
+      `;
+      return;
+    }
+
+    if (state === "not-found") {
+      status.className = "shipping-zone-status is-error";
+      status.textContent =
+        "No hay una tarifa configurada para estos datos. Contacta a la papelería para confirmar el envío.";
+      return;
+    }
+
+    if (state === "error") {
+      status.className = "shipping-zone-status is-error";
+      status.textContent = detail || "No se pudo calcular el costo de envío.";
+      return;
+    }
+
+    status.className = "shipping-zone-status";
+    status.textContent =
+      "Escribe código postal, colonia, alcaldía o municipio, estado y país para calcular el costo.";
   }
 
   function addCheckoutValidationCapture() {
     const checkoutBtn = document.getElementById("checkoutBtn");
-
     if (!checkoutBtn) return;
 
     checkoutBtn.addEventListener(
@@ -389,25 +387,36 @@
   }
 
   function getShippingValidationError(address) {
-    if (!address.nombre_completo) return "Escribe el nombre completo de quien recibirá el pedido.";
+    if (!address.nombre_completo) {
+      return "Escribe el nombre completo de quien recibirá el pedido.";
+    }
     if (!address.telefono) return "Escribe un número de contacto.";
     if (!isValidEmail(address.email)) return "Escribe un correo electrónico válido.";
-    if (!/^\d{5}$/.test(address.codigo_postal)) return "Escribe un código postal de 5 dígitos.";
-    if (!address.cobertura_envio_id) {
-      return "Selecciona una ubicación registrada para calcular la zona y el costo de envío.";
+    if (!/^\d{5}$/.test(address.codigo_postal)) {
+      return "Escribe un código postal de 5 dígitos.";
+    }
+    if (!address.colonia) return "Escribe la colonia.";
+    if (!address.municipio) return "Escribe la alcaldía o municipio.";
+    if (!address.estado) return "Escribe el estado o entidad federativa.";
+    if (!address.pais) return "Escribe el país.";
+    if (calculationInProgress) return "Espera un momento mientras se calcula el costo de envío.";
+    if (!address.regla_envio_id) {
+      return "No se encontró una tarifa para esta dirección. Contacta a la papelería.";
     }
     if (!address.calle) return "Escribe la calle de la dirección de entrega.";
     if (!address.numero_exterior) return "Escribe el número exterior.";
-    if (!address.pais) return "Selecciona el país.";
-    if (!address.horario_recepcion) return "Selecciona la hora en la que puedes recibir la mercancía.";
-    if (!isReceiveTimeValid(address.horario_recepcion)) return "La hora de recepción debe ser a partir de las 3:00 p. m.";
+    if (!address.horario_recepcion) {
+      return "Selecciona la hora en la que puedes recibir la mercancía.";
+    }
+    if (!isReceiveTimeValid(address.horario_recepcion)) {
+      return "La hora de recepción debe ser a partir de las 3:00 p. m.";
+    }
 
     return "";
   }
 
   function installFetchInterceptor() {
     if (fetchInterceptorInstalled) return;
-
     fetchInterceptorInstalled = true;
 
     window.fetch = async function (input, init = {}) {
@@ -454,7 +463,7 @@
         email_cliente: address.email,
         telefono_cliente: address.telefono,
         direccion_envio: window.formatShippingAddress(address),
-        cobertura_envio_id: address.cobertura_envio_id,
+        regla_envio_id: address.regla_envio_id,
         zona_envio_id: address.zona_id,
         zona_envio: address.zona,
         datos_envio: address,
@@ -465,10 +474,7 @@
 
       return JSON.stringify(
         isMercadoPago
-          ? {
-              ...parsed,
-              pedido: enhancedOrder
-            }
+          ? { ...parsed, pedido: enhancedOrder }
           : enhancedOrder
       );
     } catch (error) {
@@ -485,7 +491,6 @@
     const minute = Number(match[2]);
 
     if (!Number.isFinite(hour) || !Number.isFinite(minute)) return false;
-
     return hour > 15 || (hour === 15 && minute >= 0);
   }
 
@@ -507,11 +512,7 @@
 
   async function readJsonSafely(response) {
     const contentType = response.headers.get("content-type") || "";
-
-    if (!contentType.includes("application/json")) {
-      return {};
-    }
-
+    if (!contentType.includes("application/json")) return {};
     return response.json();
   }
 })();

@@ -660,6 +660,28 @@ async function ensureDatabaseUpdates() {
       );
     `);
 
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reglas_envio (
+        id SERIAL PRIMARY KEY,
+        zona_id INTEGER NOT NULL REFERENCES zonas_envio(id) ON DELETE CASCADE,
+        tipo TEXT NOT NULL CHECK (
+          tipo IN ('codigo_postal', 'colonia', 'municipio', 'estado', 'pais')
+        ),
+        valor TEXT NOT NULL,
+        valor_normalizado TEXT NOT NULL,
+        activo BOOLEAN DEFAULT TRUE,
+        creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (tipo, valor_normalizado)
+      );
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_reglas_envio_busqueda
+      ON reglas_envio(tipo, valor_normalizado)
+      WHERE activo IS NOT FALSE;
+    `);
+
     await pool.query(`
       ALTER TABLE pedidos
       ADD COLUMN IF NOT EXISTS requiere_factura BOOLEAN DEFAULT FALSE,
@@ -1928,25 +1950,24 @@ app.delete("/api/admin/productos/:id", async (req, res) => {
 });
 
 /* =========================
-   ZONAS Y COBERTURA DE ENVÍO
+   ZONAS Y REGLAS DE ENVÍO
 ========================= */
 
-function normalizeShippingCoverage(row) {
-  return {
-    id: Number(row.id),
-    zona_id: Number(row.zona_id),
-    zona_numero: Number(row.zona_numero),
-    zona: row.zona || `Zona ${Number(row.zona_numero || 0)}`,
-    costo: Number(row.costo || 0),
-    colonia: row.colonia || "",
-    codigo_postal: row.codigo_postal || "",
-    municipio: row.municipio || "",
-    estado: row.estado || "",
-    pais: row.pais || "",
-    activo: row.activo !== false,
-    creado_en: row.creado_en
-  };
-}
+const SHIPPING_RULE_TYPES = new Set([
+  "codigo_postal",
+  "colonia",
+  "municipio",
+  "estado",
+  "pais"
+]);
+
+const SHIPPING_RULE_PRIORITY = [
+  "codigo_postal",
+  "colonia",
+  "municipio",
+  "estado",
+  "pais"
+];
 
 function cleanPostalCode(value) {
   return String(value || "").replace(/\D/g, "").slice(0, 5);
@@ -1957,7 +1978,49 @@ function normalizeComparableText(value) {
     .trim()
     .toLocaleLowerCase("es-MX")
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeShippingRuleType(value) {
+  const type = String(value || "").trim().toLowerCase();
+  return SHIPPING_RULE_TYPES.has(type) ? type : "";
+}
+
+function normalizeShippingRuleValue(type, value) {
+  if (type === "codigo_postal") {
+    const postalCode = cleanPostalCode(value);
+    return /^\d{5}$/.test(postalCode) ? postalCode : "";
+  }
+
+  return normalizeComparableText(value);
+}
+
+function shippingRuleTypeLabel(type) {
+  const labels = {
+    codigo_postal: "Código postal",
+    colonia: "Colonia",
+    municipio: "Alcaldía o municipio",
+    estado: "Estado o entidad federativa",
+    pais: "País"
+  };
+
+  return labels[type] || type;
+}
+
+function normalizeShippingRule(row) {
+  return {
+    id: Number(row.id),
+    zona_id: Number(row.zona_id),
+    zona_numero: Number(row.zona_numero),
+    zona: row.zona || `Zona ${Number(row.zona_numero || 0)}`,
+    costo: Number(row.costo || 0),
+    tipo: row.tipo || "",
+    tipo_etiqueta: shippingRuleTypeLabel(row.tipo),
+    valor: row.valor || "",
+    activo: row.activo !== false,
+    creado_en: row.creado_en
+  };
 }
 
 function isValidReceiveTime(value) {
@@ -1995,46 +2058,88 @@ function cleanShippingData(value) {
   };
 }
 
-app.get("/api/zonas-envio/cobertura", async (req, res) => {
-  try {
-    const codigoPostal = cleanPostalCode(req.query.codigo_postal);
+function buildShippingRuleCandidates(address) {
+  const data = address && typeof address === "object" ? address : {};
 
-    if (!/^\d{5}$/.test(codigoPostal)) {
-      return res.status(400).json({
-        message: "Escribe un código postal de 5 dígitos."
-      });
-    }
+  const sourceValues = {
+    codigo_postal: cleanPostalCode(data.codigo_postal),
+    colonia: String(data.colonia || "").trim(),
+    municipio: String(data.municipio || "").trim(),
+    estado: String(data.estado || "").trim(),
+    pais: String(data.pais || "").trim()
+  };
 
+  return SHIPPING_RULE_PRIORITY
+    .map((type) => ({
+      tipo: type,
+      valor: sourceValues[type],
+      valor_normalizado: normalizeShippingRuleValue(type, sourceValues[type])
+    }))
+    .filter((candidate) => candidate.valor_normalizado);
+}
+
+async function resolveShippingRule(address) {
+  const candidates = buildShippingRuleCandidates(address);
+
+  for (const candidate of candidates) {
     const result = await pool.query(
       `
       SELECT
-        ce.id,
-        ce.zona_id,
-        ce.colonia,
-        ce.codigo_postal,
-        ce.municipio,
-        ce.estado,
-        ce.pais,
-        ce.activo,
-        ce.creado_en,
+        r.id,
+        r.zona_id,
+        r.tipo,
+        r.valor,
+        r.activo,
+        r.creado_en,
         z.numero AS zona_numero,
         z.nombre AS zona,
         z.costo
-      FROM cobertura_envio ce
-      INNER JOIN zonas_envio z ON z.id = ce.zona_id
+      FROM reglas_envio r
+      INNER JOIN zonas_envio z ON z.id = r.zona_id
       WHERE
-        ce.codigo_postal = $1
-        AND ce.activo IS NOT FALSE
+        r.tipo = $1
+        AND r.valor_normalizado = $2
+        AND r.activo IS NOT FALSE
         AND z.activo IS NOT FALSE
-      ORDER BY ce.colonia ASC
+      LIMIT 1
       `,
-      [codigoPostal]
+      [candidate.tipo, candidate.valor_normalizado]
     );
 
-    res.json(result.rows.map(normalizeShippingCoverage));
+    if (result.rows.length) {
+      return normalizeShippingRule(result.rows[0]);
+    }
+  }
+
+  return null;
+}
+
+app.post("/api/zonas-envio/calcular", async (req, res) => {
+  try {
+    const matchedRule = await resolveShippingRule(req.body || {});
+
+    if (!matchedRule) {
+      return res.json({
+        encontrada: false,
+        message: "No hay una tarifa configurada para estos datos de envío."
+      });
+    }
+
+    res.json({
+      encontrada: true,
+      regla_id: matchedRule.id,
+      regla_tipo: matchedRule.tipo,
+      regla_tipo_etiqueta: matchedRule.tipo_etiqueta,
+      regla_valor: matchedRule.valor,
+      zona_id: matchedRule.zona_id,
+      zona_numero: matchedRule.zona_numero,
+      zona: matchedRule.zona,
+      costo: matchedRule.costo,
+      message: `${matchedRule.zona}: $${matchedRule.costo.toFixed(2)}`
+    });
   } catch (error) {
-    console.error("Error en GET /api/zonas-envio/cobertura:", error);
-    res.status(500).json({ message: "Error al consultar la cobertura de envío." });
+    console.error("Error en POST /api/zonas-envio/calcular:", error);
+    res.status(500).json({ message: "Error al calcular el costo de envío." });
   }
 });
 
@@ -2048,24 +2153,31 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
       `
     );
 
-    const coverageResult = await pool.query(
+    const rulesResult = await pool.query(
       `
       SELECT
-        ce.id,
-        ce.zona_id,
-        ce.colonia,
-        ce.codigo_postal,
-        ce.municipio,
-        ce.estado,
-        ce.pais,
-        ce.activo,
-        ce.creado_en,
+        r.id,
+        r.zona_id,
+        r.tipo,
+        r.valor,
+        r.activo,
+        r.creado_en,
         z.numero AS zona_numero,
         z.nombre AS zona,
         z.costo
-      FROM cobertura_envio ce
-      INNER JOIN zonas_envio z ON z.id = ce.zona_id
-      ORDER BY z.numero ASC, ce.codigo_postal ASC, ce.colonia ASC
+      FROM reglas_envio r
+      INNER JOIN zonas_envio z ON z.id = r.zona_id
+      ORDER BY
+        z.numero ASC,
+        CASE r.tipo
+          WHEN 'codigo_postal' THEN 1
+          WHEN 'colonia' THEN 2
+          WHEN 'municipio' THEN 3
+          WHEN 'estado' THEN 4
+          WHEN 'pais' THEN 5
+          ELSE 6
+        END,
+        r.valor ASC
       `
     );
 
@@ -2077,33 +2189,26 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
         costo: Number(zone.costo || 0),
         activo: zone.activo !== false
       })),
-      coberturas: coverageResult.rows.map(normalizeShippingCoverage)
+      reglas: rulesResult.rows.map(normalizeShippingRule)
     });
   } catch (error) {
     console.error("Error en GET /api/admin/zonas-envio:", error);
-    res.status(500).json({ message: "Error al obtener las zonas de envío." });
+    res.status(500).json({ message: "Error al obtener las reglas de envío." });
   }
 });
 
-app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, res) => {
+app.post("/api/admin/zonas-envio/reglas", requireAdminSession, async (req, res) => {
   try {
-    const zonaNumero = Number(req.body.zona_numero || req.body.zona_id);
-    const colonia = String(req.body.colonia || "").trim();
-    const codigoPostal = cleanPostalCode(req.body.codigo_postal);
-    const municipio = String(req.body.municipio || "").trim();
-    const estado = String(req.body.estado || "").trim();
-    const pais = String(req.body.pais || "").trim();
+    const zonaNumero = Number(req.body.zona_numero);
+    const tipo = normalizeShippingRuleType(req.body.tipo);
+    const valor = String(req.body.valor || "").trim();
+    const valorNormalizado = normalizeShippingRuleValue(tipo, valor);
 
-    if (
-      !zonaNumero ||
-      !colonia ||
-      !/^\d{5}$/.test(codigoPostal) ||
-      !municipio ||
-      !estado ||
-      !pais
-    ) {
+    if (!zonaNumero || !tipo || !valor || !valorNormalizado) {
       return res.status(400).json({
-        message: "Completa zona, colonia, C.P., alcaldía o municipio, estado y país."
+        message: tipo === "codigo_postal"
+          ? "Selecciona una zona y escribe un código postal de 5 dígitos."
+          : "Selecciona una zona, el tipo de dato y escribe su valor."
       });
     }
 
@@ -2121,67 +2226,53 @@ app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, r
       return res.status(400).json({ message: "La zona seleccionada no existe." });
     }
 
-    const zonaId = Number(zoneResult.rows[0].id);
-
     const result = await pool.query(
       `
-      INSERT INTO cobertura_envio (
+      INSERT INTO reglas_envio (
         zona_id,
-        colonia,
-        codigo_postal,
-        municipio,
-        estado,
-        pais,
+        tipo,
+        valor,
+        valor_normalizado,
         activo
       )
-      VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+      VALUES ($1, $2, $3, $4, TRUE)
       RETURNING id
       `,
-      [zonaId, colonia, codigoPostal, municipio, estado, pais]
+      [Number(zoneResult.rows[0].id), tipo, valor, valorNormalizado]
     );
 
     res.status(201).json({
-      message: "Ubicación agregada correctamente.",
+      message: "Regla de envío agregada correctamente.",
       id: Number(result.rows[0].id)
     });
   } catch (error) {
     if (error.code === "23505") {
       return res.status(400).json({
-        message: "Esa ubicación completa ya está registrada en una zona."
+        message: "Ese dato ya está registrado en una zona. Edítalo si deseas cambiarlo."
       });
     }
 
-    console.error("Error en POST /api/admin/zonas-envio/coberturas:", error);
-    res.status(500).json({ message: "Error al agregar la ubicación." });
+    console.error("Error en POST /api/admin/zonas-envio/reglas:", error);
+    res.status(500).json({ message: "Error al agregar la regla de envío." });
   }
 });
 
-app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req, res) => {
+app.put("/api/admin/zonas-envio/reglas/:id", requireAdminSession, async (req, res) => {
   try {
-    const coverageId = Number(req.params.id);
-    const zonaNumero = Number(req.body.zona_numero || req.body.zona_id);
-    const colonia = String(req.body.colonia || "").trim();
-    const codigoPostal = cleanPostalCode(req.body.codigo_postal);
-    const municipio = String(req.body.municipio || "").trim();
-    const estado = String(req.body.estado || "").trim();
-    const pais = String(req.body.pais || "").trim();
+    const ruleId = Number(req.params.id);
+    const zonaNumero = Number(req.body.zona_numero);
+    const tipo = normalizeShippingRuleType(req.body.tipo);
+    const valor = String(req.body.valor || "").trim();
+    const valorNormalizado = normalizeShippingRuleValue(tipo, valor);
     const activo = req.body.activo !== false;
 
-    if (
-      !coverageId ||
-      !zonaNumero ||
-      !colonia ||
-      !/^\d{5}$/.test(codigoPostal) ||
-      !municipio ||
-      !estado ||
-      !pais
-    ) {
+    if (!ruleId || !zonaNumero || !tipo || !valor || !valorNormalizado) {
       return res.status(400).json({
-        message: "Completa zona, colonia, C.P., alcaldía o municipio, estado y país."
+        message: "Completa correctamente la zona, el tipo de dato y el valor."
       });
     }
 
-    const zoneExists = await pool.query(
+    const zoneResult = await pool.query(
       `
       SELECT id
       FROM zonas_envio
@@ -2191,67 +2282,70 @@ app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req
       [zonaNumero]
     );
 
-    if (!zoneExists.rows.length) {
+    if (!zoneResult.rows.length) {
       return res.status(400).json({ message: "La zona seleccionada no existe." });
     }
 
-    const zonaId = Number(zoneExists.rows[0].id);
-
     const result = await pool.query(
       `
-      UPDATE cobertura_envio
+      UPDATE reglas_envio
       SET
         zona_id = $1,
-        colonia = $2,
-        codigo_postal = $3,
-        municipio = $4,
-        estado = $5,
-        pais = $6,
-        activo = $7
-      WHERE id = $8
+        tipo = $2,
+        valor = $3,
+        valor_normalizado = $4,
+        activo = $5
+      WHERE id = $6
       RETURNING id
       `,
-      [zonaId, colonia, codigoPostal, municipio, estado, pais, activo, coverageId]
+      [
+        Number(zoneResult.rows[0].id),
+        tipo,
+        valor,
+        valorNormalizado,
+        activo,
+        ruleId
+      ]
     );
 
     if (!result.rows.length) {
-      return res.status(404).json({ message: "Ubicación no encontrada." });
+      return res.status(404).json({ message: "Regla no encontrada." });
     }
 
-    res.json({ message: "Ubicación actualizada correctamente." });
+    res.json({ message: "Regla de envío actualizada correctamente." });
   } catch (error) {
     if (error.code === "23505") {
       return res.status(400).json({
-        message: "Esa ubicación completa ya está registrada en una zona."
+        message: "Ese dato ya está registrado en otra regla."
       });
     }
 
-    console.error("Error en PUT /api/admin/zonas-envio/coberturas/:id:", error);
-    res.status(500).json({ message: "Error al actualizar la ubicación." });
+    console.error("Error en PUT /api/admin/zonas-envio/reglas/:id:", error);
+    res.status(500).json({ message: "Error al actualizar la regla de envío." });
   }
 });
 
-app.delete("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req, res) => {
+app.delete("/api/admin/zonas-envio/reglas/:id", requireAdminSession, async (req, res) => {
   try {
-    const coverageId = Number(req.params.id);
+    const ruleId = Number(req.params.id);
 
-    if (!coverageId) {
-      return res.status(400).json({ message: "Ubicación inválida." });
+    if (!ruleId) {
+      return res.status(400).json({ message: "Regla inválida." });
     }
 
     const result = await pool.query(
-      "DELETE FROM cobertura_envio WHERE id = $1 RETURNING id",
-      [coverageId]
+      "DELETE FROM reglas_envio WHERE id = $1 RETURNING id",
+      [ruleId]
     );
 
     if (!result.rows.length) {
-      return res.status(404).json({ message: "Ubicación no encontrada." });
+      return res.status(404).json({ message: "Regla no encontrada." });
     }
 
-    res.json({ message: "Ubicación eliminada correctamente." });
+    res.json({ message: "Regla de envío eliminada correctamente." });
   } catch (error) {
-    console.error("Error en DELETE /api/admin/zonas-envio/coberturas/:id:", error);
-    res.status(500).json({ message: "Error al eliminar la ubicación." });
+    console.error("Error en DELETE /api/admin/zonas-envio/reglas/:id:", error);
+    res.status(500).json({ message: "Error al eliminar la regla de envío." });
   }
 });
 
@@ -2318,14 +2412,7 @@ app.post("/api/pedidos", async (req, res) => {
     let shippingAddressFinal = String(direccion_envio || "").trim();
 
     if (isDelivery) {
-      const coverageId = Number(cobertura_envio_id);
       shippingDataFinal = cleanShippingData(datos_envio);
-
-      if (!coverageId) {
-        return res.status(400).json({
-          message: "Selecciona una colonia con cobertura de envío."
-        });
-      }
 
       if (
         !shippingDataFinal.nombre_completo ||
@@ -2345,59 +2432,25 @@ app.post("/api/pedidos", async (req, res) => {
         });
       }
 
-      const coverageResult = await pool.query(
-        `
-        SELECT
-          ce.id,
-          ce.zona_id,
-          ce.colonia,
-          ce.codigo_postal,
-          ce.municipio,
-          ce.estado,
-          ce.pais,
-          z.numero AS zona_numero,
-          z.nombre AS zona,
-          z.costo
-        FROM cobertura_envio ce
-        INNER JOIN zonas_envio z ON z.id = ce.zona_id
-        WHERE
-          ce.id = $1
-          AND ce.activo IS NOT FALSE
-          AND z.activo IS NOT FALSE
-        LIMIT 1
-        `,
-        [coverageId]
-      );
+      const matchedRule = await resolveShippingRule(shippingDataFinal);
 
-      const coverage = coverageResult.rows[0];
-
-      if (!coverage) {
+      if (!matchedRule) {
         return res.status(400).json({
-          message: "La ubicación seleccionada ya no tiene cobertura."
+          message: "No hay una tarifa configurada para esta dirección. Contacta a la papelería."
         });
       }
 
-      const coverageMatches =
-        coverage.codigo_postal === shippingDataFinal.codigo_postal &&
-        normalizeComparableText(coverage.colonia) === normalizeComparableText(shippingDataFinal.colonia) &&
-        normalizeComparableText(coverage.municipio) === normalizeComparableText(shippingDataFinal.municipio) &&
-        normalizeComparableText(coverage.estado) === normalizeComparableText(shippingDataFinal.estado) &&
-        normalizeComparableText(coverage.pais) === normalizeComparableText(shippingDataFinal.pais);
-
-      if (!coverageMatches) {
-        return res.status(400).json({
-          message: "Los datos de la dirección no coinciden con la zona seleccionada."
-        });
-      }
-
-      shippingCostFinal = Number(coverage.costo || 0);
-      shippingZoneIdFinal = Number(coverage.zona_id);
-      shippingZoneNameFinal = coverage.zona || `Zona ${coverage.zona_numero}`;
+      shippingCostFinal = Number(matchedRule.costo || 0);
+      shippingZoneIdFinal = Number(matchedRule.zona_id);
+      shippingZoneNameFinal = matchedRule.zona || `Zona ${matchedRule.zona_numero}`;
       deliveryTimeFinal = "1 a 3 días hábiles";
 
       shippingDataFinal = {
         ...shippingDataFinal,
-        cobertura_envio_id: coverageId,
+        regla_envio_id: matchedRule.id,
+        regla_tipo: matchedRule.tipo,
+        regla_tipo_etiqueta: matchedRule.tipo_etiqueta,
+        regla_valor: matchedRule.valor,
         zona_id: shippingZoneIdFinal,
         zona: shippingZoneNameFinal,
         costo_envio: shippingCostFinal,
@@ -2417,6 +2470,7 @@ app.post("/api/pedidos", async (req, res) => {
         `C.P. ${shippingDataFinal.codigo_postal}`,
         `${shippingDataFinal.municipio}, ${shippingDataFinal.estado}, ${shippingDataFinal.pais}`,
         `${shippingZoneNameFinal} · Envío $${shippingCostFinal.toFixed(2)}`,
+        `Tarifa determinada por ${matchedRule.tipo_etiqueta}: ${matchedRule.valor}`,
         `Horario para recibir: ${shippingDataFinal.horario_recepcion}`,
         `Tiempo estimado: ${deliveryTimeFinal}`,
         shippingDataFinal.referencias ? `Referencias: ${shippingDataFinal.referencias}` : ""

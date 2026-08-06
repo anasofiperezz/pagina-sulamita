@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Carrito | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=40">
+  <link rel="stylesheet" href="styles.css?v=43">
 
   <style>
     .shipping-help-card {
@@ -200,10 +200,12 @@
             <div id="addressGroup" style="display: none;">
               <div class="shipping-help-card">
                 <strong>Envío a domicilio</strong>
-                La papelería asigna cada ubicación a una zona usando colonia, código postal,
-                alcaldía o municipio, estado o entidad federativa y país.
-                El costo se calcula automáticamente y la entrega tarda de 1 a 3 días hábiles,
+                Escribe tu dirección normalmente. La página buscará reglas independientes por
+                código postal, colonia, alcaldía o municipio, estado y país, y mostrará
+                automáticamente el costo de envío. La entrega tarda de 1 a 3 días hábiles,
                 después de las 3:00 p. m.
+                <br><br>
+                <strong>Prioridad:</strong> código postal → colonia → alcaldía/municipio → estado → país.
 
                 <div class="shipping-price-grid" aria-label="Precios por zona">
                   <div class="shipping-price-item">Zona 1 · $150</div>
@@ -259,9 +261,12 @@
 
               <div class="form-group">
                 <label for="shippingNeighborhood">Colonia</label>
-                <select id="shippingNeighborhood" disabled>
-                  <option value="">Primero escribe el código postal</option>
-                </select>
+                <input
+                  type="text"
+                  id="shippingNeighborhood"
+                  placeholder="Ej. Roma Norte"
+                  autocomplete="address-level3"
+                />
               </div>
 
               <div class="form-group">
@@ -269,9 +274,8 @@
                 <input
                   type="text"
                   id="shippingCity"
-                  class="readonly-shipping-field"
-                  readonly
-                  placeholder="Se completa al elegir la colonia"
+                  placeholder="Ej. Cuauhtémoc"
+                  autocomplete="address-level2"
                 />
               </div>
 
@@ -280,9 +284,8 @@
                 <input
                   type="text"
                   id="shippingState"
-                  class="readonly-shipping-field"
-                  readonly
-                  placeholder="Se completa al elegir la colonia"
+                  placeholder="Ej. Ciudad de México"
+                  autocomplete="address-level1"
                 />
               </div>
 
@@ -291,9 +294,9 @@
                 <input
                   type="text"
                   id="shippingCountry"
-                  class="readonly-shipping-field"
-                  readonly
-                  placeholder="Se completa al elegir la colonia"
+                  value="México"
+                  placeholder="Ej. México"
+                  autocomplete="country-name"
                 />
               </div>
 
@@ -510,8 +513,8 @@
     <p>© 2026 Papelería Sulamita - Carrito</p>
   </footer>
 
-  <script src="tienda.js?v=40"></script>
-  <script src="zonas-envio.js?v=3"></script>
+  <script src="tienda.js?v=43"></script>
+  <script src="zonas-envio.js?v=5"></script>
 
   <script>
     protectPage();

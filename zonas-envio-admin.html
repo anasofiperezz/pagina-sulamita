@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Zonas de envío | Papelería Sulamita</title>
+  <title>Catálogos de zonas | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=41">
+  <link rel="stylesheet" href="styles.css?v=43">
 
   <style>
     .shipping-admin-page {
-      max-width: 1220px;
+      max-width: 1240px;
       margin: 0 auto;
       padding: 48px 22px 70px;
     }
 
-    .shipping-admin-layout {
+    .shipping-layout {
       display: grid;
-      grid-template-columns: minmax(300px, 420px) 1fr;
+      grid-template-columns: minmax(330px, 430px) 1fr;
       gap: 26px;
       align-items: start;
     }
 
-    .shipping-admin-card {
+    .shipping-card {
       background: #ffffff;
       border: 1px solid #e5e7eb;
       border-radius: 24px;
@@ -29,20 +29,49 @@
       box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
     }
 
-    .shipping-admin-card h2 {
+    .shipping-card h2,
+    .shipping-card h3 {
       margin-top: 0;
     }
 
-    .zone-price-list {
+    .session-note,
+    .explanation-note {
+      padding: 14px;
+      border-radius: 16px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    .session-note {
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .explanation-note {
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #0f2f5f;
+    }
+
+    .step-title {
+      margin: 20px 0 10px;
+      color: #334155;
+      font-weight: 900;
+    }
+
+    .type-selector,
+    .zone-selector {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
-      margin: 18px 0;
     }
 
-    .zone-price-item {
+    .type-button,
+    .zone-button {
       width: 100%;
-      padding: 12px;
+      min-height: 52px;
+      padding: 11px 12px;
       border: 1px solid #bfdbfe;
       border-radius: 14px;
       background: #eff6ff;
@@ -51,94 +80,55 @@
       font-weight: 800;
       text-align: left;
       cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      transition: 0.16s ease;
     }
 
-    .zone-price-item:hover {
-      transform: translateY(-1px);
+    .type-button:hover,
+    .zone-button:hover {
       border-color: #60a5fa;
       background: #dbeafe;
+      transform: translateY(-1px);
     }
 
-    .zone-price-item.is-selected {
+    .type-button.is-selected,
+    .zone-button.is-selected {
       border-color: #0057b8;
       background: #0057b8;
       color: #ffffff;
-      box-shadow: 0 8px 18px rgba(0, 87, 184, 0.22);
+      box-shadow: 0 8px 18px rgba(0, 87, 184, 0.2);
     }
 
-    .selected-zone-message {
-      display: none;
-      margin: -4px 0 16px;
-      padding: 11px 13px;
-      border-radius: 13px;
+    .type-button:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
+    .current-selection {
+      margin: 14px 0 0;
+      padding: 12px 13px;
+      border-radius: 14px;
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
       color: #065f46;
       font-weight: 800;
-    }
-
-    .selected-zone-message.is-visible {
-      display: block;
-    }
-
-    .coverage-toolbar {
-      display: grid;
-      grid-template-columns: 1fr minmax(150px, 190px) auto;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .coverage-list {
-      display: grid;
-      gap: 14px;
-    }
-
-    .coverage-item {
-      border: 1px solid #e5e7eb;
-      border-radius: 18px;
-      padding: 18px;
-      background: #ffffff;
-    }
-
-    .coverage-item-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 14px;
-      align-items: flex-start;
-      flex-wrap: wrap;
-    }
-
-    .coverage-zone-badge {
-      display: inline-block;
-      margin-bottom: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: #eff6ff;
-      color: #004aad;
-      font-weight: 800;
-      font-size: 0.82rem;
-    }
-
-    .coverage-item h3 {
-      margin: 0 0 7px;
-      color: #111827;
-    }
-
-    .coverage-item p {
-      margin: 4px 0;
-      color: #4b5563;
       line-height: 1.45;
     }
 
-    .coverage-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 14px;
+    .bulk-input {
+      width: 100%;
+      min-height: 145px;
+      resize: vertical;
+      font: inherit;
     }
 
-    .form-actions {
+    .field-help {
+      margin: 8px 0 0;
+      color: #64748b;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .form-actions,
+    .row-actions {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
@@ -148,28 +138,102 @@
       flex: 1;
     }
 
-    .session-note {
-      margin-bottom: 18px;
-      padding: 14px;
-      border: 1px solid #a7f3d0;
-      border-radius: 16px;
-      background: #ecfdf5;
-      color: #065f46;
-      line-height: 1.5;
+    .catalog-toolbar {
+      display: grid;
+      grid-template-columns: 1fr minmax(170px, 210px) auto;
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
-    @media (max-width: 920px) {
-      .shipping-admin-layout {
+    .catalog-section {
+      margin-bottom: 26px;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .catalog-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .catalog-section-header h3 {
+      margin: 0;
+      color: #0f172a;
+    }
+
+    .catalog-count {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: #e0ecff;
+      color: #004aad;
+      font-weight: 800;
+      font-size: 0.82rem;
+    }
+
+    .catalog-list {
+      display: grid;
+    }
+
+    .catalog-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) minmax(110px, 145px) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 15px 18px;
+      border-bottom: 1px solid #eef2f7;
+    }
+
+    .catalog-row:last-child {
+      border-bottom: 0;
+    }
+
+    .catalog-value {
+      color: #111827;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .zone-badge {
+      display: inline-block;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #004aad;
+      font-weight: 800;
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    .empty-section {
+      padding: 18px;
+      color: #64748b;
+    }
+
+    @media (max-width: 980px) {
+      .shipping-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .type-selector,
+      .zone-selector,
+      .catalog-toolbar {
         grid-template-columns: 1fr;
       }
 
-      .coverage-toolbar {
-        grid-template-columns: 1fr;
+      .type-button:last-child:nth-child(odd) {
+        grid-column: auto;
       }
-    }
 
-    @media (max-width: 560px) {
-      .zone-price-list {
+      .catalog-row {
         grid-template-columns: 1fr;
       }
     }
@@ -197,148 +261,92 @@
     <section class="page-hero admin-hero">
       <div class="page-hero-content">
         <span class="page-badge">Administrador</span>
-        <h1>Zonas y cobertura de envío</h1>
+        <h1>Catálogos para calcular el envío</h1>
         <p>
-          Indica a qué zona pertenece cada combinación de colonia, código postal,
-          alcaldía o municipio, estado o entidad federativa y país.
-          El cliente no podrá elegir la zona ni el precio manualmente.
+          Guarda cada código postal, colonia, alcaldía o municipio, estado y país
+          por separado, indicando a qué zona pertenece cada valor.
         </p>
       </div>
     </section>
 
-    <section class="shipping-admin-layout">
-      <div class="shipping-admin-card">
-        <h2 id="formTitle">Agregar ubicación</h2>
+    <section class="shipping-layout">
+      <div class="shipping-card">
+        <h2 id="formTitle">Agregar datos a una zona</h2>
 
         <div class="session-note">
           Ya iniciaste sesión como administrador. No necesitas volver a escribir una contraseña.
         </div>
 
-        <div class="zone-price-list" id="zonePriceList" aria-label="Seleccionar zona">
-          <button class="zone-price-item" type="button" data-zone-number="1">Zona 1: $150.00</button>
-          <button class="zone-price-item" type="button" data-zone-number="2">Zona 2: $175.00</button>
-          <button class="zone-price-item" type="button" data-zone-number="3">Zona 3: $200.00</button>
-          <button class="zone-price-item" type="button" data-zone-number="4">Zona 4: $225.00</button>
-          <button class="zone-price-item" type="button" data-zone-number="5">Zona 5: $250.00</button>
-          <button class="zone-price-item" type="button" data-zone-number="6">Zona 6: $275.00</button>
+        <div class="explanation-note">
+          <strong>Ejemplo:</strong><br>
+          C.P. 12222 → Zona 1<br>
+          C.P. 45667 → Zona 2<br>
+          Colonia Roma Norte → Zona 3
         </div>
 
-        <div class="selected-zone-message" id="selectedZoneMessage" aria-live="polite"></div>
+        <p class="step-title">1. Elige qué datos vas a agregar</p>
+        <div class="type-selector" id="typeSelector"></div>
 
-        <form id="coverageForm">
-          <input type="hidden" id="coverageId" />
+        <p class="step-title">2. Elige la zona correspondiente</p>
+        <div class="zone-selector" id="zoneSelector"></div>
 
-          <div class="form-group">
-            <label for="coverageZone">Zona</label>
-            <select id="coverageZone" required>
-              <option value="">Selecciona una zona</option>
-              <option value="1">Zona 1 — $150.00</option>
-              <option value="2">Zona 2 — $175.00</option>
-              <option value="3">Zona 3 — $200.00</option>
-              <option value="4">Zona 4 — $225.00</option>
-              <option value="5">Zona 5 — $250.00</option>
-              <option value="6">Zona 6 — $275.00</option>
-            </select>
-          </div>
+        <div class="current-selection" id="currentSelection">
+          Código postal → todavía no has seleccionado una zona.
+        </div>
 
-          <div class="form-group">
-            <label for="coverageZip">Código postal</label>
-            <input
-              type="text"
-              id="coverageZip"
-              maxlength="5"
-              inputmode="numeric"
-              placeholder="Ej. 06700"
+        <form id="catalogForm">
+          <input type="hidden" id="editingRuleId">
+
+          <div class="form-group" style="margin-top: 18px;">
+            <label for="catalogValues" id="valuesLabel">3. Códigos postales</label>
+            <textarea
+              id="catalogValues"
+              class="bulk-input"
+              placeholder="Escribe un código postal por línea.&#10;Ej.&#10;12222&#10;45667&#10;06700"
               required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="coverageNeighborhood">Colonia</label>
-            <input
-              type="text"
-              id="coverageNeighborhood"
-              placeholder="Ej. Roma Norte"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="coverageCity">Alcaldía o municipio</label>
-            <input
-              type="text"
-              id="coverageCity"
-              placeholder="Ej. Cuauhtémoc"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="coverageState">Estado o entidad federativa</label>
-            <input
-              type="text"
-              id="coverageState"
-              placeholder="Ej. Ciudad de México"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="coverageCountry">País</label>
-            <input
-              type="text"
-              id="coverageCountry"
-              value="México"
-              placeholder="Ej. México"
-              required
-            />
+            ></textarea>
+            <p class="field-help" id="valuesHelp">
+              Puedes pegar varios códigos postales. Cada línea se guardará como un registro independiente dentro de la zona seleccionada.
+            </p>
           </div>
 
           <div class="form-actions">
-            <button class="btn-primary" id="saveCoverageBtn" type="submit">
-              Agregar ubicación
+            <button class="btn-primary" type="submit" id="saveButton">
+              Agregar códigos postales
             </button>
-            <button class="btn-outline" id="cancelEditBtn" type="button" style="display: none;">
+            <button class="btn-outline" type="button" id="cancelEditButton" style="display: none;">
               Cancelar edición
             </button>
           </div>
         </form>
 
-        <div class="note" id="coverageMessage" aria-live="polite"></div>
+        <div class="note" id="formMessage" aria-live="polite"></div>
       </div>
 
-      <div class="shipping-admin-card">
+      <div class="shipping-card">
         <div class="admin-table-header">
-          <h2>Ubicaciones registradas</h2>
-          <button class="btn-outline" id="reloadCoverageBtn" type="button">
-            Actualizar
-          </button>
+          <h2>Datos registrados por separado</h2>
+          <button class="btn-outline" id="reloadButton" type="button">Actualizar</button>
         </div>
 
-        <div class="coverage-toolbar">
+        <div class="catalog-toolbar">
           <input
             type="search"
-            id="coverageSearch"
-            placeholder="Buscar colonia, C.P., municipio, estado o país"
-          />
+            id="catalogSearch"
+            placeholder="Buscar código postal, colonia, municipio..."
+          >
 
-          <select id="coverageZoneFilter">
+          <select id="zoneFilter">
             <option value="">Todas las zonas</option>
-            <option value="1">Zona 1</option>
-            <option value="2">Zona 2</option>
-            <option value="3">Zona 3</option>
-            <option value="4">Zona 4</option>
-            <option value="5">Zona 5</option>
-            <option value="6">Zona 6</option>
           </select>
 
-          <button class="btn-outline" id="clearFiltersBtn" type="button">
+          <button class="btn-outline" id="clearFiltersButton" type="button">
             Limpiar
           </button>
         </div>
 
-        <div id="coverageList" class="coverage-list">
-          <div class="note">Cargando ubicaciones...</div>
+        <div id="catalogSections">
+          <div class="note">Cargando datos...</div>
         </div>
       </div>
     </section>
@@ -348,33 +356,13 @@
     <p>© 2026 Papelería Sulamita - Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=41"></script>
+  <script src="tienda.js?v=43"></script>
   <script>
     protectPage();
     protectAdminPage();
     setupHeader();
 
-    const coverageForm = document.getElementById("coverageForm");
-    const coverageId = document.getElementById("coverageId");
-    const coverageZone = document.getElementById("coverageZone");
-    const coverageZip = document.getElementById("coverageZip");
-    const coverageNeighborhood = document.getElementById("coverageNeighborhood");
-    const coverageCity = document.getElementById("coverageCity");
-    const coverageState = document.getElementById("coverageState");
-    const coverageCountry = document.getElementById("coverageCountry");
-    const saveCoverageBtn = document.getElementById("saveCoverageBtn");
-    const cancelEditBtn = document.getElementById("cancelEditBtn");
-    const coverageMessage = document.getElementById("coverageMessage");
-    const zonePriceList = document.getElementById("zonePriceList");
-    const selectedZoneMessage = document.getElementById("selectedZoneMessage");
-    const coverageList = document.getElementById("coverageList");
-    const coverageSearch = document.getElementById("coverageSearch");
-    const coverageZoneFilter = document.getElementById("coverageZoneFilter");
-    const reloadCoverageBtn = document.getElementById("reloadCoverageBtn");
-    const clearFiltersBtn = document.getElementById("clearFiltersBtn");
-    const formTitle = document.getElementById("formTitle");
-
-    const fixedShippingZones = [
+    const fixedZones = [
       { numero: 1, nombre: "Zona 1", costo: 150 },
       { numero: 2, nombre: "Zona 2", costo: 175 },
       { numero: 3, nombre: "Zona 3", costo: 200 },
@@ -383,37 +371,205 @@
       { numero: 6, nombre: "Zona 6", costo: 275 }
     ];
 
-    let shippingZones = [...fixedShippingZones];
-    let shippingCoverages = [];
+    const typeConfig = {
+      codigo_postal: {
+        button: "Códigos postales",
+        singular: "Código postal",
+        plural: "Códigos postales",
+        placeholder:
+          "Escribe un código postal por línea.\nEj.\n12222\n45667\n06700",
+        help:
+          "Cada código postal debe tener 5 dígitos. Cada línea se guardará por separado."
+      },
+      colonia: {
+        button: "Colonias",
+        singular: "Colonia",
+        plural: "Colonias",
+        placeholder:
+          "Escribe una colonia por línea.\nEj.\nRoma Norte\nDel Valle Centro",
+        help:
+          "Cada colonia se asignará individualmente a la zona seleccionada."
+      },
+      municipio: {
+        button: "Alcaldías o municipios",
+        singular: "Alcaldía o municipio",
+        plural: "Alcaldías o municipios",
+        placeholder:
+          "Escribe una alcaldía o municipio por línea.\nEj.\nCuauhtémoc\nBenito Juárez",
+        help:
+          "Cada alcaldía o municipio se guardará como un registro independiente."
+      },
+      estado: {
+        button: "Estados o entidades",
+        singular: "Estado o entidad federativa",
+        plural: "Estados o entidades federativas",
+        placeholder:
+          "Escribe un estado o entidad por línea.\nEj.\nCiudad de México\nEstado de México",
+        help:
+          "Cada estado o entidad se asignará individualmente a la zona seleccionada."
+      },
+      pais: {
+        button: "Países",
+        singular: "País",
+        plural: "Países",
+        placeholder:
+          "Escribe un país por línea.\nEj.\nMéxico",
+        help:
+          "Cada país se asignará individualmente a la zona seleccionada."
+      }
+    };
 
-    coverageZip.addEventListener("input", function () {
-      coverageZip.value = coverageZip.value.replace(/\D/g, "").slice(0, 5);
+    const typeOrder = [
+      "codigo_postal",
+      "colonia",
+      "municipio",
+      "estado",
+      "pais"
+    ];
+
+    const typeSelector = document.getElementById("typeSelector");
+    const zoneSelector = document.getElementById("zoneSelector");
+    const currentSelection = document.getElementById("currentSelection");
+    const catalogForm = document.getElementById("catalogForm");
+    const editingRuleId = document.getElementById("editingRuleId");
+    const catalogValues = document.getElementById("catalogValues");
+    const valuesLabel = document.getElementById("valuesLabel");
+    const valuesHelp = document.getElementById("valuesHelp");
+    const saveButton = document.getElementById("saveButton");
+    const cancelEditButton = document.getElementById("cancelEditButton");
+    const formTitle = document.getElementById("formTitle");
+    const formMessage = document.getElementById("formMessage");
+    const reloadButton = document.getElementById("reloadButton");
+    const catalogSearch = document.getElementById("catalogSearch");
+    const zoneFilter = document.getElementById("zoneFilter");
+    const clearFiltersButton = document.getElementById("clearFiltersButton");
+    const catalogSections = document.getElementById("catalogSections");
+
+    let zones = [...fixedZones];
+    let rules = [];
+    let selectedType = "codigo_postal";
+    let selectedZoneNumber = 0;
+
+    typeSelector.addEventListener("click", function (event) {
+      const button = event.target.closest("[data-type]");
+      if (!button) return;
+
+      selectedType = button.dataset.type;
+      resetEditOnly();
+      renderSelectors();
+      updateFormForType();
     });
 
-    coverageForm.addEventListener("submit", saveCoverage);
-    coverageZone.addEventListener("change", updateSelectedZoneUI);
-    cancelEditBtn.addEventListener("click", resetCoverageForm);
-
-    zonePriceList.addEventListener("click", function (event) {
+    zoneSelector.addEventListener("click", function (event) {
       const button = event.target.closest("[data-zone-number]");
       if (!button) return;
 
-      coverageZone.value = String(button.dataset.zoneNumber || "");
-      updateSelectedZoneUI();
-      coverageZip.focus();
-    });
-    reloadCoverageBtn.addEventListener("click", loadShippingAdminData);
-    coverageSearch.addEventListener("input", renderCoverageList);
-    coverageZoneFilter.addEventListener("change", renderCoverageList);
-
-    clearFiltersBtn.addEventListener("click", function () {
-      coverageSearch.value = "";
-      coverageZoneFilter.value = "";
-      renderCoverageList();
+      selectedZoneNumber = Number(button.dataset.zoneNumber || 0);
+      renderSelectors();
     });
 
-    async function loadShippingAdminData() {
-      coverageList.innerHTML = `<div class="note">Cargando ubicaciones...</div>`;
+    catalogForm.addEventListener("submit", saveCatalogValues);
+    cancelEditButton.addEventListener("click", resetForm);
+    reloadButton.addEventListener("click", loadData);
+    catalogSearch.addEventListener("input", renderCatalogs);
+    zoneFilter.addEventListener("change", renderCatalogs);
+
+    clearFiltersButton.addEventListener("click", function () {
+      catalogSearch.value = "";
+      zoneFilter.value = "";
+      renderCatalogs();
+    });
+
+    function renderSelectors() {
+      typeSelector.innerHTML = typeOrder.map((type) => `
+        <button
+          class="type-button ${type === selectedType ? "is-selected" : ""}"
+          type="button"
+          data-type="${type}"
+          aria-pressed="${type === selectedType ? "true" : "false"}"
+        >
+          ${escapeHtml(typeConfig[type].button)}
+        </button>
+      `).join("");
+
+      zoneSelector.innerHTML = zones.map((zone) => `
+        <button
+          class="zone-button ${
+            Number(zone.numero) === selectedZoneNumber ? "is-selected" : ""
+          }"
+          type="button"
+          data-zone-number="${Number(zone.numero)}"
+          aria-pressed="${
+            Number(zone.numero) === selectedZoneNumber ? "true" : "false"
+          }"
+        >
+          ${escapeHtml(zone.nombre)} · ${formatMoney(zone.costo)}
+        </button>
+      `).join("");
+
+      zoneFilter.innerHTML = `
+        <option value="">Todas las zonas</option>
+        ${zones.map((zone) => `
+          <option value="${Number(zone.numero)}">
+            ${escapeHtml(zone.nombre)}
+          </option>
+        `).join("")}
+      `;
+
+      const zone = zones.find(
+        (item) => Number(item.numero) === selectedZoneNumber
+      );
+
+      currentSelection.textContent = zone
+        ? `${typeConfig[selectedType].plural} → ${zone.nombre} (${formatMoney(zone.costo)})`
+        : `${typeConfig[selectedType].plural} → todavía no has seleccionado una zona.`;
+    }
+
+    function updateFormForType() {
+      const config = typeConfig[selectedType];
+
+      valuesLabel.textContent = `3. ${config.plural}`;
+      catalogValues.placeholder = config.placeholder;
+      valuesHelp.textContent = config.help;
+
+      if (!editingRuleId.value) {
+        saveButton.textContent = `Agregar ${config.plural.toLowerCase()}`;
+      }
+    }
+
+    function parseValues() {
+      const values = catalogValues.value
+        .split(/\r?\n/)
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      const unique = [];
+      const used = new Set();
+
+      for (let value of values) {
+        if (selectedType === "codigo_postal") {
+          value = value.replace(/\D/g, "");
+
+          if (value.length !== 5) {
+            throw new Error(
+              `El código postal "${value || "(vacío)"}" debe tener exactamente 5 dígitos.`
+            );
+          }
+        }
+
+        const key = value.toLocaleLowerCase("es-MX");
+
+        if (!used.has(key)) {
+          used.add(key);
+          unique.push(value);
+        }
+      }
+
+      return unique;
+    }
+
+    async function loadData() {
+      catalogSections.innerHTML = `<div class="note">Cargando datos...</div>`;
 
       try {
         const response = await fetch("/api/admin/zonas-envio", {
@@ -423,27 +579,25 @@
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudieron cargar las zonas.");
+          throw new Error(data.message || "No se pudieron cargar los datos.");
         }
 
-        shippingZones =
+        zones =
           Array.isArray(data.zonas) && data.zonas.length
             ? data.zonas
-            : [...fixedShippingZones];
+            : [...fixedZones];
 
-        shippingCoverages = Array.isArray(data.coberturas) ? data.coberturas : [];
+        rules = Array.isArray(data.reglas) ? data.reglas : [];
 
-        renderZoneOptions();
-        renderZonePrices();
-        renderCoverageList();
+        renderSelectors();
+        updateFormForType();
+        renderCatalogs();
       } catch (error) {
         console.error(error);
+        zones = [...fixedZones];
+        renderSelectors();
 
-        shippingZones = [...fixedShippingZones];
-        renderZoneOptions();
-        renderZonePrices();
-
-        coverageList.innerHTML = `
+        catalogSections.innerHTML = `
           <div class="note error">
             ${escapeHtml(error.message || "No se pudo conectar con el servidor.")}
           </div>
@@ -451,118 +605,174 @@
       }
     }
 
-    function renderZoneOptions() {
-      const currentZone = coverageZone.value;
+    async function saveCatalogValues(event) {
+      event.preventDefault();
+      clearMessage();
 
-      coverageZone.innerHTML = `
-        <option value="">Selecciona una zona</option>
-        ${shippingZones.map((zone) => `
-          <option value="${Number(zone.numero)}">
-            ${escapeHtml(zone.nombre)} — ${formatMoney(zone.costo)}
-          </option>
-        `).join("")}
-      `;
-
-      coverageZoneFilter.innerHTML = `
-        <option value="">Todas las zonas</option>
-        ${shippingZones.map((zone) => `
-          <option value="${Number(zone.numero)}">${escapeHtml(zone.nombre)}</option>
-        `).join("")}
-      `;
-
-      if (currentZone) {
-        coverageZone.value = currentZone;
-      }
-
-      updateSelectedZoneUI();
-    }
-
-    function renderZonePrices() {
-      zonePriceList.innerHTML = shippingZones.map((zone) => `
-        <button
-          class="zone-price-item"
-          type="button"
-          data-zone-number="${Number(zone.numero)}"
-        >
-          ${escapeHtml(zone.nombre)}: ${formatMoney(zone.costo)}
-        </button>
-      `).join("");
-
-      updateSelectedZoneUI();
-    }
-
-    function updateSelectedZoneUI() {
-      const selectedNumber = Number(coverageZone.value || 0);
-      const selectedZone = shippingZones.find(
-        (zone) => Number(zone.numero) === selectedNumber
-      );
-
-      zonePriceList.querySelectorAll("[data-zone-number]").forEach((button) => {
-        const isSelected =
-          Number(button.dataset.zoneNumber) === selectedNumber;
-
-        button.classList.toggle("is-selected", isSelected);
-        button.setAttribute("aria-pressed", isSelected ? "true" : "false");
-      });
-
-      if (!selectedZone) {
-        selectedZoneMessage.textContent = "";
-        selectedZoneMessage.classList.remove("is-visible");
+      if (!selectedZoneNumber) {
+        showMessage("Selecciona la zona a la que pertenecen estos datos.", true);
         return;
       }
 
-      selectedZoneMessage.textContent =
-        `✓ ${selectedZone.nombre} seleccionada — ${formatMoney(selectedZone.costo)}`;
+      let values;
 
-      selectedZoneMessage.classList.add("is-visible");
-    }
-
-    function renderCoverageList() {
-      const search = normalizeText(coverageSearch.value);
-      const selectedZone = Number(coverageZoneFilter.value || 0);
-
-      const filtered = shippingCoverages.filter((coverage) => {
-        const matchesZone = !selectedZone || Number(coverage.zona_numero) === selectedZone;
-        const searchable = normalizeText([
-          coverage.colonia,
-          coverage.codigo_postal,
-          coverage.municipio,
-          coverage.estado,
-          coverage.pais,
-          coverage.zona
-        ].join(" "));
-        const matchesSearch = !search || searchable.includes(search);
-
-        return matchesZone && matchesSearch;
-      });
-
-      if (!filtered.length) {
-        coverageList.innerHTML = `
-          <div class="note">No se encontraron ubicaciones con esos filtros.</div>
-        `;
+      try {
+        values = parseValues();
+      } catch (error) {
+        showMessage(error.message, true);
         return;
       }
 
-      coverageList.innerHTML = filtered.map((coverage) => `
-        <article class="coverage-item">
-          <div class="coverage-item-header">
-            <div>
-              <span class="coverage-zone-badge">
-                ${escapeHtml(coverage.zona)} · ${formatMoney(coverage.costo)}
-              </span>
-              <h3>${escapeHtml(coverage.colonia)}</h3>
-              <p><strong>C.P.:</strong> ${escapeHtml(coverage.codigo_postal)}</p>
-              <p><strong>Alcaldía o municipio:</strong> ${escapeHtml(coverage.municipio)}</p>
-              <p><strong>Estado o entidad:</strong> ${escapeHtml(coverage.estado)}</p>
-              <p><strong>País:</strong> ${escapeHtml(coverage.pais || "")}</p>
+      if (!values.length) {
+        showMessage(`Escribe al menos un ${typeConfig[selectedType].singular.toLowerCase()}.`, true);
+        return;
+      }
+
+      const editId = Number(editingRuleId.value || 0);
+
+      if (editId && values.length !== 1) {
+        showMessage("Durante la edición solo puedes guardar un valor.", true);
+        return;
+      }
+
+      saveButton.disabled = true;
+      saveButton.textContent = editId ? "Guardando cambio..." : "Agregando...";
+
+      try {
+        if (editId) {
+          const response = await fetch(
+            `/api/admin/zonas-envio/reglas/${editId}`,
+            {
+              method: "PUT",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                zona_numero: selectedZoneNumber,
+                tipo: selectedType,
+                valor: values[0],
+                activo: true
+              })
+            }
+          );
+
+          const data = await readJsonResponse(response);
+
+          if (!response.ok) {
+            throw new Error(data.message || "No se pudo actualizar el dato.");
+          }
+
+          showMessage("Dato actualizado correctamente.");
+          resetForm(false);
+          await loadData();
+          return;
+        }
+
+        let added = 0;
+        const errors = [];
+
+        for (const value of values) {
+          try {
+            const response = await fetch("/api/admin/zonas-envio/reglas", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                zona_numero: selectedZoneNumber,
+                tipo: selectedType,
+                valor: value
+              })
+            });
+
+            const data = await readJsonResponse(response);
+
+            if (!response.ok) {
+              throw new Error(data.message || "No se pudo agregar.");
+            }
+
+            added += 1;
+          } catch (error) {
+            errors.push(`${value}: ${error.message}`);
+          }
+        }
+
+        catalogValues.value = "";
+        await loadData();
+
+        if (errors.length) {
+          showMessage(
+            `Se agregaron ${added} registros. No se agregaron: ${errors.join(" | ")}`,
+            true
+          );
+        } else {
+          showMessage(
+            `${added} ${added === 1 ? "registro agregado" : "registros agregados"} correctamente.`
+          );
+        }
+      } catch (error) {
+        console.error(error);
+        showMessage(error.message || "No se pudieron guardar los datos.", true);
+      } finally {
+        saveButton.disabled = false;
+        updateFormForType();
+      }
+    }
+
+    function renderCatalogs() {
+      const search = catalogSearch.value.trim().toLocaleLowerCase("es-MX");
+      const zoneNumber = Number(zoneFilter.value || 0);
+
+      const filtered = rules.filter((rule) => {
+        const matchesSearch =
+          !search ||
+          String(rule.valor || "")
+            .toLocaleLowerCase("es-MX")
+            .includes(search);
+
+        const matchesZone =
+          !zoneNumber || Number(rule.zona_numero) === zoneNumber;
+
+        return matchesSearch && matchesZone;
+      });
+
+      catalogSections.innerHTML = typeOrder.map((type) => {
+        const items = filtered.filter((rule) => rule.tipo === type);
+        const config = typeConfig[type];
+
+        return `
+          <section class="catalog-section">
+            <div class="catalog-section-header">
+              <h3>${escapeHtml(config.plural)}</h3>
+              <span class="catalog-count">${items.length}</span>
             </div>
+
+            <div class="catalog-list">
+              ${
+                items.length
+                  ? items.map(renderCatalogRow).join("")
+                  : `<div class="empty-section">Todavía no hay ${escapeHtml(config.plural.toLowerCase())} con estos filtros.</div>`
+              }
+            </div>
+          </section>
+        `;
+      }).join("");
+    }
+
+    function renderCatalogRow(rule) {
+      return `
+        <article class="catalog-row">
+          <div class="catalog-value">${escapeHtml(rule.valor)}</div>
+
+          <div>
+            <span class="zone-badge">
+              ${escapeHtml(rule.zona)} · ${formatMoney(rule.costo)}
+            </span>
           </div>
 
-          <div class="coverage-actions">
+          <div class="row-actions">
             <button
               class="btn-outline btn-sm"
               type="button"
-              onclick="editCoverage(${Number(coverage.id)})"
+              onclick="editRule(${Number(rule.id)})"
             >
               Editar
             </button>
@@ -570,170 +780,126 @@
             <button
               class="btn-danger btn-sm"
               type="button"
-              onclick="deleteCoverage(${Number(coverage.id)})"
+              onclick="deleteRule(${Number(rule.id)}, '${escapeHtmlAttr(rule.valor)}')"
             >
               Borrar
             </button>
           </div>
         </article>
-      `).join("");
+      `;
     }
 
-    async function saveCoverage(event) {
-      event.preventDefault();
-      clearMessage();
+    function editRule(id) {
+      const rule = rules.find((item) => Number(item.id) === Number(id));
+      if (!rule) return;
 
-      const id = Number(coverageId.value || 0);
-      const payload = {
-        zona_numero: Number(coverageZone.value),
-        codigo_postal: coverageZip.value.trim(),
-        colonia: coverageNeighborhood.value.trim(),
-        municipio: coverageCity.value.trim(),
-        estado: coverageState.value.trim(),
-        pais: coverageCountry.value.trim(),
-        activo: true
-      };
+      editingRuleId.value = String(rule.id);
+      selectedType = rule.tipo;
+      selectedZoneNumber = Number(rule.zona_numero);
+      catalogValues.value = rule.valor;
 
-      if (
-        !payload.zona_numero ||
-        !/^\d{5}$/.test(payload.codigo_postal) ||
-        !payload.colonia ||
-        !payload.municipio ||
-        !payload.estado ||
-        !payload.pais
-      ) {
-        showMessage(
-          "Completa zona, colonia, C.P., alcaldía o municipio, estado y país.",
-          true
-        );
-        return;
-      }
+      formTitle.textContent = `Editar ${typeConfig[selectedType].singular.toLowerCase()}`;
+      saveButton.textContent = "Guardar cambio";
+      cancelEditButton.style.display = "inline-block";
+
+      renderSelectors();
+      updateFormForType();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    async function deleteRule(id, value) {
+      const confirmed = confirm(
+        `¿Seguro que quieres borrar "${value}" de los catálogos de envío?`
+      );
+
+      if (!confirmed) return;
 
       try {
-        saveCoverageBtn.disabled = true;
-        saveCoverageBtn.textContent = id ? "Guardando..." : "Agregando...";
-
         const response = await fetch(
-          id
-            ? `/api/admin/zonas-envio/coberturas/${id}`
-            : "/api/admin/zonas-envio/coberturas",
+          `/api/admin/zonas-envio/reglas/${Number(id)}`,
           {
-            method: id ? "PUT" : "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
+            method: "DELETE",
+            credentials: "include"
           }
         );
 
         const data = await readJsonResponse(response);
 
         if (!response.ok) {
-          throw new Error(data.message || "No se pudo guardar la ubicación.");
+          throw new Error(data.message || "No se pudo borrar el dato.");
         }
 
-        showMessage(id ? "Ubicación actualizada correctamente." : "Ubicación agregada correctamente.");
-        resetCoverageForm(false);
-        await loadShippingAdminData();
+        showMessage("Dato eliminado correctamente.");
+        await loadData();
       } catch (error) {
         console.error(error);
-        showMessage(error.message || "No se pudo conectar con el servidor.", true);
-      } finally {
-        saveCoverageBtn.disabled = false;
-        saveCoverageBtn.textContent = coverageId.value ? "Guardar cambios" : "Agregar ubicación";
+        showMessage(error.message || "No se pudo borrar el dato.", true);
       }
     }
 
-    function editCoverage(id) {
-      const coverage = shippingCoverages.find((item) => Number(item.id) === Number(id));
-      if (!coverage) return;
+    function resetEditOnly() {
+      if (!editingRuleId.value) return;
 
-      coverageId.value = String(coverage.id);
-      coverageZone.value = String(coverage.zona_numero);
-      coverageZip.value = coverage.codigo_postal;
-      coverageNeighborhood.value = coverage.colonia;
-      coverageCity.value = coverage.municipio;
-      coverageState.value = coverage.estado || "";
-      coverageCountry.value = coverage.pais || "México";
-      updateSelectedZoneUI();
-
-      formTitle.textContent = "Editar ubicación";
-      saveCoverageBtn.textContent = "Guardar cambios";
-      cancelEditBtn.style.display = "inline-block";
-
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      editingRuleId.value = "";
+      catalogValues.value = "";
+      formTitle.textContent = "Agregar datos a una zona";
+      cancelEditButton.style.display = "none";
     }
 
-    async function deleteCoverage(id) {
-      const coverage = shippingCoverages.find((item) => Number(item.id) === Number(id));
-      if (!coverage) return;
+    function resetForm(clearZone = true) {
+      editingRuleId.value = "";
+      catalogValues.value = "";
+      formTitle.textContent = "Agregar datos a una zona";
+      cancelEditButton.style.display = "none";
 
-      const confirmed = confirm(
-        `¿Seguro que quieres borrar ${coverage.colonia}, C.P. ${coverage.codigo_postal}?`
-      );
-
-      if (!confirmed) return;
-
-      try {
-        const response = await fetch(`/api/admin/zonas-envio/coberturas/${Number(id)}`, {
-          method: "DELETE",
-          credentials: "include"
-        });
-
-        const data = await readJsonResponse(response);
-
-        if (!response.ok) {
-          throw new Error(data.message || "No se pudo borrar la ubicación.");
-        }
-
-        showMessage("Ubicación eliminada correctamente.");
-        await loadShippingAdminData();
-      } catch (error) {
-        console.error(error);
-        showMessage(error.message || "No se pudo conectar con el servidor.", true);
+      if (clearZone) {
+        selectedZoneNumber = 0;
       }
-    }
 
-    function resetCoverageForm(clearMessageToo = true) {
-      coverageForm.reset();
-      coverageCountry.value = "México";
-      coverageId.value = "";
-      updateSelectedZoneUI();
-      formTitle.textContent = "Agregar ubicación";
-      saveCoverageBtn.textContent = "Agregar ubicación";
-      cancelEditBtn.style.display = "none";
-
-      if (clearMessageToo) clearMessage();
+      renderSelectors();
+      updateFormForType();
     }
 
     function showMessage(message, isError = false) {
-      coverageMessage.textContent = message;
-      coverageMessage.className = isError ? "note error" : "note success";
+      formMessage.textContent = message;
+      formMessage.className = isError ? "note error" : "note success";
     }
 
     function clearMessage() {
-      coverageMessage.textContent = "";
-      coverageMessage.className = "note";
-    }
-
-    function normalizeText(value) {
-      return String(value || "")
-        .toLocaleLowerCase("es-MX")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
+      formMessage.textContent = "";
+      formMessage.className = "note";
     }
 
     async function readJsonResponse(response) {
       const contentType = response.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) return {};
+
+      if (!contentType.includes("application/json")) {
+        return {};
+      }
+
       return response.json();
     }
 
-    renderZoneOptions();
-    renderZonePrices();
-    loadShippingAdminData();
+    function formatMoney(value) {
+      return `$${Number(value || 0).toFixed(2)}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeHtmlAttr(value) {
+      return escapeHtml(value).replaceAll("\\", "\\\\");
+    }
+
+    renderSelectors();
+    updateFormForType();
+    loadData();
   </script>
 </body>
 </html>
