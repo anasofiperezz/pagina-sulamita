@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Catálogos de zonas | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=46">
+  <link rel="stylesheet" href="styles.css?v=47">
 
   <style>
     .shipping-admin-page {
@@ -220,10 +220,10 @@
 
     .catalog-row {
       display: grid;
-      grid-template-columns: minmax(150px, 1fr) minmax(110px, 145px) auto;
-      gap: 14px;
-      align-items: center;
-      padding: 15px 18px;
+      grid-template-columns: minmax(140px, 0.8fr) minmax(300px, 2fr);
+      gap: 18px;
+      align-items: start;
+      padding: 16px 18px;
       border-bottom: 1px solid #eef2f7;
     }
 
@@ -232,9 +232,27 @@
     }
 
     .catalog-value {
+      padding-top: 8px;
       color: #111827;
-      font-weight: 800;
+      font-weight: 900;
       overflow-wrap: anywhere;
+    }
+
+    .zone-assignments {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .zone-assignment {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 9px 8px 12px;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      background: #f8fbff;
     }
 
     .zone-badge {
@@ -246,6 +264,17 @@
       font-weight: 800;
       font-size: 0.86rem;
       text-align: center;
+    }
+
+    .zone-assignment-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .zone-assignment-actions .btn-sm {
+      padding: 7px 10px;
+      min-height: 36px;
     }
 
     .empty-section {
@@ -272,6 +301,15 @@
 
       .catalog-row {
         grid-template-columns: 1fr;
+      }
+
+      .catalog-value {
+        padding-top: 0;
+      }
+
+      .zone-assignment {
+        align-items: flex-start;
+        flex-direction: column;
       }
     }
   </style>
@@ -397,7 +435,7 @@
     <p>© 2026 Papelería Sulamita - Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=46"></script>
+  <script src="tienda.js?v=47"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -814,20 +852,26 @@
       });
 
       catalogSections.innerHTML = typeOrder.map((type) => {
-        const items = filtered.filter((rule) => rule.tipo === type);
+        const typeRules = filtered.filter((rule) => rule.tipo === type);
+        const groups = groupRulesByValue(typeRules);
         const config = typeConfig[type];
 
         return `
           <section class="catalog-section">
             <div class="catalog-section-header">
               <h3>${escapeHtml(config.plural)}</h3>
-              <span class="catalog-count">${items.length}</span>
+              <span
+                class="catalog-count"
+                title="${typeRules.length} asignaciones en total"
+              >
+                ${groups.length}
+              </span>
             </div>
 
             <div class="catalog-list">
               ${
-                items.length
-                  ? items.map(renderCatalogRow).join("")
+                groups.length
+                  ? groups.map(renderGroupedCatalogRow).join("")
                   : `<div class="empty-section">Todavía no hay ${escapeHtml(config.plural.toLowerCase())} con estos filtros.</div>`
               }
             </div>
@@ -836,34 +880,74 @@
       }).join("");
     }
 
-    function renderCatalogRow(rule) {
-      return `
-        <article class="catalog-row">
-          <div class="catalog-value">${escapeHtml(rule.valor)}</div>
+    function groupRulesByValue(typeRules) {
+      const groupsMap = new Map();
 
-          <div>
+      typeRules.forEach((rule) => {
+        const normalizedValue = String(rule.valor || "")
+          .trim()
+          .toLocaleLowerCase("es-MX");
+
+        if (!groupsMap.has(normalizedValue)) {
+          groupsMap.set(normalizedValue, {
+            valor: String(rule.valor || "").trim(),
+            reglas: []
+          });
+        }
+
+        groupsMap.get(normalizedValue).reglas.push(rule);
+      });
+
+      return Array.from(groupsMap.values())
+        .map((group) => ({
+          ...group,
+          reglas: group.reglas.sort(
+            (a, b) => Number(a.zona_numero) - Number(b.zona_numero)
+          )
+        }))
+        .sort((a, b) =>
+          a.valor.localeCompare(b.valor, "es-MX", {
+            numeric: true,
+            sensitivity: "base"
+          })
+        );
+    }
+
+    function renderGroupedCatalogRow(group) {
+      const assignmentsHtml = group.reglas
+        .map((rule) => `
+          <div class="zone-assignment">
             <span class="zone-badge">
               ${escapeHtml(rule.zona)} · ${formatMoney(rule.costo)}
             </span>
-          </div>
 
-          <div class="row-actions">
-            <button
-              class="btn-outline btn-sm"
-              type="button"
-              onclick="editRule(${Number(rule.id)})"
-            >
-              Editar
-            </button>
+            <div class="zone-assignment-actions">
+              <button
+                class="btn-outline btn-sm"
+                type="button"
+                onclick="editRule(${Number(rule.id)})"
+                aria-label="Editar ${escapeHtmlAttr(group.valor)} en ${escapeHtmlAttr(rule.zona)}"
+              >
+                Editar
+              </button>
 
-            <button
-              class="btn-danger btn-sm"
-              type="button"
-              onclick="deleteRule(${Number(rule.id)}, '${escapeHtmlAttr(rule.valor)}')"
-            >
-              Borrar
-            </button>
+              <button
+                class="btn-danger btn-sm"
+                type="button"
+                onclick="deleteRule(${Number(rule.id)})"
+                aria-label="Borrar ${escapeHtmlAttr(group.valor)} de ${escapeHtmlAttr(rule.zona)}"
+              >
+                Borrar
+              </button>
+            </div>
           </div>
+        `)
+        .join("");
+
+      return `
+        <article class="catalog-row">
+          <div class="catalog-value">${escapeHtml(group.valor)}</div>
+          <div class="zone-assignments">${assignmentsHtml}</div>
         </article>
       `;
     }
@@ -886,9 +970,12 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    async function deleteRule(id, value) {
+    async function deleteRule(id) {
+      const rule = rules.find((item) => Number(item.id) === Number(id));
+      if (!rule) return;
+
       const confirmed = confirm(
-        `¿Seguro que quieres borrar "${value}" de los catálogos de envío?`
+        `¿Seguro que quieres quitar "${rule.valor}" de ${rule.zona}?`
       );
 
       if (!confirmed) return;
