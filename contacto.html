@@ -3,255 +3,320 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Contacto | Papelería Sulamita</title>
+
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=50">
+
+  <style>
+    /* =========================
+       DETALLES DE CONTACTO
+    ========================= */
+
+    .contact-intro-note {
+      margin: 0 0 18px;
+      color: #64748b;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .required-mark {
+      color: #b0002f;
+      font-weight: 800;
+    }
+
+    .contact-info-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .contact-address {
+      margin: 8px 0 0;
+      font-style: normal;
+      line-height: 1.65;
+    }
+
+    .contact-method-list {
+      margin: 10px 0 0;
+      padding-left: 20px;
+      line-height: 1.7;
+    }
+
+    .contact-phone-link,
+    .contact-email-link {
+      color: inherit;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .contact-phone-link:hover,
+    .contact-email-link:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
+
 <body>
+  <!-- =========================
+       ENCABEZADO
+  ========================== -->
+
   <header>
     <div class="navbar">
       <div class="logo">Papelería Sulamita</div>
+
       <div class="nav-right">
-        <div class="user-badge" id="userInfo">Bienvenido</div>
+        <div class="user-badge" id="userInfo">Cargando sesión...</div>
+
         <a href="index.html" class="nav-btn">Inicio</a>
+        <a href="contacto.html" class="nav-btn">Contacto</a>
         <a href="carrito.html" class="nav-btn">Carrito</a>
-        <button class="nav-btn" id="adminBtn" style="display: none;">Panel admin</button>
-        <button class="nav-btn" id="logoutBtn" style="display: none;">Cerrar sesión</button>
+
+        <button class="nav-btn" id="logoutBtn" type="button">
+          Cerrar sesión
+        </button>
       </div>
     </div>
   </header>
 
   <main>
+    <!-- =========================
+         PRESENTACIÓN
+    ========================== -->
+
     <section class="page-hero contact-hero">
       <div class="page-hero-content">
-        <span class="page-badge">Contacto</span>
-        <h1>Estamos para ayudarte</h1>
+        <span class="page-badge">Atención al cliente</span>
+
+        <h1>¿Cómo podemos ayudarte?</h1>
+
         <p>
-          Ponte en contacto con nosotros para resolver dudas sobre pedidos,
-          entregas, pagos o información de las escuelas.
+          Escríbenos si tienes dudas sobre un producto, tu pedido, el envío,
+          la forma de pago o la información escolar.
         </p>
       </div>
     </section>
 
+    <!-- =========================
+         FORMULARIO E INFORMACIÓN
+    ========================== -->
+
     <section class="contact-page">
       <div class="contact-layout">
+        <!-- Formulario -->
         <div class="contact-form-card">
           <h2>Envíanos un mensaje</h2>
+
           <p class="contact-subtext">
-            Completa el formulario y nos pondremos en contacto contigo.
+            Completa el formulario y revisaremos tu solicitud lo antes posible.
+          </p>
+
+          <p class="contact-intro-note">
+            Los campos marcados con
+            <span class="required-mark">*</span>
+            son obligatorios.
           </p>
 
           <form id="contactForm">
             <div class="form-group">
-              <label for="contactName">Nombre completo</label>
-              <input type="text" id="contactName" placeholder="Tu nombre" required />
+              <label for="contactName">
+                Nombre completo
+                <span class="required-mark">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="contactName"
+                name="name"
+                autocomplete="name"
+                placeholder="Escribe tu nombre y apellidos"
+                required
+              />
             </div>
 
             <div class="form-group">
-              <label for="contactEmail">Correo electrónico</label>
-              <input type="email" id="contactEmail" placeholder="correo@ejemplo.com" required />
+              <label for="contactEmail">
+                Correo electrónico
+                <span class="required-mark">*</span>
+              </label>
+
+              <input
+                type="email"
+                id="contactEmail"
+                name="email"
+                autocomplete="email"
+                placeholder="correo@ejemplo.com"
+                required
+              />
             </div>
 
             <div class="form-group">
-              <label for="contactPhone">Teléfono</label>
-              <input type="text" id="contactPhone" placeholder="Tu número de teléfono" />
+              <label for="contactPhone">Teléfono de contacto</label>
+
+              <input
+                type="tel"
+                id="contactPhone"
+                name="phone"
+                autocomplete="tel"
+                inputmode="tel"
+                placeholder="Ej. 55 1234 5678"
+              />
+
+              <p class="subtext">
+                Opcional. Agrégalo si prefieres que te contactemos por teléfono.
+              </p>
             </div>
 
             <div class="form-group">
-              <label for="contactSubject">Asunto</label>
-              <select id="contactSubject" required>
+              <label for="contactSubject">
+                Motivo de tu mensaje
+                <span class="required-mark">*</span>
+              </label>
+
+              <select id="contactSubject" name="subject" required>
                 <option value="">Selecciona una opción</option>
-                <option value="pedido">Duda sobre pedido</option>
+                <option value="pedido">Duda sobre un pedido</option>
                 <option value="envio">Envío a domicilio</option>
-                <option value="pago">Método de pago</option>
-                <option value="escuela">Información de escuela</option>
-                <option value="otro">Otro</option>
+                <option value="pago">Forma de pago</option>
+                <option value="escuela">Información escolar</option>
+                <option value="otro">Otro asunto</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label for="contactMessage">Mensaje</label>
+              <label for="contactMessage">
+                Mensaje
+                <span class="required-mark">*</span>
+              </label>
+
               <textarea
                 id="contactMessage"
+                name="message"
                 rows="6"
-                placeholder="Escribe tu mensaje aquí"
+                placeholder="Cuéntanos con detalle cómo podemos ayudarte"
                 required
               ></textarea>
             </div>
 
-            <button type="submit" class="btn-primary full-width" id="sendContactBtn">
+            <button
+              type="submit"
+              class="btn-primary full-width"
+              id="sendContactBtn"
+            >
               Enviar mensaje
             </button>
           </form>
 
-          <div class="note" id="contactResponse"></div>
+          <div
+            class="note"
+            id="contactResponse"
+            aria-live="polite"
+          ></div>
         </div>
 
+        <!-- Información -->
         <div class="contact-info-column">
           <div class="info-card">
-            <h3>Contacto general</h3>
+            <h3>Contacto de la papelería</h3>
+
             <p>
-              <strong>Nombre comercial:</strong> Papelería Sulamita<br />
-              <strong>Teléfono:</strong> 55 5533 5177<br />
-              <strong>Horario:</strong> Lunes a Viernes, 8:00 AM a 5:00 PM
+              <strong>Nombre comercial:</strong>
+              Papelería Sulamita
+            </p>
+
+            <p>
+              <strong>Teléfono:</strong>
+              <a class="contact-phone-link" href="tel:+525555335177">
+                55 5533 5177
+              </a>
+            </p>
+
+            <p>
+              <strong>Horario de atención:</strong><br>
+              Lunes a viernes, de 8:00 a. m. a 5:00 p. m.
             </p>
           </div>
 
           <div class="info-card">
             <h3>Instituto Pedagógico Anglo Español (IPAE)</h3>
+
             <p>
-              <strong>Niveles:</strong> Secundaria y Preparatoria<br />
-              <strong>Secundaria:</strong> Jalapa 44, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700<br />
-              <strong>Preparatoria:</strong> Durango 101, Col. Roma Norte, Alcaldía Cuauhtémoc, CDMX. C.P. 06700
+              <strong>Niveles:</strong>
+              Secundaria y preparatoria
             </p>
+
+            <address class="contact-address">
+              <strong>Secundaria</strong><br>
+              Jalapa 44, colonia Roma Norte,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06700
+            </address>
+
+            <address class="contact-address">
+              <strong>Preparatoria</strong><br>
+              Durango 101, colonia Roma Norte,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06700
+            </address>
           </div>
 
           <div class="info-card">
             <h3>Instituto Anglo Español (IAE)</h3>
+
             <p>
-              <strong>Niveles:</strong> Jardín de niños y Primaria<br />
-              <strong>Jardín de niños:</strong> Sadi Carnot #23, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470<br />
-              <strong>Primaria:</strong> Sadi Carnot #44, Col. San Rafael, Alcaldía Cuauhtémoc, CDMX. C.P. 06470
+              <strong>Niveles:</strong>
+              Jardín de niños y primaria
             </p>
+
+            <address class="contact-address">
+              <strong>Jardín de niños</strong><br>
+              Sadi Carnot 23, colonia San Rafael,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06470
+            </address>
+
+            <address class="contact-address">
+              <strong>Primaria</strong><br>
+              Sadi Carnot 44, colonia San Rafael,<br>
+              alcaldía Cuauhtémoc, Ciudad de México,<br>
+              C. P. 06470
+            </address>
           </div>
 
           <div class="info-card">
-            <h3>Métodos de atención</h3>
-            <p>
-              Atención por correo electrónico.<br />
-              Atención telefónica.<br />
-              Seguimiento de pedidos y apoyo con compras escolares.
-            </p>
+            <h3>¿En qué podemos apoyarte?</h3>
+
+            <ul class="contact-method-list">
+              <li>Seguimiento de pedidos.</li>
+              <li>Dudas sobre productos, tallas o existencias.</li>
+              <li>Información sobre entregas y formas de pago.</li>
+              <li>Orientación para compras escolares.</li>
+            </ul>
           </div>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- =========================
+       PIE DE PÁGINA
+  ========================== -->
+
   <footer>
-    <p>© 2026 Papelería Sulamita - Contacto</p>
+    <p>© 2026 Papelería Sulamita · Contacto</p>
   </footer>
 
-  <script src="tienda.js?v=22"></script>
+  <!-- =========================
+       SCRIPTS
+  ========================== -->
+
+  <script src="tienda.js?v=50"></script>
 
   <script>
+    protectPage();
     setupHeader();
-
-    const runningOnGitHubPages = window.location.hostname.includes("github.io");
-
-    const role = localStorage.getItem("userRole");
-    const isSessionActive = localStorage.getItem("sessionActive");
-    const adminBtn = document.getElementById("adminBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const userInfo = document.getElementById("userInfo");
-
-    if (userInfo) {
-      const savedName = localStorage.getItem("userName");
-      const savedEmail = localStorage.getItem("userEmail");
-
-      if (isSessionActive && savedName) {
-        userInfo.textContent = savedName;
-      } else if (isSessionActive && savedEmail) {
-        userInfo.textContent = savedEmail;
-      } else {
-        userInfo.textContent = "Bienvenido";
-      }
-    }
-
-    if (isSessionActive && logoutBtn) {
-      logoutBtn.style.display = "inline-block";
-    }
-
-    if (role === "admin" && adminBtn) {
-      adminBtn.style.display = "inline-block";
-      adminBtn.addEventListener("click", function () {
-        window.location.href = "admin.html";
-      });
-    }
-
-    const contactForm = document.getElementById("contactForm");
-    const contactResponse = document.getElementById("contactResponse");
-    const sendContactBtn = document.getElementById("sendContactBtn");
-
-    const savedName = localStorage.getItem("userName");
-    const savedEmail = localStorage.getItem("userEmail");
-
-    if (savedName) {
-      document.getElementById("contactName").value = savedName;
-    }
-
-    if (savedEmail) {
-      document.getElementById("contactEmail").value = savedEmail;
-    }
-
-    function showContactResponse(text, isError = false) {
-      contactResponse.textContent = text;
-      contactResponse.className = isError ? "note error show" : "note success show";
-      contactResponse.style.display = "block";
-    }
-
-    contactForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-
-      if (runningOnGitHubPages) {
-        showContactResponse(
-          "El formulario de contacto necesita servidor Node.js para guardar mensajes. En GitHub Pages solo se muestra la página; para enviar mensajes reales publícalo en Render.",
-          true
-        );
-        return;
-      }
-
-      const payload = {
-        nombre: document.getElementById("contactName").value.trim(),
-        email: document.getElementById("contactEmail").value.trim(),
-        telefono: document.getElementById("contactPhone").value.trim(),
-        asunto: document.getElementById("contactSubject").value,
-        mensaje: document.getElementById("contactMessage").value.trim()
-      };
-
-      if (!payload.nombre || !payload.email || !payload.asunto || !payload.mensaje) {
-        showContactResponse("Completa nombre, correo, asunto y mensaje.", true);
-        return;
-      }
-
-      try {
-        sendContactBtn.disabled = true;
-        sendContactBtn.textContent = "Enviando...";
-
-        const response = await fetch("/api/contacto", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          showContactResponse(data.message || "No se pudo enviar el mensaje.", true);
-          return;
-        }
-
-        showContactResponse("Tu mensaje fue enviado correctamente.");
-
-        contactForm.reset();
-
-        if (savedName) {
-          document.getElementById("contactName").value = savedName;
-        }
-
-        if (savedEmail) {
-          document.getElementById("contactEmail").value = savedEmail;
-        }
-      } catch (error) {
-        console.error(error);
-        showContactResponse("No se pudo conectar con el servidor.", true);
-      } finally {
-        sendContactBtn.disabled = false;
-        sendContactBtn.textContent = "Enviar mensaje";
-      }
-    });
   </script>
 </body>
 </html>
