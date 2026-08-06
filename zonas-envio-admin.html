@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Zonas de envío | Papelería Sulamita</title>
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=40">
+  <link rel="stylesheet" href="styles.css?v=41">
 
   <style>
     .shipping-admin-page {
@@ -41,12 +41,45 @@
     }
 
     .zone-price-item {
+      width: 100%;
       padding: 12px;
       border: 1px solid #bfdbfe;
       border-radius: 14px;
       background: #eff6ff;
       color: #0f2f5f;
+      font: inherit;
       font-weight: 800;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .zone-price-item:hover {
+      transform: translateY(-1px);
+      border-color: #60a5fa;
+      background: #dbeafe;
+    }
+
+    .zone-price-item.is-selected {
+      border-color: #0057b8;
+      background: #0057b8;
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(0, 87, 184, 0.22);
+    }
+
+    .selected-zone-message {
+      display: none;
+      margin: -4px 0 16px;
+      padding: 11px 13px;
+      border-radius: 13px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      font-weight: 800;
+    }
+
+    .selected-zone-message.is-visible {
+      display: block;
     }
 
     .coverage-toolbar {
@@ -181,14 +214,16 @@
           Ya iniciaste sesión como administrador. No necesitas volver a escribir una contraseña.
         </div>
 
-        <div class="zone-price-list" id="zonePriceList">
-          <div class="zone-price-item">Zona 1: $150.00</div>
-          <div class="zone-price-item">Zona 2: $175.00</div>
-          <div class="zone-price-item">Zona 3: $200.00</div>
-          <div class="zone-price-item">Zona 4: $225.00</div>
-          <div class="zone-price-item">Zona 5: $250.00</div>
-          <div class="zone-price-item">Zona 6: $275.00</div>
+        <div class="zone-price-list" id="zonePriceList" aria-label="Seleccionar zona">
+          <button class="zone-price-item" type="button" data-zone-number="1">Zona 1: $150.00</button>
+          <button class="zone-price-item" type="button" data-zone-number="2">Zona 2: $175.00</button>
+          <button class="zone-price-item" type="button" data-zone-number="3">Zona 3: $200.00</button>
+          <button class="zone-price-item" type="button" data-zone-number="4">Zona 4: $225.00</button>
+          <button class="zone-price-item" type="button" data-zone-number="5">Zona 5: $250.00</button>
+          <button class="zone-price-item" type="button" data-zone-number="6">Zona 6: $275.00</button>
         </div>
+
+        <div class="selected-zone-message" id="selectedZoneMessage" aria-live="polite"></div>
 
         <form id="coverageForm">
           <input type="hidden" id="coverageId" />
@@ -197,6 +232,12 @@
             <label for="coverageZone">Zona</label>
             <select id="coverageZone" required>
               <option value="">Selecciona una zona</option>
+              <option value="1">Zona 1 — $150.00</option>
+              <option value="2">Zona 2 — $175.00</option>
+              <option value="3">Zona 3 — $200.00</option>
+              <option value="4">Zona 4 — $225.00</option>
+              <option value="5">Zona 5 — $250.00</option>
+              <option value="6">Zona 6 — $275.00</option>
             </select>
           </div>
 
@@ -283,6 +324,12 @@
 
           <select id="coverageZoneFilter">
             <option value="">Todas las zonas</option>
+            <option value="1">Zona 1</option>
+            <option value="2">Zona 2</option>
+            <option value="3">Zona 3</option>
+            <option value="4">Zona 4</option>
+            <option value="5">Zona 5</option>
+            <option value="6">Zona 6</option>
           </select>
 
           <button class="btn-outline" id="clearFiltersBtn" type="button">
@@ -301,7 +348,7 @@
     <p>© 2026 Papelería Sulamita - Zonas de envío</p>
   </footer>
 
-  <script src="tienda.js?v=40"></script>
+  <script src="tienda.js?v=41"></script>
   <script>
     protectPage();
     protectAdminPage();
@@ -319,6 +366,7 @@
     const cancelEditBtn = document.getElementById("cancelEditBtn");
     const coverageMessage = document.getElementById("coverageMessage");
     const zonePriceList = document.getElementById("zonePriceList");
+    const selectedZoneMessage = document.getElementById("selectedZoneMessage");
     const coverageList = document.getElementById("coverageList");
     const coverageSearch = document.getElementById("coverageSearch");
     const coverageZoneFilter = document.getElementById("coverageZoneFilter");
@@ -326,7 +374,16 @@
     const clearFiltersBtn = document.getElementById("clearFiltersBtn");
     const formTitle = document.getElementById("formTitle");
 
-    let shippingZones = [];
+    const fixedShippingZones = [
+      { numero: 1, nombre: "Zona 1", costo: 150 },
+      { numero: 2, nombre: "Zona 2", costo: 175 },
+      { numero: 3, nombre: "Zona 3", costo: 200 },
+      { numero: 4, nombre: "Zona 4", costo: 225 },
+      { numero: 5, nombre: "Zona 5", costo: 250 },
+      { numero: 6, nombre: "Zona 6", costo: 275 }
+    ];
+
+    let shippingZones = [...fixedShippingZones];
     let shippingCoverages = [];
 
     coverageZip.addEventListener("input", function () {
@@ -334,7 +391,17 @@
     });
 
     coverageForm.addEventListener("submit", saveCoverage);
+    coverageZone.addEventListener("change", updateSelectedZoneUI);
     cancelEditBtn.addEventListener("click", resetCoverageForm);
+
+    zonePriceList.addEventListener("click", function (event) {
+      const button = event.target.closest("[data-zone-number]");
+      if (!button) return;
+
+      coverageZone.value = String(button.dataset.zoneNumber || "");
+      updateSelectedZoneUI();
+      coverageZip.focus();
+    });
     reloadCoverageBtn.addEventListener("click", loadShippingAdminData);
     coverageSearch.addEventListener("input", renderCoverageList);
     coverageZoneFilter.addEventListener("change", renderCoverageList);
@@ -359,7 +426,11 @@
           throw new Error(data.message || "No se pudieron cargar las zonas.");
         }
 
-        shippingZones = Array.isArray(data.zonas) ? data.zonas : [];
+        shippingZones =
+          Array.isArray(data.zonas) && data.zonas.length
+            ? data.zonas
+            : [...fixedShippingZones];
+
         shippingCoverages = Array.isArray(data.coberturas) ? data.coberturas : [];
 
         renderZoneOptions();
@@ -367,6 +438,11 @@
         renderCoverageList();
       } catch (error) {
         console.error(error);
+
+        shippingZones = [...fixedShippingZones];
+        renderZoneOptions();
+        renderZonePrices();
+
         coverageList.innerHTML = `
           <div class="note error">
             ${escapeHtml(error.message || "No se pudo conectar con el servidor.")}
@@ -376,39 +452,69 @@
     }
 
     function renderZoneOptions() {
-      const options = shippingZones.map((zone) => `
-        <option value="${Number(zone.id)}">
-          ${escapeHtml(zone.nombre)} — ${formatMoney(zone.costo)}
-        </option>
-      `).join("");
-
       const currentZone = coverageZone.value;
+
       coverageZone.innerHTML = `
         <option value="">Selecciona una zona</option>
-        ${options}
+        ${shippingZones.map((zone) => `
+          <option value="${Number(zone.numero)}">
+            ${escapeHtml(zone.nombre)} — ${formatMoney(zone.costo)}
+          </option>
+        `).join("")}
       `;
 
       coverageZoneFilter.innerHTML = `
         <option value="">Todas las zonas</option>
         ${shippingZones.map((zone) => `
-          <option value="${Number(zone.id)}">${escapeHtml(zone.nombre)}</option>
+          <option value="${Number(zone.numero)}">${escapeHtml(zone.nombre)}</option>
         `).join("")}
       `;
 
-      if (currentZone) coverageZone.value = currentZone;
+      if (currentZone) {
+        coverageZone.value = currentZone;
+      }
+
+      updateSelectedZoneUI();
     }
 
     function renderZonePrices() {
-      if (!shippingZones.length) {
-        zonePriceList.innerHTML = `<div class="zone-price-item">No hay zonas configuradas.</div>`;
+      zonePriceList.innerHTML = shippingZones.map((zone) => `
+        <button
+          class="zone-price-item"
+          type="button"
+          data-zone-number="${Number(zone.numero)}"
+        >
+          ${escapeHtml(zone.nombre)}: ${formatMoney(zone.costo)}
+        </button>
+      `).join("");
+
+      updateSelectedZoneUI();
+    }
+
+    function updateSelectedZoneUI() {
+      const selectedNumber = Number(coverageZone.value || 0);
+      const selectedZone = shippingZones.find(
+        (zone) => Number(zone.numero) === selectedNumber
+      );
+
+      zonePriceList.querySelectorAll("[data-zone-number]").forEach((button) => {
+        const isSelected =
+          Number(button.dataset.zoneNumber) === selectedNumber;
+
+        button.classList.toggle("is-selected", isSelected);
+        button.setAttribute("aria-pressed", isSelected ? "true" : "false");
+      });
+
+      if (!selectedZone) {
+        selectedZoneMessage.textContent = "";
+        selectedZoneMessage.classList.remove("is-visible");
         return;
       }
 
-      zonePriceList.innerHTML = shippingZones.map((zone) => `
-        <div class="zone-price-item">
-          ${escapeHtml(zone.nombre)}: ${formatMoney(zone.costo)}
-        </div>
-      `).join("");
+      selectedZoneMessage.textContent =
+        `✓ ${selectedZone.nombre} seleccionada — ${formatMoney(selectedZone.costo)}`;
+
+      selectedZoneMessage.classList.add("is-visible");
     }
 
     function renderCoverageList() {
@@ -416,7 +522,7 @@
       const selectedZone = Number(coverageZoneFilter.value || 0);
 
       const filtered = shippingCoverages.filter((coverage) => {
-        const matchesZone = !selectedZone || Number(coverage.zona_id) === selectedZone;
+        const matchesZone = !selectedZone || Number(coverage.zona_numero) === selectedZone;
         const searchable = normalizeText([
           coverage.colonia,
           coverage.codigo_postal,
@@ -446,7 +552,7 @@
               </span>
               <h3>${escapeHtml(coverage.colonia)}</h3>
               <p><strong>C.P.:</strong> ${escapeHtml(coverage.codigo_postal)}</p>
-              <p><strong>Alcaldía:</strong> ${escapeHtml(coverage.municipio)}</p>
+              <p><strong>Alcaldía o municipio:</strong> ${escapeHtml(coverage.municipio)}</p>
               <p><strong>Estado o entidad:</strong> ${escapeHtml(coverage.estado)}</p>
               <p><strong>País:</strong> ${escapeHtml(coverage.pais || "")}</p>
             </div>
@@ -479,7 +585,7 @@
 
       const id = Number(coverageId.value || 0);
       const payload = {
-        zona_id: Number(coverageZone.value),
+        zona_numero: Number(coverageZone.value),
         codigo_postal: coverageZip.value.trim(),
         colonia: coverageNeighborhood.value.trim(),
         municipio: coverageCity.value.trim(),
@@ -489,7 +595,7 @@
       };
 
       if (
-        !payload.zona_id ||
+        !payload.zona_numero ||
         !/^\d{5}$/.test(payload.codigo_postal) ||
         !payload.colonia ||
         !payload.municipio ||
@@ -544,12 +650,13 @@
       if (!coverage) return;
 
       coverageId.value = String(coverage.id);
-      coverageZone.value = String(coverage.zona_id);
+      coverageZone.value = String(coverage.zona_numero);
       coverageZip.value = coverage.codigo_postal;
       coverageNeighborhood.value = coverage.colonia;
       coverageCity.value = coverage.municipio;
       coverageState.value = coverage.estado || "";
       coverageCountry.value = coverage.pais || "México";
+      updateSelectedZoneUI();
 
       formTitle.textContent = "Editar ubicación";
       saveCoverageBtn.textContent = "Guardar cambios";
@@ -592,6 +699,7 @@
       coverageForm.reset();
       coverageCountry.value = "México";
       coverageId.value = "";
+      updateSelectedZoneUI();
       formTitle.textContent = "Agregar ubicación";
       saveCoverageBtn.textContent = "Agregar ubicación";
       cancelEditBtn.style.display = "none";
@@ -623,6 +731,8 @@
       return response.json();
     }
 
+    renderZoneOptions();
+    renderZonePrices();
     loadShippingAdminData();
   </script>
 </body>

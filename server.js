@@ -2087,7 +2087,7 @@ app.get("/api/admin/zonas-envio", requireAdminSession, async (req, res) => {
 
 app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, res) => {
   try {
-    const zonaId = Number(req.body.zona_id);
+    const zonaNumero = Number(req.body.zona_numero || req.body.zona_id);
     const colonia = String(req.body.colonia || "").trim();
     const codigoPostal = cleanPostalCode(req.body.codigo_postal);
     const municipio = String(req.body.municipio || "").trim();
@@ -2095,7 +2095,7 @@ app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, r
     const pais = String(req.body.pais || "").trim();
 
     if (
-      !zonaId ||
+      !zonaNumero ||
       !colonia ||
       !/^\d{5}$/.test(codigoPostal) ||
       !municipio ||
@@ -2108,13 +2108,20 @@ app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, r
     }
 
     const zoneResult = await pool.query(
-      "SELECT id FROM zonas_envio WHERE id = $1 AND activo IS NOT FALSE LIMIT 1",
-      [zonaId]
+      `
+      SELECT id
+      FROM zonas_envio
+      WHERE numero = $1 AND activo IS NOT FALSE
+      LIMIT 1
+      `,
+      [zonaNumero]
     );
 
     if (!zoneResult.rows.length) {
       return res.status(400).json({ message: "La zona seleccionada no existe." });
     }
+
+    const zonaId = Number(zoneResult.rows[0].id);
 
     const result = await pool.query(
       `
@@ -2152,7 +2159,7 @@ app.post("/api/admin/zonas-envio/coberturas", requireAdminSession, async (req, r
 app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req, res) => {
   try {
     const coverageId = Number(req.params.id);
-    const zonaId = Number(req.body.zona_id);
+    const zonaNumero = Number(req.body.zona_numero || req.body.zona_id);
     const colonia = String(req.body.colonia || "").trim();
     const codigoPostal = cleanPostalCode(req.body.codigo_postal);
     const municipio = String(req.body.municipio || "").trim();
@@ -2162,7 +2169,7 @@ app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req
 
     if (
       !coverageId ||
-      !zonaId ||
+      !zonaNumero ||
       !colonia ||
       !/^\d{5}$/.test(codigoPostal) ||
       !municipio ||
@@ -2173,6 +2180,22 @@ app.put("/api/admin/zonas-envio/coberturas/:id", requireAdminSession, async (req
         message: "Completa zona, colonia, C.P., alcaldía o municipio, estado y país."
       });
     }
+
+    const zoneExists = await pool.query(
+      `
+      SELECT id
+      FROM zonas_envio
+      WHERE numero = $1 AND activo IS NOT FALSE
+      LIMIT 1
+      `,
+      [zonaNumero]
+    );
+
+    if (!zoneExists.rows.length) {
+      return res.status(400).json({ message: "La zona seleccionada no existe." });
+    }
+
+    const zonaId = Number(zoneExists.rows[0].id);
 
     const result = await pool.query(
       `
