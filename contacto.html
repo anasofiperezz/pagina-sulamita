@@ -7,7 +7,7 @@
   <title>Contacto | Papelería Sulamita</title>
 
   <link rel="icon" href="img/angel.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=65">
+  <link rel="stylesheet" href="styles.css?v=66">
 
   <style>
     /* =========================
@@ -54,6 +54,25 @@
     .contact-phone-link:hover,
     .contact-email-link:hover {
       text-decoration: underline;
+    }
+
+    .contact-phone-list {
+      display: grid;
+      gap: 8px;
+      margin: -4px 0 16px;
+    }
+
+    .contact-phone-list .contact-phone-link {
+      width: fit-content;
+    }
+
+    .contact-whatsapp {
+      margin-top: 14px;
+    }
+
+    .whatsapp-contact-btn {
+      margin-top: 10px;
+      width: fit-content;
     }
   </style>
 </head>
@@ -227,9 +246,33 @@
             </p>
 
             <p>
-              <strong>Teléfono:</strong>
+              <strong>Teléfonos:</strong>
+            </p>
+
+            <div class="contact-phone-list">
+              <a class="contact-phone-link" href="tel:+525555113255">
+                55 5511 3255
+              </a>
+
+              <a class="contact-phone-link" href="tel:+525555115835">
+                55 5511 5835
+              </a>
+
               <a class="contact-phone-link" href="tel:+525555335177">
                 55 5533 5177
+              </a>
+            </div>
+
+            <p class="contact-whatsapp">
+              <strong>WhatsApp:</strong><br>
+              <a
+                class="btn-primary whatsapp-contact-btn"
+                href="https://wa.me/525554688790?text=Hola%2C%20quisiera%20informaci%C3%B3n%20sobre%20productos%20o%20pedidos%20de%20Papeler%C3%ADa%20Sulamita."
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Enviar mensaje por WhatsApp a Papelería Sulamita"
+              >
+                55 5468 8790 · Enviar mensaje
               </a>
             </p>
 
@@ -312,7 +355,7 @@
        SCRIPTS
   ========================== -->
 
-  <script src="tienda.js?v=50"></script>
+  <script src="tienda.js?v=66"></script>
 
   <script>
     protectPage();

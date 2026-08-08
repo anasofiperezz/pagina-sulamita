@@ -1931,3 +1931,20 @@ textarea:focus-visible {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* ---------- CONTACTO DE PAPELERÍA ---------- */
+.contact-phone-list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.contact-whatsapp {
+  margin-top: 14px;
+}
+
+.whatsapp-contact-btn {
+  margin-top: 10px;
+  width: fit-content;
+}
